@@ -1,0 +1,52 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+*.whl
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Lean 4
+lean/.lake/
+lean/build/
+*.olean
+
+# Environment variables
+.env
+.env.local
+
+# Node
+node_modules/
+
+# AxiomCode secrets — NEVER commit these
+.axiomcode/keys/
+.axiomcode/cache/
+.axiomcode/licenses/
+.axiomcode/audit.log
+.axiomcode/version.json
+.axiomcode/migrations.log
+.axiomcode/backups/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Test
+.pytest_cache/
+.coverage
+htmlcov/

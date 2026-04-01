@@ -1,0 +1,82 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "axiomcode"
+version = "0.1.0"
+description = "Natural language to formally verified code — zero-trust, encrypted, zero-dependency"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.10"
+authors = [
+    {name = "Nrupa", email = "nrupa@axiom-code.com"},
+]
+maintainers = [
+    {name = "AxiomCode Team"},
+]
+keywords = [
+    "formal-verification",
+    "lean4",
+    "theorem-proving",
+    "verified-code",
+    "mathematics",
+    "zero-trust",
+    "cryptography",
+    "natural-language",
+    "code-generation",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Security :: Cryptography",
+    "Typing :: Typed",
+]
+dependencies = ["cffi>=1.15"]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+    "ruff>=0.1",
+    "mypy>=1.0",
+]
+
+[project.urls]
+Homepage = "https://axiom-code.com"
+Repository = "https://github.com/nrupala/axiomcode"
+Documentation = "https://nrupala.github.io/axiomcode"
+"Bug Tracker" = "https://github.com/nrupala/axiomcode/issues"
+
+[project.scripts]
+axiomcode = "cli:main"
+
+[tool.setuptools.packages.find]
+include = ["core*", "visualize*", "publish*", "libraries*"]
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
