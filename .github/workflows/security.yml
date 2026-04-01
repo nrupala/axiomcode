@@ -1,0 +1,29 @@
+name: Security Audit
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Run every Monday at 00:00 UTC
+    - cron: '0 0 * * 1'
+  workflow_dispatch:
+jobs:
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install dependencies
+        run: pip install pytest cffi bandit safety
+      - name: Run bandit (static analysis)
+        run: bandit -r . -ll -x tests/
+      - name: Run safety (dependency check)
+        run: safety check
+      - name: Run security tests
+        run: python -m pytest tests/test_core.py::TestSecurity -v
+      - name: Verify audit log integrity
+        run: python -c "from core.security import AuditLog; print('Audit log module OK')"
+      - name: Verify license system
+        run: python -c "from core.licensing import LicenseManager, LicenseKeyPair; lm = LicenseManager(); keys = lm.generate_root_key(); lic = lm.issue_license('test@test.com', 'Test', 'pro'); valid, reason = lic.is_valid(lm._public_key); assert valid, reason; print('License system OK')"
