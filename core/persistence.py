@@ -105,9 +105,11 @@ class DataStore:
 
     def _history_path(self, record_id: str, timestamp: float) -> Path:
         """Get the file path for a historical record."""
-        # Use microsecond precision to avoid collisions
+        # Use nanosecond precision + counter to avoid collisions
+        import random
         ts = str(timestamp).replace(".", "")
-        return self.history_dir / f"{record_id}_{ts}.json"
+        suffix = random.randint(1000, 9999)
+        return self.history_dir / f"{record_id}_{ts}_{suffix}.json"
 
     def create(self, record_id: str, data: dict[str, Any], metadata: dict[str, Any] | None = None) -> DataRecord:
         """Create a new record."""
@@ -171,7 +173,7 @@ class DataStore:
 
     def list(self) -> list[DataRecord]:
         """List all records."""
-        records = []
+        records: list[DataRecord] = []
         for path in self.store_dir.glob("*.json"):
             if path.name == "index.json":
                 continue

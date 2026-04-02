@@ -140,19 +140,34 @@ class KeyStore:
         return keypair
 
     def load_key(self, name: str, passphrase: str) -> KeyPair:
-        """Load a key pair from storage."""
-        if name in self._cache:
-            return self._cache[name]
-
+        """Load a key pair from storage.
+        
+        Always validates the passphrase — never returns cached key without verification.
+        This ensures security-sensitive operations always verify user credentials.
+        """
         key_file = self.store_dir / f"{name}.key"
         if not key_file.exists():
             raise FileNotFoundError(f"Key not found: {name}")
 
-        data = json.loads(key_file.read_text())
-        salt = base64.b64decode(data["salt"])
-        master_key = self._derive_master_key(passphrase, salt)
-        decrypted = self._decrypt_key(data["encrypted"], master_key)
-        keypair = KeyPair.from_dict(json.loads(decrypted))
+        try:
+            data = json.loads(key_file.read_text(encoding='utf-8'))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            raise ValueError(f"Invalid key file: {e}")
+        
+        if not isinstance(data, dict) or "salt" not in data or "encrypted" not in data:
+            raise ValueError("Invalid key file format")
+        
+        try:
+            salt = base64.b64decode(data["salt"])
+            master_key = self._derive_master_key(passphrase, salt)
+            decrypted = self._decrypt_key(data["encrypted"], master_key)
+            decrypted_dict = json.loads(decrypted)
+            # Validate that decrypted data has expected structure
+            if not isinstance(decrypted_dict, dict) or "key_id" not in decrypted_dict:
+                raise ValueError("Invalid decrypted key structure - wrong passphrase?")
+            keypair = KeyPair.from_dict(decrypted_dict)
+        except (base64.binascii.Error, json.JSONDecodeError, ValueError) as e:
+            raise ValueError(f"Failed to decrypt key: {e}")
 
         self._cache[name] = keypair
         return keypair
@@ -271,7 +286,14 @@ class ProofCertificate:
     @classmethod
     def from_json(cls, data: str) -> "ProofCertificate":
         """Import certificate from JSON."""
-        d = json.loads(data)
+        try:
+            d = json.loads(data)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in proof certificate: {e}")
+        
+        if not isinstance(d, dict):
+            raise ValueError("Proof certificate JSON must be an object")
+        
         return cls(
             version=d.get("version", PROOF_CERT_VERSION),
             algorithm_name=d.get("algorithm_name", ""),
@@ -297,7 +319,16 @@ class ProofCertificate:
     @classmethod
     def load(cls, path: Path) -> "ProofCertificate":
         """Load certificate from file."""
-        return cls.from_json(path.read_text())
+        path = Path(path)
+        if not path.is_file():
+            raise FileNotFoundError(f"Certificate file not found: {path}")
+        
+        try:
+            content = path.read_text(encoding='utf-8')
+        except UnicodeDecodeError as e:
+            raise ValueError(f"Certificate file is not valid UTF-8: {e}")
+        
+        return cls.from_json(content)
 
 
 # ─── Binary Signing ─────────────────────────────────────────────────────────
@@ -337,11 +368,12 @@ class BinarySignature:
 def sign_binary(file_path: Path, signing_key: bytes, key_id: str, file_type: str = "c_binary") -> BinarySignature:
     """Sign a binary file."""
     file_hash = hash_file(file_path)
+    signed_at = time.time()  # Use same timestamp for both
     payload = json.dumps({
         "file_hash": file_hash,
         "file_type": file_type,
         "key_id": key_id,
-        "signed_at": time.time(),
+        "signed_at": signed_at,
     }, sort_keys=True).encode("utf-8")
     signature = compute_hmac(signing_key, payload)
 
@@ -349,7 +381,7 @@ def sign_binary(file_path: Path, signing_key: bytes, key_id: str, file_type: str
         file_hash=file_hash,
         signature=signature,
         key_id=key_id,
-        signed_at=time.time(),
+        signed_at=signed_at,
         file_type=file_type,
     )
 

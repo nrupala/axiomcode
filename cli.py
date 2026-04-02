@@ -276,6 +276,7 @@ def http_post_json(url: str, data: dict, headers: dict | None = None, timeout: i
     if headers:
         req_headers.update(headers)
 
+    conn: http.client.HTTPConnection | http.client.HTTPSConnection
     if parsed.scheme == "https":
         conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=timeout)
     else:
@@ -301,6 +302,7 @@ def http_get_json(url: str, timeout: int = 10) -> dict:
     if parsed.query:
         path += "?" + parsed.query
 
+    conn: http.client.HTTPConnection | http.client.HTTPSConnection
     if parsed.scheme == "https":
         conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=timeout)
     else:
@@ -384,6 +386,7 @@ def openai_generate(model: str, prompt: str, api_key: str | None = None) -> str:
 
     body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
     parsed = urlparse("https://api.openai.com/v1/chat/completions")
+    conn: http.client.HTTPConnection | http.client.HTTPSConnection
     conn = http.client.HTTPSConnection(str(parsed.hostname), 443, timeout=120)
     try:
         conn.request("POST", parsed.path, body=body, headers={
@@ -411,6 +414,7 @@ def anthropic_generate(model: str, prompt: str, api_key: str | None = None) -> s
 
     body = json.dumps({"model": model, "max_tokens": 4096, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
     parsed = urlparse("https://api.anthropic.com/v1/messages")
+    conn: http.client.HTTPConnection | http.client.HTTPSConnection
     conn = http.client.HTTPSConnection(str(parsed.hostname), 443, timeout=120)
     try:
         conn.request("POST", parsed.path, body=body, headers={
