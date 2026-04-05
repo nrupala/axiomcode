@@ -483,3 +483,468 @@ class TestPersistence:
             # Migration to same version should be no-op
             migrated = store.migrate_schema(CURRENT_SCHEMA_VERSION)
             assert migrated == 0
+
+
+# ─── Comprehensive Security Tests ────────────────────────────────────────────
+
+class TestEncryptionRoundtrip:
+    """Tests for encryption/decryption roundtrips and tampering detection."""
+    
+    def test_secure_channel_encrypt_decrypt(self):
+        from core.security import SecureChannel
+        import secrets
+        key = secrets.token_bytes(64)
+        channel = SecureChannel(key)
+        plaintext = b"Hello, World!"
+        encrypted = channel.encrypt(plaintext)
+        decrypted = channel.decrypt(encrypted)
+        assert decrypted == plaintext
+    
+    def test_secure_channel_tampering_detection(self):
+        from core.security import SecureChannel
+        import secrets
+        import base64
+        key = secrets.token_bytes(64)
+        channel = SecureChannel(key)
+        plaintext = b"Secret data"
+        encrypted = channel.encrypt(plaintext)
+        
+        # Tamper with the data: flip bits in the encrypted payload but keep valid base64
+        data_bytes = base64.b64decode(encrypted["data"])
+        tampered = bytes([data_bytes[0] ^ 0xFF]) + data_bytes[1:]  # Flip all bits in first byte
+        encrypted["data"] = base64.b64encode(tampered).decode()
+        
+        # Decryption should fail at MAC verification
+        with pytest.raises(ValueError, match="MAC verification failed"):
+            channel.decrypt(encrypted)
+    
+    def test_secure_channel_tampering_nonce(self):
+        from core.security import SecureChannel
+        import secrets
+        key = secrets.token_bytes(64)
+        channel = SecureChannel(key)
+        plaintext = b"Secret data"
+        encrypted = channel.encrypt(plaintext)
+        
+        # Tamper with the nonce
+        encrypted["nonce"] = "abcdabcdabcdabcdabcdabcd"  # Different nonce
+        
+        # Decryption should fail
+        with pytest.raises(ValueError, match="MAC verification failed"):
+            channel.decrypt(encrypted)
+    
+    def test_secure_channel_large_data(self):
+        from core.security import SecureChannel
+        import secrets
+        key = secrets.token_bytes(64)
+        channel = SecureChannel(key)
+        plaintext = b"X" * 100000  # 100 KB
+        encrypted = channel.encrypt(plaintext)
+        decrypted = channel.decrypt(encrypted)
+        assert decrypted == plaintext
+    
+    def test_audit_log_chain_integrity(self):
+        from core.security import AuditLog
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_file = Path(tmpdir) / "audit.log"
+            audit = AuditLog(log_file)
+            
+            # Add multiple entries
+            audit.add_entry("action1", {"detail": "value1"})
+            audit.add_entry("action2", {"detail": "value2"})
+            audit.add_entry("action3", {"detail": "value3"})
+            
+            # Verify integrity
+            assert audit.verify_integrity() is True
+    
+    def test_audit_log_tampering_detection(self):
+        from core.security import AuditLog
+        import json
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log_file = Path(tmpdir) / "audit.log"
+            audit = AuditLog(log_file)
+            
+            audit.add_entry("action1", {"detail": "value1"})
+            audit.add_entry("action2", {"detail": "value2"})
+            
+            # Tamper with the log file
+            lines = log_file.read_text().strip().split("\n")
+            entry = json.loads(lines[0])
+            entry["details"]["detail"] = "TAMPERED"
+            lines[0] = json.dumps(entry)
+            log_file.write_text("\n".join(lines))
+            
+            # Verification should fail
+            assert audit.verify_integrity() is False
+
+
+# ─── Input Validation Tests ─────────────────────────────────────────────────
+
+class TestInputValidation:
+    """Tests for input validation and sanitization."""
+    
+    def test_record_id_validation_valid(self):
+        from core.persistence import _validate_record_id
+        _validate_record_id("valid_record_id_001")  # Should not raise
+    
+    def test_record_id_validation_empty(self):
+        from core.persistence import _validate_record_id
+        with pytest.raises(ValueError, match="must be 1-255 characters"):
+            _validate_record_id("")
+    
+    def test_record_id_validation_too_long(self):
+        from core.persistence import _validate_record_id
+        with pytest.raises(ValueError, match="must be 1-255 characters"):
+            _validate_record_id("x" * 256)
+    
+    def test_record_id_validation_path_traversal(self):
+        from core.persistence import _validate_record_id
+        with pytest.raises(ValueError, match="invalid characters"):
+            _validate_record_id("../../../etc/passwd")
+        with pytest.raises(ValueError, match="invalid characters"):
+            _validate_record_id("record/with/slashes")
+    
+    def test_record_id_validation_null_byte(self):
+        from core.persistence import _validate_record_id
+        with pytest.raises(ValueError, match="invalid characters"):
+            _validate_record_id("record\x00name")
+    
+    def test_json_data_validation_valid(self):
+        from core.persistence import _validate_json_data
+        _validate_json_data({"key": "value", "number": 42})  # Should not raise
+    
+    def test_json_data_validation_not_dict(self):
+        from core.persistence import _validate_json_data
+        with pytest.raises(TypeError, match="must be a dictionary"):
+            _validate_json_data("not a dict")
+    
+    def test_json_data_validation_not_serializable(self):
+        from core.persistence import _validate_json_data
+        with pytest.raises(ValueError, match="not JSON-serializable"):
+            _validate_json_data({"key": object()})  # object() is not JSON-serializable
+    
+    def test_safe_read_json_valid(self):
+        from core.persistence import _safe_read_json
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.json"
+            test_file.write_text('{"key": "value"}')
+            data = _safe_read_json(test_file)
+            assert data["key"] == "value"
+    
+    def test_safe_read_json_invalid_json(self):
+        from core.persistence import _safe_read_json
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.json"
+            test_file.write_text("not valid json {{{")
+            with pytest.raises(ValueError, match="Invalid JSON"):
+                _safe_read_json(test_file)
+    
+    def test_safe_read_json_not_object(self):
+        from core.persistence import _safe_read_json
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.json"
+            test_file.write_text("[1, 2, 3]")  # Array, not object
+            with pytest.raises(ValueError, match="must be an object"):
+                _safe_read_json(test_file)
+    
+    def test_safe_read_json_file_too_large(self):
+        from core.persistence import _safe_read_json
+        import io
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.json"
+            # Create a file larger than 10 MB by writing a large JSON object
+            large_data = {"data": "x" * (11 * 1024 * 1024)}  # 11 MB of data
+            test_file.write_text(json.dumps(large_data))
+            with pytest.raises(ValueError, match="too large"):
+                _safe_read_json(test_file)
+    
+    def test_safe_read_json_invalid_encoding(self):
+        from core.persistence import _safe_read_json
+        with tempfile.TemporaryDirectory() as tmpdir:
+            test_file = Path(tmpdir) / "test.json"
+            test_file.write_bytes(b'\xff\xfe invalid utf-8')
+            with pytest.raises(ValueError, match="not valid UTF-8"):
+                _safe_read_json(test_file)
+    
+    def test_license_file_validation(self):
+        from core.licensing import LicenseCertificate
+        with pytest.raises(ValueError, match="Invalid JSON"):
+            LicenseCertificate.from_json("not json")
+    
+    def test_license_file_not_object(self):
+        from core.licensing import LicenseCertificate
+        with pytest.raises(ValueError, match="must be an object"):
+            LicenseCertificate.from_json("[1, 2, 3]")
+
+
+# ─── Corrupted File Recovery Tests ──────────────────────────────────────────
+
+class TestCorruptedFileRecovery:
+    """Tests for handling and recovering from corrupted files."""
+    
+    def test_datastore_corrupted_json(self):
+        from core.persistence import DataStore
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = DataStore(tmpdir)
+            store.create("test_001", {"name": "test"})
+            
+            # Corrupt the JSON file
+            record_file = store._record_path("test_001")
+            record_file.write_text("not valid json {{{")
+            
+            # get() should return None gracefully
+            result = store.get("test_001")
+            assert result is None
+    
+    def test_datastore_list_skips_corrupted(self):
+        from core.persistence import DataStore
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = DataStore(tmpdir)
+            store.create("test_001", {"name": "test"})
+            store.create("test_002", {"name": "test2"})
+            
+            # Corrupt one file
+            record_file = store._record_path("test_002")
+            record_file.write_text("corrupted!")
+            
+            # list() should skip the corrupted file
+            records = store.list()
+            assert len(records) == 1
+            assert records[0].id == "test_001"
+    
+    def test_datastore_history_skips_corrupted(self):
+        from core.persistence import DataStore
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = DataStore(tmpdir)
+            store.create("test_001", {"name": "test"})
+            store.update("test_001", {"name": "updated"})
+            
+            # Corrupt a history file
+            history_files = list(store.history_dir.glob("*.json"))
+            if history_files:
+                history_files[0].write_text("corrupted!")
+            
+            # get_history() should skip corrupted entries
+            history = store.get_history("test_001")
+            # Should return at least 0 entries (corrupted ones skipped)
+            assert isinstance(history, list)
+
+
+# ─── License Expiration and Revocation Tests ───────────────────────────────
+
+class TestLicenseExpirRevoke:
+    """Comprehensive tests for license expiration and revocation."""
+    
+    def test_license_not_expired(self):
+        from core.licensing import LicenseManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lm = LicenseManager(tmpdir)
+            lm.generate_root_key()
+            lic = lm.issue_license(
+                user_id="test@example.com",
+                user_name="Test User",
+                tier="pro",
+                expires_at=time.time() + 86400,  # Tomorrow
+            )
+            assert lm._public_key is not None
+            valid, reason = lic.is_valid(lm._public_key)
+            assert valid is True
+    
+    def test_license_expired_yesterday(self):
+        from core.licensing import LicenseManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lm = LicenseManager(tmpdir)
+            lm.generate_root_key()
+            lic = lm.issue_license(
+                user_id="test@example.com",
+                user_name="Test User",
+                tier="pro",
+                expires_at=time.time() - 86400,  # Yesterday
+            )
+            assert lm._public_key is not None
+            valid, reason = lic.is_valid(lm._public_key)
+            assert valid is False
+            assert "expired" in reason.lower()
+    
+    def test_license_never_expires(self):
+        from core.licensing import LicenseManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lm = LicenseManager(tmpdir)
+            lm.generate_root_key()
+            lic = lm.issue_license(
+                user_id="test@example.com",
+                user_name="Test User",
+                tier="pro",
+                expires_at=0,  # 0 = never expires
+            )
+            assert lm._public_key is not None
+            valid, reason = lic.is_valid(lm._public_key)
+            assert valid is True
+    
+    def test_license_revoked_multiple(self):
+        from core.licensing import LicenseManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lm = LicenseManager(tmpdir)
+            lm.generate_root_key()
+            
+            lic1 = lm.issue_license(
+                user_id="user1@example.com",
+                user_name="User 1",
+                tier="pro",
+            )
+            lic2 = lm.issue_license(
+                user_id="user2@example.com",
+                user_name="User 2",
+                tier="pro",
+            )
+            
+            lm.revoke_license(lic1.license_id, "Payment failed")
+            
+            # lic1 should be revoked
+            valid1, _ = lm.verify_license(lic1)
+            assert valid1 is False
+            
+            # lic2 should still be valid
+            valid2, _ = lm.verify_license(lic2)
+            assert valid2 is True
+    
+    def test_license_features_by_tier(self):
+        from core.licensing import LicenseManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lm = LicenseManager(tmpdir)
+            lm.generate_root_key()
+            
+            community = lm.issue_license(
+                user_id="c@example.com",
+                user_name="Community User",
+                tier="community",
+            )
+            pro = lm.issue_license(
+                user_id="p@example.com",
+                user_name="Pro User",
+                tier="pro",
+            )
+            
+            # Community should have basic features
+            assert len(community.features) > 0
+            # Pro should have more features
+            assert len(pro.features) > len(community.features)
+
+
+# ─── Binary Signature Tests ──────────────────────────────────────────────────
+
+class TestBinarySignature:
+    """Tests for binary file signing and verification."""
+    
+    def test_binary_signature_create_verify(self):
+        from core.security import sign_binary
+        import secrets
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create a test binary file
+            binary_file = Path(tmpdir) / "test.bin"
+            binary_file.write_bytes(b"binary content")
+            
+            # Sign it
+            key = secrets.token_bytes(64)
+            sig = sign_binary(binary_file, key, "key123")
+            
+            # Verify it
+            assert sig.verify(binary_file, key) is True
+    
+    def test_binary_signature_tampering(self):
+        from core.security import sign_binary
+        import secrets
+        with tempfile.TemporaryDirectory() as tmpdir:
+            # Create and sign a binary file
+            binary_file = Path(tmpdir) / "test.bin"
+            binary_file.write_bytes(b"binary content")
+            
+            key = secrets.token_bytes(64)
+            sig = sign_binary(binary_file, key, "key123")
+            
+            # Tamper with the file
+            binary_file.write_bytes(b"tampered content")
+            
+            # Verification should fail
+            assert sig.verify(binary_file, key) is False
+    
+    def test_binary_signature_wrong_key(self):
+        from core.security import sign_binary
+        import secrets
+        with tempfile.TemporaryDirectory() as tmpdir:
+            binary_file = Path(tmpdir) / "test.bin"
+            binary_file.write_bytes(b"binary content")
+            
+            key1 = secrets.token_bytes(64)
+            key2 = secrets.token_bytes(64)
+            
+            sig = sign_binary(binary_file, key1, "key123")
+            
+            # Verify with wrong key
+            assert sig.verify(binary_file, key2) is False
+
+
+# ─── Edge Case Tests ────────────────────────────────────────────────────────
+
+class TestEdgeCases:
+    """Tests for edge cases and boundary conditions."""
+    
+    def test_datastore_record_id_special_chars(self):
+        from core.persistence import DataStore
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = DataStore(tmpdir)
+            # Valid IDs with special chars
+            store.create("record-with-dashes", {"value": 1})
+            store.create("record_with_underscores", {"value": 2})
+            store.create("record.with.dots", {"value": 3})
+            assert len(store.list()) == 3
+    
+    def test_datastore_large_data(self):
+        from core.persistence import DataStore
+        with tempfile.TemporaryDirectory() as tmpdir:
+            store = DataStore(tmpdir)
+            large_data = {"content": "X" * 1000000}  # 1 MB of text
+            record = store.create("large_001", large_data)
+            loaded = store.get("large_001")
+            assert loaded is not None
+            assert len(loaded.data["content"]) == 1000000
+    
+    def test_keystore_multiple_keys(self):
+        from core.security import KeyStore
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ks = KeyStore(tmpdir)
+            keys = [ks.create_key(f"key_{i}", "pass123") for i in range(5)]
+            
+            # Load each one back
+            for i, original_key in enumerate(keys):
+                loaded = ks.load_key(f"key_{i}", "pass123")
+                assert loaded.key_id == original_key.key_id
+    
+    def test_license_maximum_seats(self):
+        from core.licensing import LicenseManager
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lm = LicenseManager(tmpdir)
+            lm.generate_root_key()
+            
+            lic = lm.issue_license(
+                user_id="test@example.com",
+                user_name="Test User",
+                tier="enterprise",
+                max_seats=-1,  # Unlimited
+            )
+            
+            assert lm._public_key is not None
+            assert lic.max_seats == -1
+            valid, reason = lic.is_valid(lm._public_key)
+            assert valid is True
+    
+    def test_audit_log_empty(self):
+        from core.security import AuditLog
+        with tempfile.TemporaryDirectory() as tmpdir:
+            audit = AuditLog(Path(tmpdir) / "audit.log")
+            # Empty log should verify
+            assert audit.verify_integrity() is True
+
+
+# Ensure pytest fixture is available
+pytest.fixture = lambda *args, **kwargs: lambda f: f

@@ -152,9 +152,24 @@ class LicenseKeyPair:
     @classmethod
     def load_private(cls, path: Path, passphrase: str = "") -> "LicenseKeyPair":
         """Load private key."""
-        data = json.loads(path.read_text())
-        salt = base64.b64decode(data["salt"])
-        encrypted = base64.b64decode(data["data"])
+        path = Path(path)
+        if not path.is_file():
+            raise FileNotFoundError(f"Private key file not found: {path}")
+        
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            raise ValueError(f"Invalid private key file: {e}")
+        
+        if not isinstance(data, dict) or "salt" not in data or "data" not in data:
+            raise ValueError("Invalid private key format")
+        
+        try:
+            salt = base64.b64decode(data["salt"])
+            encrypted = base64.b64decode(data["data"])
+        except (base64.binascii.Error, KeyError) as e:
+            raise ValueError(f"Invalid base64 encoding in private key: {e}")
+        
         derived = hashlib.pbkdf2_hmac("sha512", passphrase.encode(), salt, 600000)
         keystream = hashlib.sha512(derived).digest()
         while len(keystream) < len(encrypted):
@@ -182,10 +197,26 @@ class LicenseKeyPair:
     @classmethod
     def load_public(cls, path: Path) -> "LicenseKeyPair":
         """Load public key."""
-        data = json.loads(path.read_text())
+        path = Path(path)
+        if not path.is_file():
+            raise FileNotFoundError(f"Public key file not found: {path}")
+        
+        try:
+            data = json.loads(path.read_text(encoding='utf-8'))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            raise ValueError(f"Invalid public key file: {e}")
+        
+        if not isinstance(data, dict) or "data" not in data:
+            raise ValueError("Invalid public key format")
+        
+        try:
+            public_key = base64.b64decode(data["data"])
+        except base64.binascii.Error as e:
+            raise ValueError(f"Invalid base64 encoding in public key: {e}")
+        
         return cls(
             private_key=b"",
-            public_key=base64.b64decode(data["data"]),
+            public_key=public_key,
             key_id=data["key_id"],
             created_at=data["created_at"],
             algorithm=data.get("algorithm", "hmac-sha512"),
@@ -296,7 +327,14 @@ class LicenseCertificate:
     @classmethod
     def from_json(cls, data: str) -> "LicenseCertificate":
         """Import license from JSON."""
-        d = json.loads(data)
+        try:
+            d = json.loads(data)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON in license certificate: {e}")
+        
+        if not isinstance(d, dict):
+            raise ValueError("License certificate JSON must be an object")
+        
         return cls(
             version=d.get("version", LICENSE_VERSION),
             license_id=d.get("license_id", ""),
@@ -323,7 +361,16 @@ class LicenseCertificate:
     @classmethod
     def load(cls, path: Path) -> "LicenseCertificate":
         """Load license from file."""
-        return cls.from_json(path.read_text())
+        path = Path(path)
+        if not path.is_file():
+            raise FileNotFoundError(f"License file not found: {path}")
+        
+        try:
+            content = path.read_text(encoding='utf-8')
+        except UnicodeDecodeError as e:
+            raise ValueError(f"License file is not valid UTF-8: {e}")
+        
+        return cls.from_json(content)
 
 
 # ─── License Manager ────────────────────────────────────────────────────────

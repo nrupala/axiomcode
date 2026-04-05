@@ -66,6 +66,50 @@ class DataRecord:
         )
 
 
+# ─── Input Validation ───────────────────────────────────────────────────────
+
+def _validate_record_id(record_id: str) -> None:
+    """Validate record ID to prevent path traversal attacks."""
+    if not isinstance(record_id, str):
+        raise TypeError("Record ID must be a string")
+    if not record_id or len(record_id) > 255:
+        raise ValueError("Record ID must be 1-255 characters")
+    if any(c in record_id for c in ['/', '\\', '..', '\0']):
+        raise ValueError("Record ID contains invalid characters")
+
+
+def _validate_json_data(data: dict) -> None:
+    """Validate that data is JSON-serializable."""
+    if not isinstance(data, dict):
+        raise TypeError("Data must be a dictionary")
+    try:
+        json.dumps(data)
+    except (TypeError, ValueError) as e:
+        raise ValueError(f"Data is not JSON-serializable: {e}")
+
+
+def _safe_read_json(path: Path) -> dict:
+    """Safely read and validate JSON from a file."""
+    if not path.is_file():
+        raise FileNotFoundError(f"File not found: {path}")
+    
+    # Check file size (prevent DoS via huge files)
+    max_size = 10 * 1024 * 1024  # 10 MB limit
+    if path.stat().st_size > max_size:
+        raise ValueError(f"File too large: {path.stat().st_size} bytes (max {max_size})")
+    
+    try:
+        content = path.read_text(encoding='utf-8')
+        data = json.loads(content)
+        if not isinstance(data, dict):
+            raise ValueError("JSON root must be an object/dictionary")
+        return data
+    except json.JSONDecodeError as e:
+        raise ValueError(f"Invalid JSON in {path}: {e}")
+    except UnicodeDecodeError as e:
+        raise ValueError(f"File is not valid UTF-8: {e}")
+
+
 class DataStore:
     """
     Persistent JSON data store with schema versioning and history retention.
@@ -106,13 +150,17 @@ class DataStore:
     def _history_path(self, record_id: str, timestamp: float) -> Path:
         """Get the file path for a historical record."""
         # Use nanosecond precision + counter to avoid collisions
-        import random
+        import secrets
         ts = str(timestamp).replace(".", "")
-        suffix = random.randint(1000, 9999)
+        suffix = secrets.randbelow(9000) + 1000  # Range [1000, 9999]
         return self.history_dir / f"{record_id}_{ts}_{suffix}.json"
 
     def create(self, record_id: str, data: dict[str, Any], metadata: dict[str, Any] | None = None) -> DataRecord:
         """Create a new record."""
+        # Validate inputs
+        _validate_record_id(record_id)
+        _validate_json_data(data)
+        
         now = time.time()
         record = DataRecord(
             id=record_id,
@@ -127,16 +175,17 @@ class DataStore:
 
     def get(self, record_id: str) -> DataRecord | None:
         """Get a record by ID. Returns None if not found."""
+        _validate_record_id(record_id)
         path = self._record_path(record_id)
         if not path.exists():
             return None
         try:
-            d = json.loads(path.read_text())
+            d = _safe_read_json(path)
             record = DataRecord.from_dict(d)
             # Validate schema compatibility
             self._validate_schema(record)
             return record
-        except (json.JSONDecodeError, KeyError):
+        except (ValueError, KeyError, TypeError):
             return None
 
     def update(self, record_id: str, data: dict[str, Any], metadata: dict[str, Any] | None = None) -> DataRecord | None:
@@ -178,11 +227,11 @@ class DataStore:
             if path.name == "index.json":
                 continue
             try:
-                d = json.loads(path.read_text())
+                d = _safe_read_json(path)
                 record = DataRecord.from_dict(d)
                 self._validate_schema(record)
                 records.append(record)
-            except (json.JSONDecodeError, KeyError):
+            except (ValueError, KeyError, TypeError):
                 continue
         return sorted(records, key=lambda r: r.created_at)
 
