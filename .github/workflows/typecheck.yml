@@ -1,0 +1,17 @@
+name: Type Check
+
+on: [push, pull_request]
+
+jobs:
+  typecheck:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install mypy
+        run: pip install mypy
+      - name: Type check
+        run: mypy . --ignore-missing-imports
