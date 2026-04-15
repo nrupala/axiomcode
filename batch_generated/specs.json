@@ -1,0 +1,1628 @@
+[
+  {
+    "id": 1,
+    "name": "binary_search",
+    "category": "Searching",
+    "difficulty": "Easy",
+    "theorem": "theorem binary_search_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (binary_search l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement binary search on a sorted array that returns the index of the target element or -1 if not found, prove it always returns the correct index when the element exists",
+    "spec_hash": "190ff685d93c4759012623feb9befd157ab31a69f839320a53afab7b7f803f02aea8dddacb92a9c8df7aba49b99c90b2a62c48a3c23d5503e34e00158e17980a",
+    "generation_time_ms": 1.0940709998976672,
+    "model_used": "mock"
+  },
+  {
+    "id": 2,
+    "name": "insertion_sort",
+    "category": "Sorting",
+    "difficulty": "Easy",
+    "theorem": "theorem insertion_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement insertion sort that sorts a list of natural numbers, prove the output is sorted and is a permutation of the input",
+    "spec_hash": "c223c2ea5964e5d6b9641a4320a50c90f337a6cb278557c27935b6c218dc4d7d6497af8c2d901aecb13a58a2fd1ebcfbe5f0552bda9f2c7a0fcac4a74815a229",
+    "generation_time_ms": 1.1053410007662023,
+    "model_used": "mock"
+  },
+  {
+    "id": 3,
+    "name": "selection_sort",
+    "category": "Sorting",
+    "difficulty": "Easy",
+    "theorem": "theorem selection_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement selection sort that repeatedly finds the minimum element and places it at the beginning, prove the result is sorted and preserves all elements",
+    "spec_hash": "307761ecd601edbdac7e4c3dcd299001c95fac0e5329a4646fb4ffcc075c9605296c32983858c115d234041957a24f10297d1e07e69e088f01c7598fc2fda521",
+    "generation_time_ms": 1.0833140004251618,
+    "model_used": "mock"
+  },
+  {
+    "id": 4,
+    "name": "bubble_sort",
+    "category": "Sorting",
+    "difficulty": "Easy",
+    "theorem": "theorem bubble_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement bubble sort that repeatedly swaps adjacent elements if they are in wrong order, prove it terminates and produces a sorted list",
+    "spec_hash": "afff4c37a09a320cf80ae242044b90dd282f2302700bd98b317ee58056c3cec9afe1a8312d288e291d14c63d79ab0684e53e4850976f9a8d6fecef7263f76ee1",
+    "generation_time_ms": 1.0936100006802008,
+    "model_used": "mock"
+  },
+  {
+    "id": 5,
+    "name": "merge_sort",
+    "category": "Sorting",
+    "difficulty": "Medium",
+    "theorem": "theorem merge_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement merge sort using divide and conquer, prove it produces a sorted list that is a permutation of the input, prove O(n log n) time complexity bound",
+    "spec_hash": "423b6e6f3cdea0418bee140f516708146ce5b6cd0058fabc6de53678197e214a3aae11939ecdccf598cb6ada59acd20cc1014a0729a541603b209b1bb958a0b2",
+    "generation_time_ms": 1.0939100002360647,
+    "model_used": "mock"
+  },
+  {
+    "id": 6,
+    "name": "quick_sort",
+    "category": "Sorting",
+    "difficulty": "Medium",
+    "theorem": "theorem quick_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement quicksort with a pivot selection strategy, prove the output is sorted and contains exactly the same elements as the input",
+    "spec_hash": "517b2450c289c9c3a5902fe2666eebda7ee3260e3e9c1628cd50f33ef647447d9cbfd512ad37633a08995e746f3775b5208586408b6c962da2a8e008a54353b3",
+    "generation_time_ms": 1.0960549998344504,
+    "model_used": "mock"
+  },
+  {
+    "id": 7,
+    "name": "heap_sort",
+    "category": "Sorting",
+    "difficulty": "Medium",
+    "theorem": "theorem heap_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement heap sort using a max-heap data structure, prove it correctly sorts any list of natural numbers",
+    "spec_hash": "2eb477c06a3d2d1033435218e5dc87e0b16256f5e56de727e68a6c3f24c5bbf00fd01862016cbb05dc736e28ad6902ba15bb1d00ead6496ff76a7b51d71180b4",
+    "generation_time_ms": 1.0384309998698882,
+    "model_used": "mock"
+  },
+  {
+    "id": 8,
+    "name": "counting_sort",
+    "category": "Sorting",
+    "difficulty": "Medium",
+    "theorem": "theorem counting_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement counting sort for integers in a known range, prove it produces a stable sorted output",
+    "spec_hash": "379fb4a5cbbd9f44316681bb359c31fdd970f3cff4dcb1c47a1f50c978c2cb9630e03fa5499d50ad5a20e7a9bfad275d305edcb014b1430ac56c13972de6943f",
+    "generation_time_ms": 1.0593560000415891,
+    "model_used": "mock"
+  },
+  {
+    "id": 9,
+    "name": "radix_sort",
+    "category": "Sorting",
+    "difficulty": "Hard",
+    "theorem": "theorem radix_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement radix sort using counting sort as a subroutine for each digit, prove it correctly sorts non-negative integers",
+    "spec_hash": "e568d036096b5d66c99204601d082485aca46dd20ddca9fc1249dad17ae33b65b318af0d972cab8b5f7c070d8e77105f507f3563410c731a47fdf12821d18a5d",
+    "generation_time_ms": 1.0927029998129,
+    "model_used": "mock"
+  },
+  {
+    "id": 10,
+    "name": "shell_sort",
+    "category": "Sorting",
+    "difficulty": "Hard",
+    "theorem": "theorem shell_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement shell sort with diminishing gap sequence, prove the final array is sorted",
+    "spec_hash": "4946434c6efa0e26782e100959c9930fcbdcce78872229ea63e2342f3d43436119221371dbc6a4b10cbcc7b8e94275e021094e200bc36c187a03f850860663b6",
+    "generation_time_ms": 1.1492619996715803,
+    "model_used": "mock"
+  },
+  {
+    "id": 11,
+    "name": "tim_sort",
+    "category": "Sorting",
+    "difficulty": "Hard",
+    "theorem": "theorem tim_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a simplified timsort that merges sorted runs, prove the output is sorted and stable",
+    "spec_hash": "42fa1a52eb3d8bd12deaf256fee59a449b2b9a96c53b3a8ed501bf335cc0a961e02345a991644689e41ef31e01a27e97a702b2af233e7407ebfa68171f465d54",
+    "generation_time_ms": 1.0868009994737804,
+    "model_used": "mock"
+  },
+  {
+    "id": 12,
+    "name": "intro_sort",
+    "category": "Sorting",
+    "difficulty": "Hard",
+    "theorem": "theorem intro_sort_correct (l : List Nat) :\n  Sorted (insertion_sort l) \u2227 Permutation (insertion_sort l) l := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement introsort that switches from quicksort to heapsort when recursion depth exceeds a limit, prove it always terminates with a sorted array",
+    "spec_hash": "7eeed31b5865d1e06e809e42301daeff4b047530f83effdbbe2d5371b69c84844bd6a717d2d60737e2b522f70a22cb302c7d47bbdef6f4deb842c46451044eac",
+    "generation_time_ms": 1.1775639995903475,
+    "model_used": "mock"
+  },
+  {
+    "id": 13,
+    "name": "linear_search",
+    "category": "Searching",
+    "difficulty": "Easy",
+    "theorem": "theorem linear_search_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (linear_search l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement linear search that finds the first occurrence of an element in a list, prove it returns the correct index or indicates absence",
+    "spec_hash": "0b989069b3f41088e7fb58a7c6b5c53b21cdbb06d281debebb37402e37ce5c769a862e3a7e1afd4a7cbd52c0647e916a6a65498b1b2d086d5b93561842545eb0",
+    "generation_time_ms": 1.0337809999327874,
+    "model_used": "mock"
+  },
+  {
+    "id": 14,
+    "name": "ternary_search",
+    "category": "Searching",
+    "difficulty": "Medium",
+    "theorem": "theorem ternary_search_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (ternary_search l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement ternary search on a sorted array that divides the search space into three parts, prove correctness and termination",
+    "spec_hash": "598466105af602106ce4a9e54c4c2467f6879808fc1695fdc59364f638534ca1489964e20893884951af7f56aa09b31952ac97305c784eccde995e87af2bb597",
+    "generation_time_ms": 1.0856640001293272,
+    "model_used": "mock"
+  },
+  {
+    "id": 15,
+    "name": "jump_search",
+    "category": "Searching",
+    "difficulty": "Medium",
+    "theorem": "theorem jump_search_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (jump_search l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement jump search that checks elements at fixed intervals then does linear search in the identified block, prove it finds the element if present",
+    "spec_hash": "3740d42ea183908190f4a4b5192675bb77d5829d30b84018e8357c75e28746d17de867c3dd2aa92180fa9de5298dc7a18b91951993655a9d90f3b9e30542d880",
+    "generation_time_ms": 1.036163999742712,
+    "model_used": "mock"
+  },
+  {
+    "id": 16,
+    "name": "exponential_search",
+    "category": "Searching",
+    "difficulty": "Medium",
+    "theorem": "theorem exponential_search_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (exponential_search l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement exponential search that finds the range where element may be present by doubling indices then binary search, prove correctness",
+    "spec_hash": "a8c7b5d9b2edf2ff05b38e874397d4b0b3c1cb092180c063996f09f35af2a76d7811a823c31c3ec9df62a11a8b1054ee2852df915b9a027f27a57fc77adee00b",
+    "generation_time_ms": 1.020600999254384,
+    "model_used": "mock"
+  },
+  {
+    "id": 17,
+    "name": "interpolation_search",
+    "category": "Searching",
+    "difficulty": "Hard",
+    "theorem": "theorem interpolation_search_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (interpolation_search l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement interpolation search that probes positions based on value distribution, prove it finds the element in uniformly distributed sorted arrays",
+    "spec_hash": "37e558e4c35f043f4e1cfcb6353d5095ce4a888189117e2c166353139401306f5331b24bce1f991f18a58442ebf8d15dae8e0701a8d694b3e157b2a8fa0d733f",
+    "generation_time_ms": 1.0773699996207142,
+    "model_used": "mock"
+  },
+  {
+    "id": 18,
+    "name": "fibonacci_search",
+    "category": "Searching",
+    "difficulty": "Hard",
+    "theorem": "theorem fibonacci_search_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (fibonacci_search l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement fibonacci search using fibonacci numbers to divide the search range, prove it correctly finds elements in sorted arrays",
+    "spec_hash": "f546310d14d46f6e993e61c5645db2b1e5f9197db71ab744d7633410eefa7c053b72388734decd1a2ea804dede4c1419bae51d66dffd3400101c612b3506fda1",
+    "generation_time_ms": 1.0680019995561452,
+    "model_used": "mock"
+  },
+  {
+    "id": 19,
+    "name": "hash_table_lookup",
+    "category": "Searching",
+    "difficulty": "Medium",
+    "theorem": "theorem hash_table_lookup_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (hash_table_lookup l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a hash table with chaining for collision resolution, prove lookup returns the correct value for any inserted key",
+    "spec_hash": "50af672266d2f7358b364d5bca2784e86d50d4047350d385ab8ba314c95af122fff1800fcaa6e4556106523f9e059c8355c9856f1700521f5b35394cb691697d",
+    "generation_time_ms": 1.0675710000214167,
+    "model_used": "mock"
+  },
+  {
+    "id": 20,
+    "name": "bloom_filter",
+    "category": "Searching",
+    "difficulty": "Hard",
+    "theorem": "theorem bloom_filter_correct (l : List Nat) (x : Nat) :\n  Sorted l \u2192 (bloom_filter l x = some i \u2194 l[i]! = x) := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a bloom filter with multiple hash functions, prove it never produces false negatives and has bounded false positive rate",
+    "spec_hash": "71e67051ac4002259d6f65401862477be62dfc41cceda37528ed08f1c1fee490b94055595227af7ea68b72df43e596685acc594dd72f724f33a3a4c779956570",
+    "generation_time_ms": 1.0189960003117449,
+    "model_used": "mock"
+  },
+  {
+    "id": 21,
+    "name": "euclidean_gcd",
+    "category": "Number Theory",
+    "difficulty": "Easy",
+    "theorem": "theorem euclidean_gcd_correct (a b : Nat) :\n  euclidean_gcd a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement the Euclidean algorithm for greatest common divisor, prove it always terminates and returns the correct GCD of two natural numbers",
+    "spec_hash": "e5f5efe6be94bc3ca7192aaa7bf3ee8896c838dcc200b2f45e7d52081652d7e8668cbd17c49f3924d35bbeb151a897eed5d9c8697ed5a9068d54587558dd0a10",
+    "generation_time_ms": 1.1061680006605457,
+    "model_used": "mock"
+  },
+  {
+    "id": 22,
+    "name": "extended_euclidean",
+    "category": "Number Theory",
+    "difficulty": "Medium",
+    "theorem": "theorem extended_euclidean_correct (a b : Nat) :\n  extended_euclidean a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement the extended Euclidean algorithm that finds GCD and B\u00e9zout coefficients, prove that a*x + b*y = gcd(a,b)",
+    "spec_hash": "5e4dc39bcd6f5ed5ffa93e84dcc0bb7517d19329b3c621f6ac1b2aaa9c3e6f148e3d4581d5d0e57317607e7c65f7508c3920b2a06bfd0b8905a8cc60a45e06e7",
+    "generation_time_ms": 1.052656999490864,
+    "model_used": "mock"
+  },
+  {
+    "id": 23,
+    "name": "sieve_of_eratosthenes",
+    "category": "Number Theory",
+    "difficulty": "Medium",
+    "theorem": "theorem sieve_of_eratosthenes_correct (a b : Nat) :\n  sieve_of_eratosthenes a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement the Sieve of Eratosthenes to find all primes up to n, prove every number marked as prime is actually prime and all composites are marked",
+    "spec_hash": "54adac4ce9dbd87f17b9b6033bb88721d497cb49d98a98417a7d88bac2827204bb79d2e4bb73d3d828600e950c54ed685ea07e35c95d3336d42fb5cd047c23c9",
+    "generation_time_ms": 1.087071000256401,
+    "model_used": "mock"
+  },
+  {
+    "id": 24,
+    "name": "prime_factorization",
+    "category": "Number Theory",
+    "difficulty": "Medium",
+    "theorem": "theorem prime_factorization_correct (a b : Nat) :\n  prime_factorization a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement trial division prime factorization, prove the product of returned prime factors equals the original number",
+    "spec_hash": "1459f66b6a4f2b73afa5211a11b0e0b0d9cbd20aff6cbce188778806160d3d381276c1cbd87c27ffbbc511330a1c7de10da802febabe495a2ca1332e96413351",
+    "generation_time_ms": 1.083848000234866,
+    "model_used": "mock"
+  },
+  {
+    "id": 25,
+    "name": "modular_exponentiation",
+    "category": "Number Theory",
+    "difficulty": "Medium",
+    "theorem": "theorem modular_exponentiation_correct (a b : Nat) :\n  modular_exponentiation a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement modular exponentiation using square-and-multiply, prove it correctly computes (base^exp) mod m",
+    "spec_hash": "d3bddede56878d2c9e291601141ceea6b111868300a505889b657eb18ca46d7cf2a8cc8ed9b0b0ed6511b816bee60684d93993db44c44a7d6668a633571bfff0",
+    "generation_time_ms": 1.0866140000871383,
+    "model_used": "mock"
+  },
+  {
+    "id": 26,
+    "name": "fermats_little_theorem",
+    "category": "Number Theory",
+    "difficulty": "Hard",
+    "theorem": "theorem fermats_little_theorem_correct (a b : Nat) :\n  fermats_little_theorem a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement a primality test based on Fermat's little theorem, prove that if a^(p-1) \u2261 1 (mod p) then p is probably prime",
+    "spec_hash": "26d2b758867473862fd767c2cbab90e8e9fbd5a02f5716703dcbdd03912a19d38c15c56e9fe86a09dff7cea18b9edbdf5c547ab28e8e14c5586233d9e406842b",
+    "generation_time_ms": 1.0922530000243569,
+    "model_used": "mock"
+  },
+  {
+    "id": 27,
+    "name": "miller_rabin_primality",
+    "category": "Number Theory",
+    "difficulty": "Hard",
+    "theorem": "theorem miller_rabin_primality_correct (a b : Nat) :\n  miller_rabin_primality a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement the Miller-Rabin primality test with k witnesses, prove it correctly identifies composites and has bounded error probability",
+    "spec_hash": "5b294868f1c8bfaf1ca8b8d1ab3571bcc64b06d39db11302818ef2f75021663f452f9ecea94229bcdfb32c1cff29cc3fcb4da5fd20c1676d3d3f9212832d602c",
+    "generation_time_ms": 1.0810959993250435,
+    "model_used": "mock"
+  },
+  {
+    "id": 28,
+    "name": "lcm_computation",
+    "category": "Number Theory",
+    "difficulty": "Easy",
+    "theorem": "theorem lcm_computation_correct (a b : Nat) :\n  lcm_computation a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement least common multiple computation using the relationship lcm(a,b) = |a*b|/gcd(a,b), prove the result is the smallest positive integer divisible by both",
+    "spec_hash": "a3921a1ebd322d47aae33cf578036f072a7aba2dc7487106e0ec34b47ad55d4aa05f9bcd0665a836c773a1dcd36e0eeeb1df14e54f8534995345be930a648931",
+    "generation_time_ms": 1.076313999874401,
+    "model_used": "mock"
+  },
+  {
+    "id": 29,
+    "name": "chinese_remainder_theorem",
+    "category": "Number Theory",
+    "difficulty": "Hard",
+    "theorem": "theorem chinese_remainder_theorem_correct (a b : Nat) :\n  chinese_remainder_theorem a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement the Chinese Remainder Theorem solver for coprime moduli, prove the solution satisfies all congruences and is unique modulo the product",
+    "spec_hash": "467027dbb9ee708819652a3f06edb2f1d99a363696d1b48d2ed787af204cef138e0ad9cc64f491423e698683dbc60aec59f3ea1f114012b96d1dba7d1e8238f7",
+    "generation_time_ms": 1.0916269993686,
+    "model_used": "mock"
+  },
+  {
+    "id": 30,
+    "name": "euler_totient",
+    "category": "Number Theory",
+    "difficulty": "Hard",
+    "theorem": "theorem euler_totient_correct (a b : Nat) :\n  euler_totient a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement Euler's totient function that counts integers coprime to n, prove the result equals the count of numbers less than n that are coprime to n",
+    "spec_hash": "5834cbfa1b827f8b6716a4eed3d938d308b2a2cd6a42d695f4e163c0ebd18cf56232e8d65f219b3b57a386dbff13ed1e99f9098f9ac4441be1b7d5defe9825b4",
+    "generation_time_ms": 1.0408750003989553,
+    "model_used": "mock"
+  },
+  {
+    "id": 31,
+    "name": "integer_square_root",
+    "category": "Number Theory",
+    "difficulty": "Medium",
+    "theorem": "theorem integer_square_root_correct (a b : Nat) :\n  integer_square_root a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement integer square root using Newton's method, prove the result is the largest integer whose square is at most n",
+    "spec_hash": "5145d4e3eb4ce1f462d5ca2d1bb3ca2e2e662262ae82b36f63f09b0380738a45b0fd63079bcc98aa2fedb6323ec4e6f6146233642099ce8f7f6bbc32aa3705c4",
+    "generation_time_ms": 1.0711050008467282,
+    "model_used": "mock"
+  },
+  {
+    "id": 32,
+    "name": "perfect_number_check",
+    "category": "Number Theory",
+    "difficulty": "Easy",
+    "theorem": "theorem perfect_number_check_correct (a b : Nat) :\n  perfect_number_check a b = Nat.gcd a b := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.NumberTheory"
+    ],
+    "definitions": [],
+    "docstring": "implement a function that checks if a number is perfect (sum of proper divisors equals the number), prove correctness for all inputs",
+    "spec_hash": "219ce330edaf1b6aab9b9e749c4fb74b0148f242f07bb53de05c4a40ba80b72524c9335c3f6c1dc987488adc9faafb035cdd0336b944c2620427c443aaae7086",
+    "generation_time_ms": 1.0864260002563242,
+    "model_used": "mock"
+  },
+  {
+    "id": 33,
+    "name": "linked_list_reverse",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem linked_list_reverse_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement an in-place singly linked list reversal, prove the reversed list has the same elements in reverse order and the same length",
+    "spec_hash": "6234f0d8932971f314e2d254857c86a30159984866d7d4a4e7d746bc8c798f7fe40055d67507a11015e71a2a62ba9d679aa5bb043d18452a45de7427528a28eb",
+    "generation_time_ms": 1.1065409998991527,
+    "model_used": "mock"
+  },
+  {
+    "id": 34,
+    "name": "linked_list_merge",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem linked_list_merge_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement merging of two sorted linked lists into one sorted linked list, prove the result is sorted and contains all elements from both lists",
+    "spec_hash": "b65aff2e65f78bd6f96c4d71795bc7912bf37e651e54a030f0543aee747563b7b605ebfe07f4bb182f92d45ce00c5c339a380e238d83d4972f6acd0348efa3eb",
+    "generation_time_ms": 1.0951730000670068,
+    "model_used": "mock"
+  },
+  {
+    "id": 35,
+    "name": "stack_with_max",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem stack_with_max_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a stack that supports push, pop, and get-max in O(1) time, prove all operations maintain the stack invariant and max is correct",
+    "spec_hash": "2a4a6fd9fcfd17fb7219ba43bfaff688f5bc569131e20a90e9811881b04d719c5bcab9da697c935d679af163d6c47fb4391a10e0a14a7eb950d37d3b022fb02a",
+    "generation_time_ms": 1.1428220004745526,
+    "model_used": "mock"
+  },
+  {
+    "id": 36,
+    "name": "queue_from_stacks",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem queue_from_stacks_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a FIFO queue using two stacks, prove enqueue and dequeue operations maintain FIFO ordering",
+    "spec_hash": "53279865c616003b3c8e866f77d99ee750adfb39f5e2e1aab0b63a82cbff287a84b254e8c34601531af4f4ee10fbc5e706550ec6c08a944fd8757c4f9600556a",
+    "generation_time_ms": 1.072083000508428,
+    "model_used": "mock"
+  },
+  {
+    "id": 37,
+    "name": "circular_buffer",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem circular_buffer_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a circular buffer with fixed capacity, prove it correctly wraps around and never overflows beyond capacity",
+    "spec_hash": "e423ab31ef149c58f25bdcb55fcb4465916af951c7e2668f415a6fc8fbe810362a2314e854264d40865c53af08785e35646f4e6afcea857ae495fade2f4fc63e",
+    "generation_time_ms": 1.0546020002948353,
+    "model_used": "mock"
+  },
+  {
+    "id": 38,
+    "name": "binary_search_tree_insert",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem binary_search_tree_insert_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement insertion into a binary search tree, prove the BST property is maintained after insertion",
+    "spec_hash": "f3b66562d501c5f800cd002f3b78bd503a2aa8899b09fc3ea41ab7e74ca71a46c0887a26538966ef4e03db06a09033d77bfc10d058bc61cbbe3f2ad1feb569b6",
+    "generation_time_ms": 1.114265000069281,
+    "model_used": "mock"
+  },
+  {
+    "id": 39,
+    "name": "binary_search_tree_search",
+    "category": "Data Structures",
+    "difficulty": "Easy",
+    "theorem": "theorem binary_search_tree_search_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement search in a binary search tree, prove it returns the node if present and None if not, with correctness of BST ordering",
+    "spec_hash": "ab7816536a10a84838eeb4bfcff97fb321b3ee93ce9b3a72b77e82533df7dbd3563017951b718ca7830809827eb4fa66758111bf317e1db0ff0da3f6ab34435a",
+    "generation_time_ms": 1.0858839996217284,
+    "model_used": "mock"
+  },
+  {
+    "id": 40,
+    "name": "avl_tree_rotation",
+    "category": "Data Structures",
+    "difficulty": "Hard",
+    "theorem": "theorem avl_tree_rotation_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement AVL tree left and right rotations, prove rotations preserve the BST property and restore the balance factor invariant",
+    "spec_hash": "289f54f9ae79916b704a4c23eb62edd2ec8ed9f38cbdff34ad580a66a4379fa7f644fb83195bfb952170422685c2722c2b1801214350c7c71d535f63ffcd3047",
+    "generation_time_ms": 1.086215000213997,
+    "model_used": "mock"
+  },
+  {
+    "id": 41,
+    "name": "heap_insert_extract",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem heap_insert_extract_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement binary heap insert and extract-min operations, prove the heap property is maintained after each operation",
+    "spec_hash": "6a9a3306949c59ebdf34e6d9dcae487b8df0c5213dc7165c747f5705c827570865fd0466d6a67b36123a5d0d59c6fd4665cd9f4a0a4a1bec079b213e4bda68c2",
+    "generation_time_ms": 1.0710289998314693,
+    "model_used": "mock"
+  },
+  {
+    "id": 42,
+    "name": "trie_insert_search",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem trie_insert_search_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a trie (prefix tree) with insert and search operations, prove search returns true if and only if the key was inserted",
+    "spec_hash": "ca0e199fc9599a4f2065d920e92c1edd233469b6c6110fbdbf14eca0a4565438debd98b4f050ae149f8299030d1057af03859a106e87f8708b4e672aa3686b32",
+    "generation_time_ms": 1.2023799999951734,
+    "model_used": "mock"
+  },
+  {
+    "id": 43,
+    "name": "hash_map_put_get",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem hash_map_put_get_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a hash map with put and get operations using open addressing, prove get returns the most recently put value for any key",
+    "spec_hash": "542c37c7a838e003c44ee63ed20d8a0cc2dbb4073163262266c71c5dbda76c5b3410577578ed7ed0124791247022a7531e0d10edb8494f098627c3f959bc652f",
+    "generation_time_ms": 1.087349999579601,
+    "model_used": "mock"
+  },
+  {
+    "id": 44,
+    "name": "doubly_linked_list",
+    "category": "Data Structures",
+    "difficulty": "Medium",
+    "theorem": "theorem doubly_linked_list_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a doubly linked list with insert, delete, and traverse operations, prove the forward and backward traversals produce reverse sequences",
+    "spec_hash": "55f7d2461bf88528441ccaeeb477313c75d6ca9672f458cfdad97e6dd8e33ece8d43d40b81529c967f06341cbdb626e1e882bba7d30222d3b90ba593fc7f9dac",
+    "generation_time_ms": 1.0678400003598654,
+    "model_used": "mock"
+  },
+  {
+    "id": 45,
+    "name": "skip_list_search",
+    "category": "Data Structures",
+    "difficulty": "Hard",
+    "theorem": "theorem skip_list_search_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement search in a skip list data structure, prove it correctly finds elements with O(log n) expected time",
+    "spec_hash": "891bcb83926126535ee89ff45a186021129401b95b30856c151c818400f009d9f53460029fe8411bcb4a0af6488ee53cc405e6a9909857eb1f7b51ce836f1b72",
+    "generation_time_ms": 1.0933980001937016,
+    "model_used": "mock"
+  },
+  {
+    "id": 46,
+    "name": "segment_tree_build",
+    "category": "Data Structures",
+    "difficulty": "Hard",
+    "theorem": "theorem segment_tree_build_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "build a segment tree for range sum queries, prove each node correctly stores the sum of its range",
+    "spec_hash": "58ec34c59aafb73773a27d76be30d23588b629680560312b8d8135372e836ed86df72027b42fc7dc8c4365bdc6b1a9941a9ec92ee1ecf1a279320ff3063f42f6",
+    "generation_time_ms": 1.032002999636461,
+    "model_used": "mock"
+  },
+  {
+    "id": 47,
+    "name": "disjoint_set_union",
+    "category": "Data Structures",
+    "difficulty": "Hard",
+    "theorem": "theorem disjoint_set_union_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement disjoint set union with path compression and union by rank, prove find returns the correct representative for each element",
+    "spec_hash": "65bc02b3b6f8017ea3c1f78a6ae06c83ff7520f56adee14bf15ec13796465aedb230bead1bd455e80be872a113d1448bf7c0b2f1c592aee4471385265ebd739e",
+    "generation_time_ms": 1.0818390001077205,
+    "model_used": "mock"
+  },
+  {
+    "id": 48,
+    "name": "lru_cache",
+    "category": "Data Structures",
+    "difficulty": "Hard",
+    "theorem": "theorem lru_cache_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement an LRU cache with get and put operations in O(1) time, prove the least recently used item is evicted when capacity is exceeded",
+    "spec_hash": "5e40c4e1484b207c9f4d5167d2d5961d688c1e8eeb58b142c8d2bbc9f733c04824e5eb4f5ec71aed1939313fbd43c99660927f34d8833b7224743c61002b87d7",
+    "generation_time_ms": 1.095120999707433,
+    "model_used": "mock"
+  },
+  {
+    "id": 49,
+    "name": "bfs_shortest_path",
+    "category": "Graph",
+    "difficulty": "Medium",
+    "theorem": "theorem bfs_shortest_path_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement breadth-first search to find shortest path in an unweighted graph, prove the distance to each reachable node is minimal",
+    "spec_hash": "984be383e953f2690c93e23fdb5246e8b5eab19c320f5b9dc1ffb8c53d2898382921af0e6a84cb8e5041117ea3ed5f3401dec64b6a26ee2bc3b2777b45845b7b",
+    "generation_time_ms": 1.088740000341204,
+    "model_used": "mock"
+  },
+  {
+    "id": 50,
+    "name": "dfs_cycle_detection",
+    "category": "Graph",
+    "difficulty": "Medium",
+    "theorem": "theorem dfs_cycle_detection_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement depth-first search to detect cycles in a directed graph, prove it correctly identifies all cyclic graphs",
+    "spec_hash": "4850225cbf9623bdb4c9a487f48689555cc598c5f8d78f94bbeb87461eb99da2c10cff6c852aa471e88a246494028ff2626c30f327a2bf7e56dc1727191a27f8",
+    "generation_time_ms": 1.0995740003636456,
+    "model_used": "mock"
+  },
+  {
+    "id": 51,
+    "name": "dijkstra_shortest_path",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem dijkstra_shortest_path_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Dijkstra's algorithm for single-source shortest paths with non-negative weights, prove it computes the correct shortest distance to every vertex",
+    "spec_hash": "01a9787f3394e8a2ebd7b45fb729d3cfc39a1d8f3c792ab3aa037a8b1379301e8fe9e5fc7b43f025438582d7405639beefc4270d5005a786547f653a8d1acbbe",
+    "generation_time_ms": 1.0276490002070204,
+    "model_used": "mock"
+  },
+  {
+    "id": 52,
+    "name": "bellman_ford",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem bellman_ford_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Bellman-Ford algorithm for shortest paths that handles negative edge weights, prove it detects negative cycles and computes correct distances otherwise",
+    "spec_hash": "7ddc03a0d8c281ac97457f16e0626acde948772457aeb43aeebb0a074a08809c1d6a13a3a57ac9cb3eaf4d35995e4e323f6d3996f8babc69251ee9b2243f916c",
+    "generation_time_ms": 2.2779020000598393,
+    "model_used": "mock"
+  },
+  {
+    "id": 53,
+    "name": "floyd_warshall",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem floyd_warshall_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Floyd-Warshall all-pairs shortest path algorithm, prove after completion dist[i][j] equals the shortest path distance between i and j",
+    "spec_hash": "4b00e91bf9eb941822e0358e4a4d8b445619b91e26b17b370b60b20b87e9d1586151ac39d0eda0fef48fd64720a35859801d799b986fdc9a0ae04f4fea765852",
+    "generation_time_ms": 1.0804300000017975,
+    "model_used": "mock"
+  },
+  {
+    "id": 54,
+    "name": "kruskal_mst",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem kruskal_mst_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Kruskal's minimum spanning tree algorithm using union-find, prove the result is a spanning tree with minimum total weight",
+    "spec_hash": "ba8559186446e17999b9287ae66c4734fc23fd6288dca7258ed8d6ef09dd5c0c5f74c750337c81e281d89726da7fd57a3ddc0527a02727b5c10917617edbb35b",
+    "generation_time_ms": 1.0811840002133977,
+    "model_used": "mock"
+  },
+  {
+    "id": 55,
+    "name": "prim_mst",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem prim_mst_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Prim's minimum spanning tree algorithm, prove the result connects all vertices with minimum total edge weight",
+    "spec_hash": "2d1307390afab81c52a1733f6868d7927661c42921b884a136976c92c42d1333aa9eb0773f6105630c7c588781310566b4b7a8c72145cd6dddabe159bc66c193",
+    "generation_time_ms": 1.021534000756219,
+    "model_used": "mock"
+  },
+  {
+    "id": 56,
+    "name": "topological_sort",
+    "category": "Graph",
+    "difficulty": "Medium",
+    "theorem": "theorem topological_sort_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement topological sort using Kahn's algorithm, prove the output ordering respects all edges (if u\u2192v then u appears before v)",
+    "spec_hash": "ec22df4c4c48aa99626451f98c767305911bde852bb530a4374421ed374721a919db5a111cfd2c31446b6608abdc4271daeb8df9d3babc159bcd695b8dc7a101",
+    "generation_time_ms": 1.0870030000660336,
+    "model_used": "mock"
+  },
+  {
+    "id": 57,
+    "name": "kosaraju_scc",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem kosaraju_scc_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Kosaraju's algorithm for finding strongly connected components, prove each component is maximal and strongly connected",
+    "spec_hash": "a9082dfa99f7d44ad11e807972ead3afed55713f1c7189783c56aa44f305d77a71fe9c84026f1360304fe6c01a295396aa8b11c24063e85188eb50263fc78eaa",
+    "generation_time_ms": 1.088475999495131,
+    "model_used": "mock"
+  },
+  {
+    "id": 58,
+    "name": "tarjan_scc",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem tarjan_scc_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Tarjan's algorithm for strongly connected components using a single DFS, prove correctness of component identification",
+    "spec_hash": "00976e56c8b6b1e836bfdc4a7c34a27ef43fa5c7468b8b7b555f2c2741d209081e0cec6abbda8e5aad03264d9121496e24e834d81e914bad4013bf6d6ee314ba",
+    "generation_time_ms": 1.0716790002334164,
+    "model_used": "mock"
+  },
+  {
+    "id": 59,
+    "name": "ford_fulkerson_max_flow",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem ford_fulkerson_max_flow_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement Ford-Fulkerson maximum flow algorithm using augmenting paths, prove the result equals the minimum cut capacity",
+    "spec_hash": "f26671a74e133cf9216e1e70e2dfe9f7fd3ea73b8c301df1d7a273aeeb2e4ef3414a128080b18136b2d3f7e4794674d14ddbd9b41a8f26961bd92e67643d8deb",
+    "generation_time_ms": 1.0300910007572384,
+    "model_used": "mock"
+  },
+  {
+    "id": 60,
+    "name": "graph_bipartite_check",
+    "category": "Graph",
+    "difficulty": "Medium",
+    "theorem": "theorem graph_bipartite_check_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement a bipartite graph checker using two-coloring, prove a graph is bipartite if and only if it is 2-colorable",
+    "spec_hash": "ea8fa3630932755914aed712640dc8870cf9e6cc8db9e1ed6e6fd4db240871a356dce9af2ad62c02ab5310417068daf2f2296ff3d02a0a4c72e7968f3264ca89",
+    "generation_time_ms": 1.0809780005729408,
+    "model_used": "mock"
+  },
+  {
+    "id": 61,
+    "name": "graph_connectivity",
+    "category": "Graph",
+    "difficulty": "Medium",
+    "theorem": "theorem graph_connectivity_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement connected component counting using BFS, prove the count equals the number of connected components in the graph",
+    "spec_hash": "2090b56db7b5786cc0c1ce18d18db44390a2835f999dc663d50b688f83236edab623d84ffb67055334ffd0656e609c6ca57305266380b67ef92b796d830d2643",
+    "generation_time_ms": 1.0421909992146539,
+    "model_used": "mock"
+  },
+  {
+    "id": 62,
+    "name": "a_star_pathfinding",
+    "category": "Graph",
+    "difficulty": "Hard",
+    "theorem": "theorem a_star_pathfinding_correct (g : Graph) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop",
+      "Mathlib.Graph"
+    ],
+    "definitions": [],
+    "docstring": "implement A* pathfinding with an admissible heuristic, prove it finds the optimal path when the heuristic is admissible",
+    "spec_hash": "17ccd6606ae604c493bc38c5e531e0564815092fd4e7822f390fec3fc82ca5753dd65a94107e7b6be0825f4161bb4232f41de8be61824e3ec0346b4d5d7eaf96",
+    "generation_time_ms": 1.1196469995411462,
+    "model_used": "mock"
+  },
+  {
+    "id": 63,
+    "name": "fibonacci_dp",
+    "category": "Dynamic Programming",
+    "difficulty": "Easy",
+    "theorem": "theorem fibonacci_dp_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement Fibonacci number computation using dynamic programming, prove fib(n) = fib(n-1) + fib(n-2) with correct base cases",
+    "spec_hash": "2b2862978bbfc1b7d0b931b76b21e74d487a592d29ed3791ea8b0c109095e2262f5798bca03304aa758486578e1a424b534c882ac0d0940453a13fe25cd59986",
+    "generation_time_ms": 1.074853999853076,
+    "model_used": "mock"
+  },
+  {
+    "id": 64,
+    "name": "knapsack_01",
+    "category": "Dynamic Programming",
+    "difficulty": "Medium",
+    "theorem": "theorem knapsack_01_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the 0/1 knapsack problem using dynamic programming, prove the solution maximizes total value without exceeding capacity",
+    "spec_hash": "46ec07aa372e4bf488235fec8c0e97c4d18090d3c47f93ecdbaff9b102de0b1153752a67c3db6bf7cb0ff9b19dbe2141c6284ec5f1d7f8f3f65c6a5513313f12",
+    "generation_time_ms": 1.0761829998955363,
+    "model_used": "mock"
+  },
+  {
+    "id": 65,
+    "name": "longest_common_subsequence",
+    "category": "Dynamic Programming",
+    "difficulty": "Medium",
+    "theorem": "theorem longest_common_subsequence_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement longest common subsequence using dynamic programming, prove the result is a subsequence of both inputs and is of maximum length",
+    "spec_hash": "6c79e0f6bbb45e675ee1c934ba4e783ffec067da1c9e94894abb75520027aea88529fb411b0cf4f69b7432aadab97daf06600e3863bd72d6523835b6d47c3c61",
+    "generation_time_ms": 1.0926920003839768,
+    "model_used": "mock"
+  },
+  {
+    "id": 66,
+    "name": "longest_increasing_subsequence",
+    "category": "Dynamic Programming",
+    "difficulty": "Medium",
+    "theorem": "theorem longest_increasing_subsequence_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement longest increasing subsequence using dynamic programming, prove the result is strictly increasing and of maximum length",
+    "spec_hash": "51474eee5f137293576eee2bfb6231f8ce5db64150a723ac9c70579cc8a6753ab9e20d43f87a2aa6ada370373ebabef7717dc27d8b2df2ecef99e99505edd88b",
+    "generation_time_ms": 1.078305999726581,
+    "model_used": "mock"
+  },
+  {
+    "id": 67,
+    "name": "matrix_chain_multiplication",
+    "category": "Dynamic Programming",
+    "difficulty": "Hard",
+    "theorem": "theorem matrix_chain_multiplication_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement optimal matrix chain multiplication ordering, prove the parenthesization minimizes the total number of scalar multiplications",
+    "spec_hash": "db5fc9d1b67b4c543e53d3ac1695a282fde50a1f753ebfd74a96a41aa68fab5ea7f02548e48255cc9ce811f89608f84d1c2784dedd6ebb864dfee51b2947b177",
+    "generation_time_ms": 1.0690379995139665,
+    "model_used": "mock"
+  },
+  {
+    "id": 68,
+    "name": "edit_distance",
+    "category": "Dynamic Programming",
+    "difficulty": "Medium",
+    "theorem": "theorem edit_distance_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement Levenshtein edit distance using dynamic programming, prove the result is the minimum number of insertions, deletions, and substitutions to transform one string to another",
+    "spec_hash": "829ca5809a027bef5a6029ae2eee59d2371c46d57db7c30c675bbde1c261470586abb75a6621b8e9bdc70ce95f0fc38c47383f4f220ed37e50e7f508a6fac4ee",
+    "generation_time_ms": 1.0656519998519798,
+    "model_used": "mock"
+  },
+  {
+    "id": 69,
+    "name": "coin_change",
+    "category": "Dynamic Programming",
+    "difficulty": "Medium",
+    "theorem": "theorem coin_change_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the coin change problem to find minimum coins needed for a target amount, prove the result uses the minimum number of coins or reports impossibility",
+    "spec_hash": "9ed0ad7a242652ba7641144a52b57d34f23c3f503b85290229b2aa26c66e8fbea16dcfcfbf7f1d485d549fdb43d42151f2bbb34818b696e505d75d08a583c550",
+    "generation_time_ms": 1.091359000383818,
+    "model_used": "mock"
+  },
+  {
+    "id": 70,
+    "name": "subset_sum",
+    "category": "Dynamic Programming",
+    "difficulty": "Medium",
+    "theorem": "theorem subset_sum_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the subset sum problem using dynamic programming, prove it correctly determines whether a subset with the target sum exists",
+    "spec_hash": "85ad22db9ec57edc53039a61bdf776e285ce94722dfae11cb062aa738f6d0f67a3467b5543b13630daa4e6b1db4d6e8186c8d563c5a4016e895ee0abdf199feb",
+    "generation_time_ms": 1.060429000062868,
+    "model_used": "mock"
+  },
+  {
+    "id": 71,
+    "name": "rod_cutting",
+    "category": "Dynamic Programming",
+    "difficulty": "Medium",
+    "theorem": "theorem rod_cutting_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the rod cutting problem to maximize revenue, prove the solution finds the optimal way to cut a rod of length n",
+    "spec_hash": "63af86c610c6499668aef7a47d13e9aa66c394baf84b317f75f4cac7f9cb8964856b4718b1c56d6e76db9600bdd83daa99668f65fc1d6105b8772eb07373a9e3",
+    "generation_time_ms": 1.0818900000231224,
+    "model_used": "mock"
+  },
+  {
+    "id": 72,
+    "name": "palindrome_partitioning",
+    "category": "Dynamic Programming",
+    "difficulty": "Hard",
+    "theorem": "theorem palindrome_partitioning_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement minimum palindrome partitioning of a string, prove the result partitions the string into the minimum number of palindromic substrings",
+    "spec_hash": "c90c5d45bf929d4501326e3df3cfbdaf9dc739e724f7b06d194e92011efd22099611410e6e7c7b3f704a00027eff2cbbaad94190337dbc70ab57d03bb18a54e0",
+    "generation_time_ms": 1.0245530002066516,
+    "model_used": "mock"
+  },
+  {
+    "id": 73,
+    "name": "wildcard_matching",
+    "category": "Dynamic Programming",
+    "difficulty": "Hard",
+    "theorem": "theorem wildcard_matching_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement wildcard pattern matching with '?' and '*' using dynamic programming, prove it correctly matches patterns against text",
+    "spec_hash": "f8cce51496b4d3fd7ddc19c0e649b2a92023abd6c1ba8cd2ab52721f3b9da0757b1d29a8eede70d174c8a5725e96064e504e82c488dec80a56ec53985dc8bccb",
+    "generation_time_ms": 1.0626540006342111,
+    "model_used": "mock"
+  },
+  {
+    "id": 74,
+    "name": "optimal_bst",
+    "category": "Dynamic Programming",
+    "difficulty": "Hard",
+    "theorem": "theorem optimal_bst_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement optimal binary search tree construction given key frequencies, prove the resulting tree minimizes expected search cost",
+    "spec_hash": "72b495992402441a0650eab1662e6a9799fe28bf4e12d0d38cee9203e34c6738003a205e811d2f474d893f511665647de671ac2999591be8767354b4692f5212",
+    "generation_time_ms": 1.0771890001706197,
+    "model_used": "mock"
+  },
+  {
+    "id": 75,
+    "name": "kmp_pattern_matching",
+    "category": "String",
+    "difficulty": "Hard",
+    "theorem": "theorem kmp_pattern_matching_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the Knuth-Morris-Pratt string matching algorithm, prove it finds all occurrences of a pattern in text with O(n+m) time",
+    "spec_hash": "1a76c31ef44a6fb2705b5d26f8215e4897e02a667bbc7773c82055a65a9e0d6914cdd9f04b5ee6e71baece3b5e119c1928461ff4508a7f09556d52ef0fb823f4",
+    "generation_time_ms": 1.0564920003162115,
+    "model_used": "mock"
+  },
+  {
+    "id": 76,
+    "name": "rabin_karp_matching",
+    "category": "String",
+    "difficulty": "Hard",
+    "theorem": "theorem rabin_karp_matching_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement Rabin-Karp string matching using rolling hash, prove it correctly identifies all pattern occurrences",
+    "spec_hash": "1a880042a68243d3fbe3c3904ec044835afa7118c87d6d9d9f1b361f043f48976d1048b7be7a6b3a860baa2ef81370a5a7126eb23a9192545419b50b21e68b5c",
+    "generation_time_ms": 1.0658339997462463,
+    "model_used": "mock"
+  },
+  {
+    "id": 77,
+    "name": "z_algorithm",
+    "category": "String",
+    "difficulty": "Hard",
+    "theorem": "theorem z_algorithm_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the Z-algorithm for string matching, prove the Z-array correctly stores the length of the longest common prefix with the string itself",
+    "spec_hash": "8eb0b93db7447519b6e426ae35ee60e9b08fb82c574533cfbb7cde538b173577d66f0071ac2167af5559c3932ac22b54a28e480a6e052e9b792f1719664eb5ae",
+    "generation_time_ms": 1.0872850007217494,
+    "model_used": "mock"
+  },
+  {
+    "id": 78,
+    "name": "boyer_moore_search",
+    "category": "String",
+    "difficulty": "Hard",
+    "theorem": "theorem boyer_moore_search_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the Boyer-Moore string search algorithm with bad character rule, prove it correctly finds all pattern occurrences",
+    "spec_hash": "900ac93f17c01ff7da957dcaf3a2cec7e72127ebea346577d1c2866263c0f41977a85acb6f2b939db1accb03fc30d4439f671f8b2252cbd519dbae2a86982d29",
+    "generation_time_ms": 1.090314000066428,
+    "model_used": "mock"
+  },
+  {
+    "id": 79,
+    "name": "string_reversal",
+    "category": "String",
+    "difficulty": "Easy",
+    "theorem": "theorem string_reversal_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement in-place string reversal, prove the output is the reverse of the input with the same length",
+    "spec_hash": "4b818accb95293cf7b12d0c3f7af26884bc06ff8caf6b92d8039d347892444cce3ca44954d0772642aa72a9841e6fd435a09ec4742c14f092a6c6696e6209506",
+    "generation_time_ms": 1.0673309998310287,
+    "model_used": "mock"
+  },
+  {
+    "id": 80,
+    "name": "palindrome_check",
+    "category": "String",
+    "difficulty": "Easy",
+    "theorem": "theorem palindrome_check_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement palindrome checking that determines if a string reads the same forwards and backwards, prove correctness for all inputs",
+    "spec_hash": "3d9d3590333dcadc0dd0e2d8e667a84addf3d0f3f4a2cc075d7b183537deae8de0dc43d2c5bcaf97873e2cd1707818052c0c96ca46b2610df770238429585ecf",
+    "generation_time_ms": 1.0978939999404247,
+    "model_used": "mock"
+  },
+  {
+    "id": 81,
+    "name": "longest_palindrome_substring",
+    "category": "String",
+    "difficulty": "Medium",
+    "theorem": "theorem longest_palindrome_substring_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement finding the longest palindromic substring using expand around center, prove the result is a palindrome and is of maximum length",
+    "spec_hash": "77b49d339de4cb510e466110d099b3f049c39227c74ccb1def6f14a2d2430e71fa8a4b7783edf18ed5649d9ddf2267cd81a73ad89e66e6a9a964e7e30fd5e65c",
+    "generation_time_ms": 1.0916380006165127,
+    "model_used": "mock"
+  },
+  {
+    "id": 82,
+    "name": "anagram_check",
+    "category": "String",
+    "difficulty": "Easy",
+    "theorem": "theorem anagram_check_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement anagram checking that determines if two strings are permutations of each other, prove correctness for all inputs",
+    "spec_hash": "300cffb0ec2a7494c0b1d53d9a50005a3732620e8fcff458ab772d1aed8033a29b3f1aff23e4233ccec392c07cc71b5f14f4e7fca17d0a174f940c4001a65af0",
+    "generation_time_ms": 1.0850740000023507,
+    "model_used": "mock"
+  },
+  {
+    "id": 83,
+    "name": "run_length_encoding",
+    "category": "String",
+    "difficulty": "Easy",
+    "theorem": "theorem run_length_encoding_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement run-length encoding compression, prove decoding the encoded string produces the original string",
+    "spec_hash": "fbf7b01d900891b4bff4375c1eb03f1bb72c2d597f18759b1595964199eff9c398a423e9fe9d6849f1cb28bc8aeac0e6751170f967605d62c96dbbeab1dbbc03",
+    "generation_time_ms": 1.091408999855048,
+    "model_used": "mock"
+  },
+  {
+    "id": 84,
+    "name": "suffix_array_build",
+    "category": "String",
+    "difficulty": "Hard",
+    "theorem": "theorem suffix_array_build_correct (s t : String) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement suffix array construction, prove the array contains all suffixes sorted in lexicographic order",
+    "spec_hash": "ee4e1ca571cfa7c6e3aa2da9de759456f2f9225004659b842bd381b2310ee320e4885cdd13fb871e0f3130853de98cd4dbfe4d5e9121f9fe02d4b28316c23b48",
+    "generation_time_ms": 1.0994049998771516,
+    "model_used": "mock"
+  },
+  {
+    "id": 85,
+    "name": "factorial",
+    "category": "Mathematical",
+    "difficulty": "Easy",
+    "theorem": "theorem factorial_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement factorial computation, prove n! = n * (n-1)! with base case 0! = 1 for all natural numbers",
+    "spec_hash": "ccbe08f301d7a70b617756136062221c38f6396219eea20397ec0518f0e27d08c9ca137b6b166da7664ef6bf579862a969c25d20658ca250b03bae0397fa2ca6",
+    "generation_time_ms": 1.067614999556099,
+    "model_used": "mock"
+  },
+  {
+    "id": 86,
+    "name": "power_function",
+    "category": "Mathematical",
+    "difficulty": "Easy",
+    "theorem": "theorem power_function_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement exponentiation by squaring, prove it correctly computes x^n for all natural number exponents in O(log n) time",
+    "spec_hash": "f5c315a153485c5104eed2c3d78aa381eca7a7e3e338c2d390ff75a8b7079862b56bbe56e4634b258f2815995f2fa4527c480dae959aab95aefeab3548361033",
+    "generation_time_ms": 1.0644659996614791,
+    "model_used": "mock"
+  },
+  {
+    "id": 87,
+    "name": "newton_raphson_sqrt",
+    "category": "Mathematical",
+    "difficulty": "Medium",
+    "theorem": "theorem newton_raphson_sqrt_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement square root computation using Newton-Raphson method, prove convergence to the correct square root within epsilon",
+    "spec_hash": "52e3dce6791a8511715c9155e9cd4d65f906ba2f13af47b4a45a27e23b478ec54ccf0808c4a41f4570f3338a5b5165c7dc941b3f095e94966a44eedb0c65feae",
+    "generation_time_ms": 1.0674320001271553,
+    "model_used": "mock"
+  },
+  {
+    "id": 88,
+    "name": "matrix_multiplication",
+    "category": "Mathematical",
+    "difficulty": "Medium",
+    "theorem": "theorem matrix_multiplication_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement matrix multiplication for n\u00d7n matrices, prove the result satisfies the mathematical definition of matrix product",
+    "spec_hash": "72de5630b9d7fc9dba63adbf74e5e5178db6166f3ea7562318b3118c091b429eab65469fd6bd6412237602894c9ead3b0f225b0319750a6e2a9d1df86ec32b96",
+    "generation_time_ms": 1.0182800006077741,
+    "model_used": "mock"
+  },
+  {
+    "id": 89,
+    "name": "matrix_determinant",
+    "category": "Mathematical",
+    "difficulty": "Hard",
+    "theorem": "theorem matrix_determinant_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement matrix determinant computation using cofactor expansion, prove the result satisfies the recursive definition of determinant",
+    "spec_hash": "0ef3892c53c3f8814626fb5a1215192879135a79fcb2005605c7966e626b82219f569f392c7f0189c9519440ef66fdca1283c42754d5737db93468ca8dae84f8",
+    "generation_time_ms": 1.0245620005662204,
+    "model_used": "mock"
+  },
+  {
+    "id": 90,
+    "name": "polynomial_evaluation",
+    "category": "Mathematical",
+    "difficulty": "Medium",
+    "theorem": "theorem polynomial_evaluation_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement polynomial evaluation using Horner's method, prove it correctly evaluates the polynomial at any point x",
+    "spec_hash": "50c7bb4bdac8747017030b65cadc20eb55ffd11401dd0754a96771cb141b5a949684df4813ce546df80c398bdfb0e724b4bc8c63bacf10b82f463b3ab1cc4e1c",
+    "generation_time_ms": 1.021039999614004,
+    "model_used": "mock"
+  },
+  {
+    "id": 91,
+    "name": "binomial_coefficient",
+    "category": "Mathematical",
+    "difficulty": "Medium",
+    "theorem": "theorem binomial_coefficient_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement binomial coefficient C(n,k) computation using dynamic programming, prove it equals n!/(k!(n-k)!) for all valid inputs",
+    "spec_hash": "e19f154695ccf1f8a529d6a39423432e6a17b7e1338ed7cb54a0dd1278553ae30bdc64838cd05d8ebe3a34fe73003d21597febf162e93009e69fd77d83875ba8",
+    "generation_time_ms": 1.0797629993248847,
+    "model_used": "mock"
+  },
+  {
+    "id": 92,
+    "name": "catalan_number",
+    "category": "Mathematical",
+    "difficulty": "Medium",
+    "theorem": "theorem catalan_number_correct (n : Nat) : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement Catalan number computation, prove C(n) = C(2n,n)/(n+1) and satisfies the recurrence C(n) = sum(C(i)*C(n-1-i)) for i in 0..n-1",
+    "spec_hash": "227904df6ba83443948c571aff98669babae7cf39dc13f22cb7f56d4e98df6f313d1e88fe47c8d948888533cfb43e4d59209b601b8571afc7eb18c33ec407cb4",
+    "generation_time_ms": 1.063411999894015,
+    "model_used": "mock"
+  },
+  {
+    "id": 93,
+    "name": "activity_selection",
+    "category": "Greedy",
+    "difficulty": "Medium",
+    "theorem": "theorem activity_selection_optimal : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the activity selection problem using greedy strategy, prove the greedy choice of earliest finish time produces a maximum-size set of compatible activities",
+    "spec_hash": "942f8a0558b1d68f6be60655a62c50f6ba9ecb258b9ac2fc2aab0aecba6ca832501e66a00f58eb65136f96120cbef2312d1504de3a040a1deadf522f3fc74d6a",
+    "generation_time_ms": 1.108724000005168,
+    "model_used": "mock"
+  },
+  {
+    "id": 94,
+    "name": "huffman_coding",
+    "category": "Greedy",
+    "difficulty": "Hard",
+    "theorem": "theorem huffman_coding_optimal : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement Huffman coding for optimal prefix-free encoding, prove the resulting code minimizes the total encoded length",
+    "spec_hash": "907421019ce55c7f969abe64643bc2ff2eb156820a255648dd1e67b423b677a824cd0a1fd70e7ca4992c23b7af03929f98eb1d73d2a341e7ca8152238d2c1374",
+    "generation_time_ms": 1.0816169997269753,
+    "model_used": "mock"
+  },
+  {
+    "id": 95,
+    "name": "fractional_knapsack",
+    "category": "Greedy",
+    "difficulty": "Medium",
+    "theorem": "theorem fractional_knapsack_optimal : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the fractional knapsack problem using greedy strategy by value-to-weight ratio, prove the greedy solution is optimal",
+    "spec_hash": "1e1676b2defc677172740c1091771ed3a3e5bf2cf94e58299fecb5599277a422769f83e0d21ec2603a2338ea334cdb2eac525b9b9ad39ba3cb4e34b50603dd11",
+    "generation_time_ms": 1.0759759998109075,
+    "model_used": "mock"
+  },
+  {
+    "id": 96,
+    "name": "job_scheduling",
+    "category": "Greedy",
+    "difficulty": "Medium",
+    "theorem": "theorem job_scheduling_optimal : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement interval job scheduling to maximize the number of non-overlapping jobs, prove the greedy strategy of earliest finish time is optimal",
+    "spec_hash": "c8d362ac77c4cfd3325f82c8baf029e2c813b7760971830b08da093d62ab61e2192a0a5519538b4973eeed7f0565d9a6fc4f4ba42399db54e6636c0e378de909",
+    "generation_time_ms": 1.0794790005093091,
+    "model_used": "mock"
+  },
+  {
+    "id": 97,
+    "name": "n_queens",
+    "category": "Backtracking",
+    "difficulty": "Hard",
+    "theorem": "theorem n_queens_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement the N-Queens problem solver using backtracking, prove every solution has no two queens attacking each other and all n queens are placed",
+    "spec_hash": "537193345993613d0121725a8c0ef7bf8591179b269332896d78bf31bdfa7898173577d1a91af8cb28b4eadfdda7bad657b4f588f56628bdb3aeec12bf1197fe",
+    "generation_time_ms": 1.0167899999942165,
+    "model_used": "mock"
+  },
+  {
+    "id": 98,
+    "name": "sudoku_solver",
+    "category": "Backtracking",
+    "difficulty": "Hard",
+    "theorem": "theorem sudoku_solver_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement a Sudoku solver using backtracking, prove the solution satisfies all row, column, and 3x3 box constraints",
+    "spec_hash": "744622e83d53c53488b00f7a4976f4c8f1de19ff97ca26a36305e099700d711f084fdb34b3804d34287a7a3f6fd77e41abd2e2fa8bb35cfb1cdeb3231e117190",
+    "generation_time_ms": 1.0892410000451491,
+    "model_used": "mock"
+  },
+  {
+    "id": 99,
+    "name": "subset_generation",
+    "category": "Backtracking",
+    "difficulty": "Medium",
+    "theorem": "theorem subset_generation_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement power set generation using backtracking, prove the result contains exactly 2^n subsets with no duplicates",
+    "spec_hash": "0e82dbd134b90f87923a45736eeedb7bd0cbd95478392eeadc5a241ee198314be0480b88e84ee3aaa2f189bf972f2496c2d6b8d5b0a5e2dac5fbd316839fd8f7",
+    "generation_time_ms": 1.075358000889537,
+    "model_used": "mock"
+  },
+  {
+    "id": 100,
+    "name": "permutation_generation",
+    "category": "Backtracking",
+    "difficulty": "Medium",
+    "theorem": "theorem permutation_generation_correct : True := by sorry",
+    "imports": [
+      "Mathlib",
+      "Aesop"
+    ],
+    "definitions": [],
+    "docstring": "implement permutation generation using backtracking, prove the result contains exactly n! distinct permutations of the input",
+    "spec_hash": "69621d037a7cbdb4b0ef271748094adfeaed799578913b2dbdcdeaee84524238d2d842cce3d1a62e249c2cfe5444bac51c4777681d19295000914ae05edf240a",
+    "generation_time_ms": 1.0705909999160212,
+    "model_used": "mock"
+  }
+]

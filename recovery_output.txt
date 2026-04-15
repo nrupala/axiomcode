@@ -1,0 +1,35 @@
+============================================================
+REPOSITORY RECOVERY DIAGNOSTIC
+============================================================
+
+1. Git Status:
+?? recovery_check.py
+?? recovery_output.txt
+
+
+2. Untracked Files:
+recovery_check.py
+recovery_output.txt
+
+
+3. Currently Tracked Files in Root:
+   - .gitignore
+   - CODE_REVIEW.md
+   - DEPLOYMENT_LOCAL.md
+   - DEPLOYMENT_QUICK_REFERENCE.md
+   - FEATURES.md
+   - PLAN.md
+   - README.md
+   - TEST_PLAN.md
+   - cli.py
+   - pyproject.toml
+
+4. Expected Files Check:
+Traceback (most recent call last):
+  File "D:\axiomcode\recovery_check.py", line 51, in <module>
+    print(f"   {fname}: {status}")
+    ~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Python314\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2717' in position 31: character maps to <undefined>

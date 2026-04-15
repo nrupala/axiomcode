@@ -111,7 +111,7 @@ FAQ:
      a cryptographic certificate that can be independently verified.
 
   Q: What LLMs are supported?
-  A: Local: Ollama (qwen2.5-coder, mistral, deepseek-r1).
+  A: Local: Ollama (stable-code, mistral, qwen3).
      Cloud: OpenAI (GPT-4o), Anthropic (Claude).
 
   Q: Is my data sent to external servers?
@@ -129,7 +129,7 @@ FAQ:
 TROUBLESHOOTING:
   Ollama connection refused:
     ollama serve
-    ollama pull qwen2.5-coder:14b
+    ollama pull stable-code:3b-code-q4_0
 
   Lean 4 not found:
     Install from https://lean-lang.org/
@@ -148,7 +148,7 @@ STEP 1: Describe Your Algorithm
 STEP 2: Generate the Specification
   Run: python cli.py "implement binary search on a sorted array"
   Behind the scenes:
-    - Your description is sent to a local LLM (qwen2.5-coder by default)
+    - Your description is sent to a local LLM (stable-code by default)
     - The LLM produces a Lean 4 theorem statement
     - The specification captures what "correct" means mathematically
 
@@ -239,7 +239,7 @@ class LLMCache:
         key = self._key(model, prompt)
         cache_file = self.cache_dir / f"{key}.json"
         if cache_file.exists():
-            data = json.loads(cache_file.read_text())
+            data = json.loads(cache_file.read_text(encoding="utf-8"))
             # Cache expires after 24 hours
             if time.time() - data.get("timestamp", 0) < 86400:
                 return data.get("response")
@@ -253,7 +253,7 @@ class LLMCache:
             "prompt_hash": hash_data(prompt.encode())[:16],
             "response": response,
             "timestamp": time.time(),
-        }))
+        }), encoding="utf-8")
 
 
 # ─── HTTP Client (stdlib only) ──────────────────────────────────────────────
@@ -356,11 +356,27 @@ def ollama_generate(model: str, prompt: str, base_url: str = "http://localhost:1
     for attempt in range(3):
         try:
             resp = http_post_json(
-                f"{base_url}/api/generate",
-                {"model": model, "prompt": prompt, "stream": False, "options": {"temperature": 0.2, "num_predict": 4096}},
+                f"{base_url}/v1/chat/completions",
+                {
+                    "model": model,
+                    "messages": [{"role": "user", "content": prompt}],
+                    "temperature": 0.2,
+                    "max_tokens": 4096,
+                },
                 timeout=180,
             )
-            result = resp.get("response", "")
+            result = ""
+            if isinstance(resp, dict):
+                choices = resp.get("choices", [])
+                if choices:
+                    first = choices[0]
+                    if isinstance(first.get("message"), dict):
+                        result = first["message"].get("content", "")
+                    elif isinstance(first.get("content"), list):
+                        result = first["content"][0].get("text", "")
+                    else:
+                        result = first.get("text", "")
+            result = result or resp.get("response", "")
             _llm_cache.put(f"ollama/{model}", prompt, result)
             return result
         except Exception as e:
@@ -432,8 +448,8 @@ def anthropic_generate(model: str, prompt: str, api_key: str | None = None) -> s
 
 
 BACKENDS = {
-    "local": ("qwen2.5-coder:14b", ollama_generate),
-    "ollama": ("qwen2.5-coder:14b", ollama_generate),
+    "local": ("stable-code:3b-code-q4_0", ollama_generate),
+    "ollama": ("stable-code:3b-code-q4_0", ollama_generate),
     "mistral": ("mistral:7b", mistral_generate),
     "openai": ("gpt-4o", openai_generate),
     "anthropic": ("claude-sonnet-4-20250514", anthropic_generate),
@@ -507,7 +523,7 @@ def run_proof(spec: LeanSpec, lean_bin: str = "lean", lake_bin: str = "lake") ->
 
     name = spec.theorem.split(":")[0].replace("theorem", "").strip().lower()
     lean_file = algo_dir / f"{name}.lean"
-    lean_file.write_text(spec.to_lean())
+    lean_file.write_text(spec.to_lean(), encoding="utf-8")
 
     try:
         result = subprocess.run([lake_bin, "build"], cwd=project_dir, capture_output=True, text=True, timeout=300)
@@ -525,14 +541,14 @@ def run_proof(spec: LeanSpec, lean_bin: str = "lean", lake_bin: str = "lake") ->
     proof = ProofResult(
         theorem_name=name, steps=len(tactics), lemmas=len(spec.definitions),
         lean_file=lean_file, olean_file=olean_file if olean_file.exists() else None,
-        tactics=tactics, proof_term=lean_file.read_text(),
+        tactics=tactics, proof_term=lean_file.read_text(encoding="utf-8"),
     )
     proof.compute_hash()
     return proof
 
 
 def _extract_tactics(lean_file: Path) -> list[str]:
-    content = lean_file.read_text()
+    content = lean_file.read_text(encoding="utf-8")
     keywords = ["rw", "simp", "induction", "cases", "apply", "exact", "have", "let", "calc", "refine", "constructor", "tauto", "linarith", "ring"]
     return [line.strip() for line in content.split("\n") for kw in keywords if line.strip().startswith(kw) or f" {kw} " in line.strip()]
 
@@ -542,7 +558,7 @@ def load_proof(name: str) -> ProofResult:
     lean_file = project_dir / f"{name.lower()}.lean"
     if not lean_file.exists():
         raise FileNotFoundError(f"No verified proof found: {name}")
-    content = lean_file.read_text()
+    content = lean_file.read_text(encoding="utf-8")
     proof = ProofResult(theorem_name=name, steps=0, lemmas=0, lean_file=lean_file, proof_term=content)
     proof.compute_hash()
     return proof
@@ -576,16 +592,19 @@ def extract_python(proof: ProofResult) -> Path:
     pkg_dir = Path(__file__).parent / "build" / "python" / f"axiomcode_{proof.theorem_name}"
     pkg_dir.mkdir(parents=True, exist_ok=True)
 
-    (pkg_dir / "__init__.py").write_text(textwrap.dedent(f'''
+    init_py = pkg_dir / "__init__.py"
+    init_text = textwrap.dedent(f'''
         """
         {proof.theorem_name} -- formally verified via AxiomCode.
         Proof: {proof.steps} steps, {proof.lemmas} lemmas.
         Certificate: axiomcode_{proof.theorem_name}.cert.json
         """
         __proof_verified__ = True
-    ''').lstrip())
+    ''').lstrip()
+    init_py.write_text(init_text, encoding="utf-8")
 
-    (pkg_dir / "bindings.py").write_text(textwrap.dedent(f'''
+    bindings_py = pkg_dir / "bindings.py"
+    bindings_text = textwrap.dedent(f'''
         import cffi
         from pathlib import Path
 
@@ -599,9 +618,11 @@ def extract_python(proof: ProofResult) -> Path:
             raise ImportError(f"Verified binary not found: {{_lib_path}}")
 
         {proof.theorem_name} = _lib
-    ''').lstrip())
+    ''').lstrip()
+    bindings_py.write_text(bindings_text, encoding="utf-8")
 
-    (pkg_dir / "setup.py").write_text(textwrap.dedent(f'''
+    setup_py = pkg_dir / "setup.py"
+    setup_text = textwrap.dedent(f'''
         from setuptools import setup, find_packages
         setup(
             name="axiomcode-{proof.theorem_name}",
@@ -609,7 +630,8 @@ def extract_python(proof: ProofResult) -> Path:
             description="Formally verified {proof.theorem_name} by AxiomCode",
             packages=find_packages(),
         )
-    ''').lstrip())
+    ''').lstrip()
+    setup_py.write_text(setup_text, encoding="utf-8")
 
     return pkg_dir
 
@@ -860,7 +882,7 @@ def cmd_guide():
     description = selected["description"] if use_default else input("Enter your description: ")
 
     print("\nStep 4: Choose LLM backend:")
-    print("  1. local (Ollama -- qwen2.5-coder:14b)")
+    print("  1. local (Ollama -- stable-code:3b-code-q4_0)")
     print("  2. mistral (Ollama -- mistral:7b)")
     print("  3. openai (GPT-4o)")
     print("  4. anthropic (Claude Sonnet)")
@@ -907,7 +929,7 @@ def cmd_models():
     print(f"{'Backend':<18} {'Default Model':<22} {'Type':<8} {'Speed':<8} {'Quality'}")
     print("-" * 65)
     for name, model, type_, speed, quality in [
-        ("local (Ollama)", "qwen2.5-coder:14b", "Local", "Fast", "Good"),
+        ("local (Ollama)", "stable-code:3b-code-q4_0", "Local", "Fast", "Good"),
         ("mistral", "mistral:7b", "Local", "Fast", "Good"),
         ("openai", "gpt-4o", "Cloud", "Medium", "Excellent"),
         ("anthropic", "claude-sonnet-4", "Cloud", "Medium", "Excellent"),
@@ -1046,7 +1068,7 @@ def cmd_audit():
         print(f"Audit log: {audit.log_file}")
         print(f"Integrity: {'VERIFIED' if audit.verify_integrity() else 'TAMPERED'}")
         print()
-        for line in audit.log_file.read_text().strip().split("\n"):
+        for line in audit.log_file.read_text(encoding="utf-8").strip().split("\n"):
             entry = json.loads(line)
             print(f"  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(entry['timestamp']))} | {entry['user']} | {entry['action']}")
     else:
