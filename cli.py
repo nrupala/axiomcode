@@ -13,43 +13,45 @@ from __future__ import annotations
 
 import argparse
 import getpass
-import http.client
 import json
 import os
 import re
-import shlex
-import ssl
 import subprocess
 import sys
 import textwrap
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
-from urllib.parse import urlparse
+
+from core.licensing import (
+    TIERS,
+    LicenseCertificate,
+    LicenseManager,
+    get_hardware_fingerprint,
+    get_hardware_hash,
+)
+
+# LLM backends: one OpenAI-compatible HTTP layer (llama.cpp first, vLLM-ready)
+from core.llm import (
+    BACKENDS,
+    list_backends,
+    resolve_backend,
+)
+from core.prover import (
+    iterative_proof_search,
+    lean_available,
+    lean_version,
+)
 
 # Import security layer
 from core.security import (
-    KeyStore, KeyPair,
-    ProofCertificate, BinarySignature, sign_binary,
-    SecureChannel, AuditLog, SecureSandbox, RateLimiter,
-    hash_data, hash_file, compute_hmac, verify_hmac,
+    AuditLog,
+    KeyStore,
+    ProofCertificate,
+    hash_data,
+    hash_file,
 )
-from core.versioning import VersionManager, CURRENT_VERSION
-from core.licensing import (
-    LicenseManager, LicenseCertificate, LicenseKeyPair,
-    get_hardware_fingerprint, get_hardware_hash, TIERS,
-)
-# LLM backends: one OpenAI-compatible HTTP layer (llama.cpp first, vLLM-ready)
-from core.llm import (
-    BACKENDS, LLMCache, list_backends, resolve_backend,
-    llamacpp_generate, vllm_generate,
-    ollama_generate, mistral_generate, openai_generate, anthropic_generate,
-)
-from core.prover import (
-    lean_available, lean_version,
-    iterative_proof_search,
-)
+from core.versioning import VersionManager
 
 # ─── Banner ─────────────────────────────────────────────────────────────────
 
@@ -63,12 +65,66 @@ BANNER = """
 # ─── Examples ───────────────────────────────────────────────────────────────
 
 EXAMPLES = [
-    {"name": "Binary Search", "description": "implement binary search on a sorted array that returns the index of the target element, prove it always finds the element if present", "difficulty": "Easy", "category": "Searching", "proof_complexity": "Medium"},
-    {"name": "Insertion Sort", "description": "implement insertion sort that sorts a list of natural numbers, prove the output is sorted and contains the same elements as the input", "difficulty": "Easy", "category": "Sorting", "proof_complexity": "Medium"},
-    {"name": "Merge Sort", "description": "implement merge sort using divide and conquer, prove it produces a sorted list that is a permutation of the input", "difficulty": "Medium", "category": "Sorting", "proof_complexity": "High"},
-    {"name": "GCD (Euclidean Algorithm)", "description": "implement the Euclidean algorithm for greatest common divisor, prove it always terminates and returns the correct GCD", "difficulty": "Easy", "category": "Number Theory", "proof_complexity": "Low"},
-    {"name": "Linked List Reverse", "description": "implement an in-place linked list reversal, prove the reversed list has the same length and elements in reverse order", "difficulty": "Medium", "category": "Data Structures", "proof_complexity": "High"},
-    {"name": "Stack with Max", "description": "implement a stack data structure that supports push, pop, and get-max in O(1) time, prove all operations maintain the stack invariant", "difficulty": "Medium", "category": "Data Structures", "proof_complexity": "Medium"},
+    {
+        "name": "Binary Search",
+        "description": (
+            "implement binary search on a sorted array that returns the index of the target element, prove it "
+            "always finds the element if present"
+        ),
+        "difficulty": "Easy",
+        "category": "Searching",
+        "proof_complexity": "Medium",
+    },
+    {
+        "name": "Insertion Sort",
+        "description": (
+            "implement insertion sort that sorts a list of natural numbers, prove the output is sorted and contains "
+            "the same elements as the input"
+        ),
+        "difficulty": "Easy",
+        "category": "Sorting",
+        "proof_complexity": "Medium",
+    },
+    {
+        "name": "Merge Sort",
+        "description": (
+            "implement merge sort using divide and conquer, prove it produces a sorted list that is a permutation "
+            "of the input"
+        ),
+        "difficulty": "Medium",
+        "category": "Sorting",
+        "proof_complexity": "High",
+    },
+    {
+        "name": "GCD (Euclidean Algorithm)",
+        "description": (
+            "implement the Euclidean algorithm for greatest common divisor, prove it always terminates and returns "
+            "the correct GCD"
+        ),
+        "difficulty": "Easy",
+        "category": "Number Theory",
+        "proof_complexity": "Low",
+    },
+    {
+        "name": "Linked List Reverse",
+        "description": (
+            "implement an in-place linked list reversal, prove the reversed list has the same length and elements "
+            "in reverse order"
+        ),
+        "difficulty": "Medium",
+        "category": "Data Structures",
+        "proof_complexity": "High",
+    },
+    {
+        "name": "Stack with Max",
+        "description": (
+            "implement a stack data structure that supports push, pop, and get-max in O(1) time, prove all "
+            "operations maintain the stack invariant"
+        ),
+        "difficulty": "Medium",
+        "category": "Data Structures",
+        "proof_complexity": "Medium",
+    },
 ]
 
 # ─── Help Text ──────────────────────────────────────────────────────────────
@@ -202,6 +258,7 @@ Next: Try "python cli.py guide" for interactive mode.
 
 # ─── Data Classes ───────────────────────────────────────────────────────────
 
+
 @dataclass
 class LeanSpec:
     theorem: str
@@ -284,6 +341,7 @@ theorem algorithm_correctness : ... := by
 ```
 """
 
+
 def generate_spec(description: str, model: str = "local") -> LeanSpec:
     """Generate a Lean 4 specification from natural language.
 
@@ -335,15 +393,20 @@ def _parse_spec(raw: str, source_nl: str, elapsed: float, backend: str) -> LeanS
         imports = ["Mathlib", "Aesop"]
 
     spec = LeanSpec(
-        theorem=theorem, definitions=definitions, imports=imports,
-        docstring=docstring, source_nl=source_nl,
-        model_used=backend, generation_time_ms=elapsed,
+        theorem=theorem,
+        definitions=definitions,
+        imports=imports,
+        docstring=docstring,
+        source_nl=source_nl,
+        model_used=backend,
+        generation_time_ms=elapsed,
     )
     spec.compute_hash()
     return spec
 
 
 # ─── Proof Engine ───────────────────────────────────────────────────────────
+
 
 def run_proof(
     spec: LeanSpec,
@@ -375,8 +438,12 @@ def run_proof(
         print(f"  [!] Spec saved as UNVERIFIED DRAFT: {lean_file}")
         print("  [!] Install Lean 4 from https://lean-lang.org/ to verify.")
         proof = ProofResult(
-            theorem_name=name, steps=0, lemmas=len(spec.definitions),
-            lean_file=lean_file, tactics=[], proof_term=initial_code,
+            theorem_name=name,
+            steps=0,
+            lemmas=len(spec.definitions),
+            lean_file=lean_file,
+            tactics=[],
+            proof_term=initial_code,
             verification_status="unverified",
             build_log="toolchain missing: lean/lake not found",
         )
@@ -394,8 +461,13 @@ def run_proof(
 
     backend_name, model, gen_fn = resolve_backend(llm_backend)
     verified, final_code, attempts, build_log = iterative_proof_search(
-        _write, project_dir, initial_code, gen_fn, model,
-        max_attempts=max_attempts, lake_bin=lake_bin,
+        _write,
+        project_dir,
+        initial_code,
+        gen_fn,
+        model,
+        max_attempts=max_attempts,
+        lake_bin=lake_bin,
     )
 
     status = "verified" if verified else "failed"
@@ -411,9 +483,13 @@ def run_proof(
     olean_file = lean_file.with_suffix(".olean")
     tactics = _extract_tactics(lean_file)
     proof = ProofResult(
-        theorem_name=name, steps=len(tactics), lemmas=len(spec.definitions),
-        lean_file=lean_file, olean_file=olean_file if olean_file.exists() else None,
-        tactics=tactics, proof_term=final_code,
+        theorem_name=name,
+        steps=len(tactics),
+        lemmas=len(spec.definitions),
+        lean_file=lean_file,
+        olean_file=olean_file if olean_file.exists() else None,
+        tactics=tactics,
+        proof_term=final_code,
         verification_status=status,
         lean_version=lean_version(lean_bin),
         build_log=build_log[-4000:],
@@ -425,8 +501,28 @@ def run_proof(
 
 def _extract_tactics(lean_file: Path) -> list[str]:
     content = lean_file.read_text(encoding="utf-8")
-    keywords = ["rw", "simp", "induction", "cases", "apply", "exact", "have", "let", "calc", "refine", "constructor", "tauto", "linarith", "ring"]
-    return [line.strip() for line in content.split("\n") for kw in keywords if line.strip().startswith(kw) or f" {kw} " in line.strip()]
+    keywords = [
+        "rw",
+        "simp",
+        "induction",
+        "cases",
+        "apply",
+        "exact",
+        "have",
+        "let",
+        "calc",
+        "refine",
+        "constructor",
+        "tauto",
+        "linarith",
+        "ring",
+    ]
+    return [
+        line.strip()
+        for line in content.split("\n")
+        for kw in keywords
+        if line.strip().startswith(kw) or f" {kw} " in line.strip()
+    ]
 
 
 def load_proof(name: str) -> ProofResult:
@@ -442,22 +538,27 @@ def load_proof(name: str) -> ProofResult:
 
 # ─── Code Extractor ─────────────────────────────────────────────────────────
 
+
 def extract_c(proof: ProofResult, lean_bin: str = "lean") -> Path:
     output_dir = Path(__file__).parent / "build" / "c"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{proof.theorem_name}.c"
 
     try:
-        result = subprocess.run([lean_bin, "--c", str(output_file), str(proof.lean_file)], capture_output=True, text=True, timeout=120)
+        result = subprocess.run(
+            [lean_bin, "--c", str(output_file), str(proof.lean_file)], capture_output=True, text=True, timeout=120
+        )
         if result.returncode != 0:
             raise RuntimeError(f"C extraction failed:\n{result.stderr}")
     except FileNotFoundError:
-        print(f"  [!] Lean 4 not found. C extraction skipped.")
+        print("  [!] Lean 4 not found. C extraction skipped.")
         return output_file
 
     so_file = output_file.with_suffix(".so")
     try:
-        subprocess.run(["gcc", "-shared", "-fPIC", "-O2", "-o", str(so_file), str(output_file)], capture_output=True, text=True)
+        subprocess.run(
+            ["gcc", "-shared", "-fPIC", "-O2", "-o", str(so_file), str(output_file)], capture_output=True, text=True
+        )
         return so_file if so_file.exists() else output_file
     except FileNotFoundError:
         print(f"  [!] gcc not found. C source saved to {output_file}")
@@ -480,7 +581,7 @@ def extract_python(proof: ProofResult) -> Path:
     init_py.write_text(init_text, encoding="utf-8")
 
     bindings_py = pkg_dir / "bindings.py"
-    bindings_text = textwrap.dedent(f'''
+    bindings_text = textwrap.dedent(f"""
         import cffi
         from pathlib import Path
 
@@ -494,11 +595,11 @@ def extract_python(proof: ProofResult) -> Path:
             raise ImportError(f"Verified binary not found: {{_lib_path}}")
 
         {proof.theorem_name} = _lib
-    ''').lstrip()
+    """).lstrip()
     bindings_py.write_text(bindings_text, encoding="utf-8")
 
     setup_py = pkg_dir / "setup.py"
-    setup_text = textwrap.dedent(f'''
+    setup_text = textwrap.dedent(f"""
         from setuptools import setup, find_packages
         setup(
             name="axiomcode-{proof.theorem_name}",
@@ -506,7 +607,7 @@ def extract_python(proof: ProofResult) -> Path:
             description="Formally verified {proof.theorem_name} by AxiomCode",
             packages=find_packages(),
         )
-    ''').lstrip()
+    """).lstrip()
     setup_py.write_text(setup_text, encoding="utf-8")
 
     return pkg_dir
@@ -514,7 +615,10 @@ def extract_python(proof: ProofResult) -> Path:
 
 # ─── Certificate Generator ──────────────────────────────────────────────────
 
-def generate_certificate(spec: LeanSpec, proof: ProofResult, c_path: Path | None, py_path: Path | None, signing_key: bytes, key_id: str) -> ProofCertificate:
+
+def generate_certificate(
+    spec: LeanSpec, proof: ProofResult, c_path: Path | None, py_path: Path | None, signing_key: bytes, key_id: str
+) -> ProofCertificate:
     """Generate a cryptographic certificate for a generated algorithm.
 
     The certificate binds the artifact hashes and signs them; the
@@ -544,6 +648,7 @@ def generate_certificate(spec: LeanSpec, proof: ProofResult, c_path: Path | None
 
 # ─── Visualization ──────────────────────────────────────────────────────────
 
+
 def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
     graph_data = _build_graph_data(proof, mode)
     return f"""<!DOCTYPE html>
@@ -554,17 +659,21 @@ def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ font-family: system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; }}
-        .header {{ padding: 20px 30px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }}
+        .header {{ padding: 20px 30px; border-bottom: 1px solid #222;
+                         display: flex; justify-content: space-between; align-items: center; }}
         .header h1 {{ font-size: 1.2rem; font-weight: 600; }}
         .header h1 span {{ color: #4a90d9; }}
         .mode-switch {{ display: flex; gap: 8px; }}
-        .mode-btn {{ padding: 6px 16px; border: 1px solid #333; background: transparent; color: #888; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }}
+        .mode-btn {{ padding: 6px 16px; border: 1px solid #333; background: transparent;
+                           color: #888; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }}
         .mode-btn.active {{ background: #4a90d9; color: white; border-color: #4a90d9; }}
         .container {{ display: flex; height: calc(100vh - 70px); }}
         .graph-panel {{ flex: 1; position: relative; }}
-        .info-panel {{ width: 320px; border-left: 1px solid #222; padding: 20px; overflow-y: auto; background: #0d0d12; }}
+        .info-panel {{ width: 320px; border-left: 1px solid #222; padding: 20px;
+                            overflow-y: auto; background: #0d0d12; }}
         .info-panel h3 {{ font-size: 0.9rem; color: #4a90d9; margin-bottom: 12px; }}
-        .info-panel pre {{ background: #151520; padding: 12px; border-radius: 8px; font-size: 0.8rem; overflow-x: auto; line-height: 1.5; }}
+        .info-panel pre {{ background: #151520; padding: 12px; border-radius: 8px;
+                               font-size: 0.8rem; overflow-x: auto; line-height: 1.5; }}
         .stats {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }}
         .stat {{ background: #151520; padding: 12px; border-radius: 8px; text-align: center; }}
         .stat-value {{ font-size: 1.5rem; font-weight: 700; color: #4a90d9; }}
@@ -576,16 +685,20 @@ def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
     <div class="header">
         <h1><span>AxiomCode</span> -- {proof.theorem_name}</h1>
         <div class="mode-switch">
-            <button class="mode-btn {'active' if mode == '2d' else ''}" onclick="location.search='?mode=2d'">2D Port Graph</button>
-            <button class="mode-btn {'active' if mode == 'force' else ''}" onclick="location.search='?mode=force'">Force Graph</button>
-            <button class="mode-btn {'active' if mode == '3d' else ''}" onclick="location.search='?mode=3d'">3D Layout</button>
+            <button class="mode-btn {"active" if mode == "2d" else ""}"
+                                onclick="location.search='?mode=2d'">2D Port Graph</button>
+            <button class="mode-btn {"active" if mode == "force" else ""}"
+                                onclick="location.search='?mode=force'">Force Graph</button>
+            <button class="mode-btn {"active" if mode == "3d" else ""}"
+                                onclick="location.search='?mode=3d'">3D Layout</button>
         </div>
     </div>
     <div class="container">
         <div class="graph-panel" id="graph-panel"></div>
         <div class="info-panel">
             <div class="stats">
-                <div class="stat"><div class="stat-value">{proof.steps}</div><div class="stat-label">Proof Steps</div></div>
+                <div class="stat"><div class="stat-value">{proof.steps}</div>
+                                 <div class="stat-label">Proof Steps</div></div>
                 <div class="stat"><div class="stat-value">{proof.lemmas}</div><div class="stat-label">Lemmas</div></div>
             </div>
             <h3>Proof Term</h3>
@@ -597,32 +710,53 @@ def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
         const mode = "{mode}";
         function render2D() {{
             const panel = document.getElementById('graph-panel');
-            const svg = d3.select(panel).append('svg').attr('width', panel.clientWidth).attr('height', panel.clientHeight);
-            const color = {{ axiom: '#4a90d9', lemma: '#50c878', theorem: '#ffd700', tactic: '#9b59b6', qed: '#e74c3c' }};
+            const svg = d3.select(panel).append('svg')
+                            .attr('width', panel.clientWidth).attr('height', panel.clientHeight);
+            const color = {{ axiom: '#4a90d9', lemma: '#50c878',
+                                       theorem: '#ffd700', tactic: '#9b59b6', qed: '#e74c3c' }};
             const nodes = svg.selectAll('g').data(proofData.nodes).join('g');
-            nodes.append('rect').attr('x', (d, i) => 50 + (i % 6) * 180).attr('y', (d, i) => 50 + Math.floor(i / 6) * 120).attr('width', 150).attr('height', 80).attr('rx', 10).attr('fill', d => color[d.kind] || '#555').attr('stroke', '#333').attr('stroke-width', 2);
-            nodes.append('text').attr('x', (d, i) => 125 + (i % 6) * 180).attr('y', (d, i) => 95 + Math.floor(i / 6) * 120).attr('text-anchor', 'middle').attr('fill', 'white').attr('font-size', '12px').text(d => d.label.slice(0, 20));
+            nodes.append('rect').attr('x', (d, i) => 50 + (i % 6) * 180)
+                            .attr('y', (d, i) => 50 + Math.floor(i / 6) * 120).attr('width', 150).attr('height', 80)
+                            .attr('rx', 10).attr('fill', d => color[d.kind] || '#555')
+                            .attr('stroke', '#333').attr('stroke-width', 2);
+            nodes.append('text').attr('x', (d, i) => 125 + (i % 6) * 180)
+                            .attr('y', (d, i) => 95 + Math.floor(i / 6) * 120).attr('text-anchor', 'middle')
+                            .attr('fill', 'white').attr('font-size', '12px')
+                            .text(d => d.label.slice(0, 20));
         }}
         function renderForce() {{
             const panel = document.getElementById('graph-panel');
-            const svg = d3.select(panel).append('svg').attr('width', panel.clientWidth).attr('height', panel.clientHeight);
+            const svg = d3.select(panel).append('svg')
+                            .attr('width', panel.clientWidth).attr('height', panel.clientHeight);
             const color = {{ theorem: '#ffd700', tactic: '#9b59b6', qed: '#e74c3c' }};
-            const simulation = d3.forceSimulation(proofData.nodes).force('link', d3.forceLink(proofData.edges).distance(120)).force('charge', d3.forceManyBody().strength(-300)).force('center', d3.forceCenter(panel.clientWidth / 2, panel.clientHeight / 2));
-            const link = svg.append('g').selectAll('line').data(proofData.edges).join('line').attr('stroke', '#333').attr('stroke-width', 2);
-            const node = svg.append('g').selectAll('circle').data(proofData.nodes).join('circle').attr('r', 20).attr('fill', d => color[d.kind] || '#555');
-            simulation.on('tick', () => {{ link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y); node.attr('cx', d => d.x).attr('cy', d => d.y); }});
+            const simulation = d3.forceSimulation(proofData.nodes)
+                            .force('link', d3.forceLink(proofData.edges).distance(120))
+                            .force('charge', d3.forceManyBody().strength(-300))
+                            .force('center', d3.forceCenter(panel.clientWidth / 2, panel.clientHeight / 2));
+            const link = svg.append('g').selectAll('line').data(proofData.edges)
+                            .join('line').attr('stroke', '#333').attr('stroke-width', 2);
+            const node = svg.append('g').selectAll('circle').data(proofData.nodes)
+                            .join('circle').attr('r', 20).attr('fill', d => color[d.kind] || '#555');
+            simulation.on('tick', () => {{ link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                            node.attr('cx', d => d.x).attr('cy', d => d.y); }});
         }}
         if (mode === '2d') render2D();
         else if (mode === 'force') renderForce();
-        else document.getElementById('graph-panel').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">3D view -- Three.js integration pending (Phase 2)</div>';
+        else document.getElementById('graph-panel').innerHTML = '<div style="display:flex;align-items:center;
+                justify-content:center;height:100%;color:#666;">'
+                + '3D view -- Three.js integration pending (Phase 2)</div>';
     </script>
 </body>
 </html>"""
 
 
 def _build_graph_data(proof: ProofResult, mode: str) -> dict:
-    nodes = [{"id": f"step_{i}", "label": t[:30], "kind": "qed" if i == len(proof.tactics) - 1 else "tactic"} for i, t in enumerate(proof.tactics)]
-    edges = [{"source": f"step_{i-1}", "target": f"step_{i}"} for i in range(1, len(proof.tactics))]
+    nodes = [
+        {"id": f"step_{i}", "label": t[:30], "kind": "qed" if i == len(proof.tactics) - 1 else "tactic"}
+        for i, t in enumerate(proof.tactics)
+    ]
+    edges = [{"source": f"step_{i - 1}", "target": f"step_{i}"} for i in range(1, len(proof.tactics))]
     return {"nodes": nodes, "edges": edges}
 
 
@@ -631,7 +765,8 @@ def _esc(s: str) -> str:
 
 
 def serve_visualization(proof: ProofResult, mode: str = "2d", port: int = 8765):
-    from http.server import HTTPServer, BaseHTTPRequestHandler
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
     html = build_proof_html(proof, mode)
 
     class Handler(BaseHTTPRequestHandler):
@@ -640,12 +775,13 @@ def serve_visualization(proof: ProofResult, mode: str = "2d", port: int = 8765):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(html.encode("utf-8"))
+
         def log_message(self, format, *args):
             pass
 
     server = HTTPServer(("127.0.0.1", port), Handler)
     print(f"  Visualization server running at http://127.0.0.1:{port}")
-    print(f"  Press Ctrl+C to stop")
+    print("  Press Ctrl+C to stop")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -653,6 +789,7 @@ def serve_visualization(proof: ProofResult, mode: str = "2d", port: int = 8765):
 
 
 # ─── CLI Commands ───────────────────────────────────────────────────────────
+
 
 def _resolve_passphrase(passphrase: str = "") -> str:
     """Resolve the keystore passphrase. No hardcoded defaults: explicit
@@ -665,13 +802,12 @@ def _resolve_passphrase(passphrase: str = "") -> str:
         return env
     if sys.stdin.isatty():
         return getpass.getpass("Keystore passphrase: ")
-    raise RuntimeError(
-        "No passphrase provided. Pass --passphrase, set AXIOMCODE_PASSPHRASE, "
-        "or run interactively."
-    )
+    raise RuntimeError("No passphrase provided. Pass --passphrase, set AXIOMCODE_PASSPHRASE, or run interactively.")
 
 
-def cmd_generate(description: str, lang: str = "python", model: str = "local", visualize: bool = False, passphrase: str = ""):
+def cmd_generate(
+    description: str, lang: str = "python", model: str = "local", visualize: bool = False, passphrase: str = ""
+):
     """Generate formally verified code from natural language."""
     print(BANNER)
 
@@ -706,19 +842,30 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     try:
         proof = run_proof(spec, llm_backend=model)
         if proof.verification_status == "verified":
-            print(f"  [+] Proof VERIFIED ({proof.steps} steps, {proof.lemmas} lemmas, {proof.proof_attempts} attempt(s))")
+            print(
+                f"  [+] Proof VERIFIED ({proof.steps} steps, {proof.lemmas} lemmas, {proof.proof_attempts} attempt(s))"
+            )
         elif proof.verification_status == "failed":
-            print(f"  [!] Proof search FAILED after {proof.proof_attempts} attempt(s) — artifact will be certified as UNVERIFIED provenance only")
+            print(
+                f"  [!] Proof search FAILED after {proof.proof_attempts} attempt(s) — "
+                f"artifact will be certified as UNVERIFIED provenance only"
+            )
         else:
-            print("  [!] Proof UNVERIFIED (no Lean toolchain) — artifact will be certified as UNVERIFIED provenance only")
+            print(
+                "  [!] Proof UNVERIFIED (no Lean toolchain) — artifact will be certified as UNVERIFIED provenance only"
+            )
         print(f"      Proof hash: {proof.proof_hash[:16]}...")
     except Exception as e:
         print(f"  [!] Proof search incomplete: {e}")
         proof = ProofResult(
             theorem_name=_theorem_name(spec.theorem),
-            steps=0, lemmas=len(spec.definitions),
-            lean_file=Path("unknown"), tactics=[], proof_term=spec.to_lean(),
-            verification_status="failed", build_log=str(e)[-4000:],
+            steps=0,
+            lemmas=len(spec.definitions),
+            lean_file=Path("unknown"),
+            tactics=[],
+            proof_term=spec.to_lean(),
+            verification_status="failed",
+            build_log=str(e)[-4000:],
         )
         proof.compute_hash()
 
@@ -743,13 +890,16 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     print(f"      Verification status: {cert.verification_status.upper()}")
     print(f"      Signature: {cert.signature[:32]}...")
 
-    audit.add_entry("generate_complete", {
-        "algorithm": proof.theorem_name,
-        "steps": proof.steps,
-        "lemmas": proof.lemmas,
-        "verification_status": proof.verification_status,
-        "certificate": str(cert_path),
-    })
+    audit.add_entry(
+        "generate_complete",
+        {
+            "algorithm": proof.theorem_name,
+            "steps": proof.steps,
+            "lemmas": proof.lemmas,
+            "verification_status": proof.verification_status,
+            "certificate": str(cert_path),
+        },
+    )
 
     if visualize:
         print("\nOpening proof visualization...")
@@ -786,7 +936,7 @@ def cmd_guide():
     except (ValueError, IndexError):
         selected = cat_examples[0]
 
-    print(f"\nStep 3: Algorithm description:")
+    print("\nStep 3: Algorithm description:")
     print(f"  {selected['description']}")
     use_default = input("Use this description? [Y/n]: ").strip().lower() != "n"
     description = selected["description"] if use_default else input("Enter your description: ")
@@ -800,7 +950,7 @@ def cmd_guide():
     model_map = {"1": "local", "2": "mistral", "3": "openai", "4": "anthropic"}
     model = model_map.get(model_choice, "local")
 
-    print(f"\nStep 5: Generating verified code...")
+    print("\nStep 5: Generating verified code...")
     print(f"  Algorithm: {selected['name']}")
     print(f"  Model: {model}\n")
     cmd_generate(description, lang="both", model=model)
@@ -815,7 +965,7 @@ def cmd_examples():
     for i, ex in enumerate(EXAMPLES, 1):
         print(f"{i:<3} {ex['name']:<28} {ex['category']:<18} {ex['difficulty']:<12} {ex['proof_complexity']}")
     print()
-    print('Run: python cli.py guide  (interactive mode)')
+    print("Run: python cli.py guide  (interactive mode)")
     print('Run: python cli.py "description"  (quick generate)')
 
 
@@ -869,7 +1019,7 @@ def cmd_publish(name: str, pypi: bool = False, github: bool = False):
         cert = ProofCertificate.load(cert_path)
         print(f"  [+] Certificate verified: {cert.signature[:32]}...")
     else:
-        print(f"  [!] No certificate found. Generate the algorithm first.")
+        print("  [!] No certificate found. Generate the algorithm first.")
 
     if pypi:
         wheel_dir = Path(__file__).parent / "build" / "python"
@@ -914,20 +1064,22 @@ def cmd_verify(name: str):
         if c_path.exists() and cert.c_binary_hash:
             actual = hash_file(c_path)
             if actual == cert.c_binary_hash:
-                print(f"  [+] C binary integrity verified")
+                print("  [+] C binary integrity verified")
             else:
-                print(f"  [-] C binary integrity FAILED")
+                print("  [-] C binary integrity FAILED")
 
     # Verify Lean proof
     try:
         proof = load_proof(name)
-        result = subprocess.run(["lean", "--c", "/dev/null", str(proof.lean_file)], capture_output=True, text=True, timeout=300)
+        result = subprocess.run(
+            ["lean", "--c", "/dev/null", str(proof.lean_file)], capture_output=True, text=True, timeout=300
+        )
         if result.returncode == 0:
-            print(f"  [+] Lean proof verified")
+            print("  [+] Lean proof verified")
         else:
-            print(f"  [-] Lean proof verification failed")
+            print("  [-] Lean proof verification failed")
     except FileNotFoundError:
-        print(f"  [-] No Lean proof found")
+        print("  [-] No Lean proof found")
     except Exception as e:
         print(f"  [-] Verification failed: {e}")
 
@@ -976,24 +1128,46 @@ def cmd_audit():
         print()
         for line in audit.log_file.read_text(encoding="utf-8").strip().split("\n"):
             entry = json.loads(line)
-            print(f"  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(entry['timestamp']))} | {entry['user']} | {entry['action']}")
+            print(
+                f"  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(entry['timestamp']))} "
+                f"| {entry['user']} | {entry['action']}"
+            )
     else:
         print("No audit log entries yet.")
 
 
 # ─── Main ───────────────────────────────────────────────────────────────────
 
+
 def main():
     # Bare-description UX (documented in README): `cli.py "implement binary
     # search"` routes to `generate`. argparse would otherwise reject the
     # positional as an invalid subcommand choice before we ever see it.
-    _COMMANDS = {"generate", "guide", "examples", "help", "walkthrough",
-                 "models", "visualize", "publish", "verify", "cert",
-                 "key", "audit", "version", "license"}
-    if len(sys.argv) > 1 and sys.argv[1] not in _COMMANDS and not sys.argv[1].startswith("-"):
+    _commands = {
+        "generate",
+        "guide",
+        "examples",
+        "help",
+        "walkthrough",
+        "models",
+        "visualize",
+        "publish",
+        "verify",
+        "cert",
+        "key",
+        "audit",
+        "version",
+        "license",
+    }
+    if len(sys.argv) > 1 and sys.argv[1] not in _commands and not sys.argv[1].startswith("-"):
         sys.argv.insert(1, "generate")
 
-    parser = argparse.ArgumentParser(prog="axiomcode", description="Natural language to formally verified code", formatter_class=argparse.RawDescriptionHelpFormatter, epilog=HELP_TEXT)
+    parser = argparse.ArgumentParser(
+        prog="axiomcode",
+        description="Natural language to formally verified code",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=HELP_TEXT,
+    )
     sub = parser.add_subparsers(dest="command")
 
     p_gen = sub.add_parser("generate", help="Generate verified code from NL")
@@ -1033,13 +1207,20 @@ def main():
 
     # Version management
     p_ver_cmd = sub.add_parser("version", help="Version management")
-    p_ver_cmd.add_argument("action", nargs="?", default="show", choices=["show", "migrate", "rollback", "backups", "history", "validate"])
+    p_ver_cmd.add_argument(
+        "action", nargs="?", default="show", choices=["show", "migrate", "rollback", "backups", "history", "validate"]
+    )
     p_ver_cmd.add_argument("--to", default=None, help="Target version for migration")
     p_ver_cmd.add_argument("--force", action="store_true", help="Force migration without confirmation")
 
     # License management
     p_lic = sub.add_parser("license", help="License management")
-    p_lic.add_argument("action", nargs="?", default="show", choices=["show", "issue", "verify", "revoke", "list", "tiers", "keygen", "fingerprint"])
+    p_lic.add_argument(
+        "action",
+        nargs="?",
+        default="show",
+        choices=["show", "issue", "verify", "revoke", "list", "tiers", "keygen", "fingerprint"],
+    )
     p_lic.add_argument("--user", default=None, help="User ID (email)")
     p_lic.add_argument("--name", default=None, help="User name")
     p_lic.add_argument("--tier", default="community", choices=["community", "pro", "enterprise"])
@@ -1062,7 +1243,8 @@ def main():
 
     if args.command == "generate":
         if not args.description:
-            print("Error: description is required"); sys.exit(1)
+            print("Error: description is required")
+            sys.exit(1)
         cmd_generate(args.description, args.lang, args.model, args.visualize, args.passphrase)
     elif args.command == "guide":
         cmd_guide()
@@ -1125,7 +1307,7 @@ def cmd_version(action: str, target: str | None = None, force: bool = False):
             for f in info.new_features:
                 print(f"  [+] {f}")
         if info.breaking_changes:
-            print(f"\nBreaking changes:")
+            print("\nBreaking changes:")
             for b in info.breaking_changes:
                 print(f"  [!] {b}")
 
@@ -1171,9 +1353,9 @@ def cmd_version(action: str, target: str | None = None, force: bool = False):
             print("No backups found.")
             return
         print("Available backups:")
-        for b in backups:
-            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(b["timestamp"]))
-            print(f"  {b['name']} (v{b['version']}, {ts})")
+        for bk in backups:
+            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(bk["timestamp"]))
+            print(f"  {bk['name']} (v{bk['version']}, {ts})")
 
     elif action == "history":
         history = vm.get_migration_history()
@@ -1198,11 +1380,19 @@ def cmd_version(action: str, target: str | None = None, force: bool = False):
             print("All data is consistent with the current version.")
 
 
-def cmd_license(action: str, user: str | None = None, name: str | None = None,
-                tier: str = "community", key_path: str | None = None,
-                passphrase: str = "", output: str | None = None,
-                license_file: str | None = None, reason: str = "",
-                portable: bool = False, expires: str | None = None):
+def cmd_license(
+    action: str,
+    user: str | None = None,
+    name: str | None = None,
+    tier: str = "community",
+    key_path: str | None = None,
+    passphrase: str = "",
+    output: str | None = None,
+    license_file: str | None = None,
+    reason: str = "",
+    portable: bool = False,
+    expires: str | None = None,
+):
     """License management: show, issue, verify, revoke, list, tiers, keygen, fingerprint."""
     print(BANNER)
     lm = LicenseManager()
@@ -1240,7 +1430,7 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         keys.save_private(priv_path, passphrase or "axiomcode-root")
         keys.save_public(pub_path)
 
-        print(f"[+] Root key pair generated")
+        print("[+] Root key pair generated")
         print(f"    Private key: {priv_path} (KEEP SECRET)")
         print(f"    Public key:  {pub_path} (ship with software)")
         print(f"    Key ID:      {keys.key_id}")
@@ -1263,24 +1453,29 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         expires_at = 0.0
         if expires:
             from datetime import datetime
+
             dt = datetime.strptime(expires, "%Y-%m-%d")
             expires_at = dt.timestamp()
 
         if portable:
             license = lm.issue_portable_license(
-                user_id=user, user_name=name, tier=tier,
+                user_id=user,
+                user_name=name,
+                tier=tier,
                 expires_at=expires_at,
             )
         else:
             license = lm.issue_license(
-                user_id=user, user_name=name, tier=tier,
+                user_id=user,
+                user_name=name,
+                tier=tier,
                 expires_at=expires_at,
             )
 
         out_path = Path(output or f".axiomcode/licenses/{name.replace(' ', '_').lower()}.license.json")
         license.save(out_path)
 
-        print(f"[+] License issued")
+        print("[+] License issued")
         print(f"    License ID: {license.license_id}")
         print(f"    User:       {license.user_name} ({license.user_id})")
         print(f"    Tier:       {license.tier}")
@@ -1289,7 +1484,7 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         if expires_at > 0:
             print(f"    Expires:    {time.strftime('%Y-%m-%d', time.localtime(expires_at))}")
         else:
-            print(f"    Expires:    Never")
+            print("    Expires:    Never")
         print(f"    Saved to:   {out_path}")
 
     elif action == "verify":
@@ -1297,9 +1492,9 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         lic_path = license_file or ".axiomcode/licenses/default.license.json"
         if not Path(lic_path).exists():
             # Try to find any license
-            licenses = list(Path(".axiomcode/licenses").glob("*.license.json"))
-            if licenses:
-                lic_path = str(licenses[0])
+            license_files = list(Path(".axiomcode/licenses").glob("*.license.json"))
+            if license_files:
+                lic_path = str(license_files[0])
             else:
                 print(f"[-] No license file found at {lic_path}")
                 return
@@ -1324,7 +1519,7 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         if license.expires_at > 0:
             print(f"  Expires:    {time.strftime('%Y-%m-%d', time.localtime(license.expires_at))}")
         else:
-            print(f"  Expires:    Never")
+            print("  Expires:    Never")
         print(f"  Hardware:   {'Portable' if not license.hardware_hash else 'Bound'}")
         print()
         if valid:
@@ -1364,8 +1559,8 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
             print(f"  Price: {tinfo['price']}")
             print(f"  Max seats: {tinfo['max_seats'] if tinfo['max_seats'] > 0 else 'Unlimited'}")
             print(f"  Expires: {'Yes' if tinfo['expires'] else 'No'}")
-            print(f"  Features:")
-            for f in tinfo['features']:
+            print("  Features:")
+            for f in tinfo["features"]:
                 print(f"    - {f}")
 
     elif action == "fingerprint":

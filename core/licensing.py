@@ -20,7 +20,6 @@ import base64
 import hashlib
 import hmac
 import json
-import os
 import platform
 import secrets
 import time
@@ -28,7 +27,6 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-
 
 # ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -38,6 +36,7 @@ HARDWARE_SALT = b"axiomcode-hardware-fingerprint-v1"
 
 
 # ─── Hardware Fingerprint ───────────────────────────────────────────────────
+
 
 def get_hardware_fingerprint() -> str:
     """
@@ -55,10 +54,8 @@ def get_hardware_fingerprint() -> str:
     try:
         if platform.system() == "Windows":
             import subprocess
-            result = subprocess.run(
-                ["wmic", "cpu", "get", "ProcessorId"],
-                capture_output=True, text=True, timeout=5
-            )
+
+            result = subprocess.run(["wmic", "cpu", "get", "ProcessorId"], capture_output=True, text=True, timeout=5)
             cpu_id = result.stdout.strip().split("\n")[-1].strip()
             if cpu_id:
                 components.append(cpu_id)
@@ -98,24 +95,26 @@ def get_hardware_hash(salt: bytes = HARDWARE_SALT) -> str:
 
 # ─── License Key Pair ───────────────────────────────────────────────────────
 
+
 @dataclass
 class LicenseKeyPair:
     """
     Asymmetric key pair for license signing and verification.
-    
+
     Uses HMAC-SHA512 for MVP. For production with true asymmetric crypto
     (where verification key cannot sign), use Ed25519 or RSA-4096.
     """
-    private_key: bytes   # SECRET — used to sign licenses
-    public_key: bytes    # PUBLIC — shipped with software to verify
+
+    private_key: bytes  # SECRET — used to sign licenses
+    public_key: bytes  # PUBLIC — shipped with software to verify
     key_id: str
     created_at: float
     algorithm: str = "hmac-sha512"
 
     @classmethod
-    def generate(cls) -> "LicenseKeyPair":
+    def generate(cls) -> LicenseKeyPair:
         """Generate a new key pair.
-        
+
         NOTE: HMAC is symmetric — signing and verification use the same key.
         The 'public_key' here is identical to 'private_key'. For production
         with true asymmetric crypto (where verification key cannot sign),
@@ -137,20 +136,25 @@ class LicenseKeyPair:
         keystream = hashlib.sha512(derived).digest()
         while len(keystream) < len(self.private_key):
             keystream += hashlib.sha512(keystream[-64:] + derived).digest()
-        encrypted = bytes(a ^ b for a, b in zip(self.private_key, keystream[:len(self.private_key)]))
+        encrypted = bytes(a ^ b for a, b in zip(self.private_key, keystream[: len(self.private_key)], strict=True))
 
-        path.write_text(json.dumps({
-            "type": "axiomcode-private-key",
-            "version": LICENSE_VERSION,
-            "key_id": self.key_id,
-            "salt": base64.b64encode(salt).decode(),
-            "data": base64.b64encode(encrypted).decode(),
-            "public_key": base64.b64encode(self.public_key).decode(),
-            "created_at": self.created_at,
-        }, indent=2))
+        path.write_text(
+            json.dumps(
+                {
+                    "type": "axiomcode-private-key",
+                    "version": LICENSE_VERSION,
+                    "key_id": self.key_id,
+                    "salt": base64.b64encode(salt).decode(),
+                    "data": base64.b64encode(encrypted).decode(),
+                    "public_key": base64.b64encode(self.public_key).decode(),
+                    "created_at": self.created_at,
+                },
+                indent=2,
+            )
+        )
 
     @classmethod
-    def load_private(cls, path: Path, passphrase: str = "") -> "LicenseKeyPair":
+    def load_private(cls, path: Path, passphrase: str = "") -> LicenseKeyPair:
         """Load private key."""
         data = json.loads(path.read_text())
         salt = base64.b64decode(data["salt"])
@@ -159,7 +163,7 @@ class LicenseKeyPair:
         keystream = hashlib.sha512(derived).digest()
         while len(keystream) < len(encrypted):
             keystream += hashlib.sha512(keystream[-64:] + derived).digest()
-        private_key = bytes(a ^ b for a, b in zip(encrypted, keystream[:len(encrypted)]))
+        private_key = bytes(a ^ b for a, b in zip(encrypted, keystream[: len(encrypted)], strict=True))
         return cls(
             private_key=private_key,
             public_key=base64.b64decode(data["public_key"]),
@@ -170,17 +174,22 @@ class LicenseKeyPair:
     def save_public(self, path: Path) -> None:
         """Save public key (safe to distribute with the software)."""
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps({
-            "type": "axiomcode-public-key",
-            "version": LICENSE_VERSION,
-            "key_id": self.key_id,
-            "data": base64.b64encode(self.public_key).decode(),
-            "algorithm": self.algorithm,
-            "created_at": self.created_at,
-        }, indent=2))
+        path.write_text(
+            json.dumps(
+                {
+                    "type": "axiomcode-public-key",
+                    "version": LICENSE_VERSION,
+                    "key_id": self.key_id,
+                    "data": base64.b64encode(self.public_key).decode(),
+                    "algorithm": self.algorithm,
+                    "created_at": self.created_at,
+                },
+                indent=2,
+            )
+        )
 
     @classmethod
-    def load_public(cls, path: Path) -> "LicenseKeyPair":
+    def load_public(cls, path: Path) -> LicenseKeyPair:
         """Load public key."""
         data = json.loads(path.read_text())
         return cls(
@@ -194,11 +203,13 @@ class LicenseKeyPair:
 
 # ─── License Certificate ────────────────────────────────────────────────────
 
+
 @dataclass
 class LicenseCertificate:
     """
     Cryptographic license certificate bound to a user and machine.
     """
+
     version: int = LICENSE_VERSION
     license_id: str = ""
     user_id: str = ""
@@ -234,7 +245,7 @@ class LicenseCertificate:
         }
         return json.dumps(data, sort_keys=True).encode("utf-8")
 
-    def sign(self, private_key: bytes) -> "LicenseCertificate":
+    def sign(self, private_key: bytes) -> LicenseCertificate:
         """Sign the license with the root private key."""
         self.signature = hmac.new(private_key, self._payload(), "sha512").hexdigest()
         return self
@@ -275,26 +286,29 @@ class LicenseCertificate:
 
     def to_json(self) -> str:
         """Export license as JSON."""
-        return json.dumps({
-            "version": self.version,
-            "license_id": self.license_id,
-            "user_id": self.user_id,
-            "user_name": self.user_name,
-            "tier": self.tier,
-            "hardware_hash": self.hardware_hash,
-            "features": self.features,
-            "max_seats": self.max_seats,
-            "issued_at": self.issued_at,
-            "expires_at": self.expires_at,
-            "revoked": self.revoked,
-            "revocation_reason": self.revocation_reason,
-            "signature": self.signature,
-            "key_id": self.key_id,
-            "metadata": self.metadata,
-        }, indent=2)
+        return json.dumps(
+            {
+                "version": self.version,
+                "license_id": self.license_id,
+                "user_id": self.user_id,
+                "user_name": self.user_name,
+                "tier": self.tier,
+                "hardware_hash": self.hardware_hash,
+                "features": self.features,
+                "max_seats": self.max_seats,
+                "issued_at": self.issued_at,
+                "expires_at": self.expires_at,
+                "revoked": self.revoked,
+                "revocation_reason": self.revocation_reason,
+                "signature": self.signature,
+                "key_id": self.key_id,
+                "metadata": self.metadata,
+            },
+            indent=2,
+        )
 
     @classmethod
-    def from_json(cls, data: str) -> "LicenseCertificate":
+    def from_json(cls, data: str) -> LicenseCertificate:
         """Import license from JSON."""
         d = json.loads(data)
         return cls(
@@ -321,12 +335,13 @@ class LicenseCertificate:
         path.write_text(self.to_json())
 
     @classmethod
-    def load(cls, path: Path) -> "LicenseCertificate":
+    def load(cls, path: Path) -> LicenseCertificate:
         """Load license from file."""
         return cls.from_json(path.read_text())
 
 
 # ─── License Manager ────────────────────────────────────────────────────────
+
 
 class LicenseManager:
     """
@@ -373,10 +388,15 @@ class LicenseManager:
     def _save_revocation_list(self) -> None:
         """Save the revocation list."""
         rev_file = self.data_dir / "revoked.json"
-        rev_file.write_text(json.dumps({
-            "revoked": list(self._revocation_list),
-            "updated_at": time.time(),
-        }, indent=2))
+        rev_file.write_text(
+            json.dumps(
+                {
+                    "revoked": list(self._revocation_list),
+                    "updated_at": time.time(),
+                },
+                indent=2,
+            )
+        )
 
     def generate_root_key(self) -> LicenseKeyPair:
         """Generate a new root key pair."""
@@ -506,23 +526,27 @@ class LicenseManager:
             try:
                 lic = LicenseCertificate.load(lf)
                 valid, reason = lic.is_valid(self._public_key) if self._public_key else (False, "No public key loaded")
-                licenses.append({
-                    "file": str(lf),
-                    "license_id": lic.license_id,
-                    "user": lic.user_name,
-                    "tier": lic.tier,
-                    "valid": valid,
-                    "reason": reason,
-                })
+                licenses.append(
+                    {
+                        "file": str(lf),
+                        "license_id": lic.license_id,
+                        "user": lic.user_name,
+                        "tier": lic.tier,
+                        "valid": valid,
+                        "reason": reason,
+                    }
+                )
             except Exception:
-                licenses.append({
-                    "file": str(lf),
-                    "license_id": "unknown",
-                    "user": "unknown",
-                    "tier": "unknown",
-                    "valid": False,
-                    "reason": "Failed to parse",
-                })
+                licenses.append(
+                    {
+                        "file": str(lf),
+                        "license_id": "unknown",
+                        "user": "unknown",
+                        "tier": "unknown",
+                        "valid": False,
+                        "reason": "Failed to parse",
+                    }
+                )
         return licenses
 
     @staticmethod
@@ -538,7 +562,7 @@ class LicenseManager:
 
 # ─── Tier Definitions ───────────────────────────────────────────────────────
 
-TIERS = {
+TIERS: dict[str, dict[str, Any]] = {
     "community": {
         "name": "Community",
         "price": "Free",

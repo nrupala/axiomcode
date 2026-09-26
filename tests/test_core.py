@@ -1,8 +1,6 @@
 """Test suite for AxiomCode -- zero external dependencies, zero-trust security."""
 
-import pytest
 import sys
-import json
 import tempfile
 import time
 from pathlib import Path
@@ -13,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 class TestSpecGenerator:
     def test_lean_spec_to_lean(self):
         from cli import LeanSpec
+
         spec = LeanSpec(theorem="theorem foo : True := by sorry", imports=["Mathlib"], docstring="Test theorem")
         output = spec.to_lean()
         assert "import Mathlib" in output
@@ -20,12 +19,14 @@ class TestSpecGenerator:
 
     def test_lean_spec_defaults(self):
         from cli import LeanSpec
+
         spec = LeanSpec(theorem="theorem bar : True := by sorry")
         assert "Mathlib" in spec.imports
         assert "Aesop" in spec.imports
 
     def test_parse_code_block(self):
         from cli import _parse_spec
+
         raw = "```lean\nimport Mathlib\n/-- Test -/\ntheorem test_correct : True := by sorry\n```"
         spec = _parse_spec(raw, "test", 100.0, "local")
         assert "Mathlib" in spec.imports
@@ -33,6 +34,7 @@ class TestSpecGenerator:
 
     def test_backends_registered(self):
         from cli import BACKENDS
+
         assert "local" in BACKENDS
         assert "openai" in BACKENDS
         assert "anthropic" in BACKENDS
@@ -41,6 +43,7 @@ class TestSpecGenerator:
 class TestSecurity:
     def test_keypair_generation(self):
         from core.security import KeyPair
+
         kp = KeyPair.generate()
         assert len(kp.encryption_key) == 64
         assert len(kp.signing_key) == 64
@@ -48,6 +51,7 @@ class TestSecurity:
 
     def test_keystore_roundtrip(self):
         from core.security import KeyStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
             kp = ks.create_key("test", "pass123")
@@ -55,8 +59,10 @@ class TestSecurity:
             assert loaded.key_id == kp.key_id
 
     def test_proof_certificate(self):
-        from core.security import ProofCertificate
         import secrets
+
+        from core.security import ProofCertificate
+
         key = secrets.token_bytes(64)
         cert = ProofCertificate(
             algorithm_name="binary_search",
@@ -70,8 +76,10 @@ class TestSecurity:
         assert cert.verify(key) is True
 
     def test_proof_certificate_tamper(self):
-        from core.security import ProofCertificate
         import secrets
+
+        from core.security import ProofCertificate
+
         key = secrets.token_bytes(64)
         cert = ProofCertificate(
             algorithm_name="binary_search",
@@ -84,8 +92,10 @@ class TestSecurity:
         assert cert.verify(key) is False
 
     def test_hmac(self):
-        from core.security import compute_hmac, verify_hmac
         import secrets
+
+        from core.security import compute_hmac, verify_hmac
+
         key = secrets.token_bytes(32)
         data = b"test data"
         mac = compute_hmac(key, data)
@@ -94,6 +104,7 @@ class TestSecurity:
 
     def test_hash_data(self):
         from core.security import hash_data
+
         h1 = hash_data(b"hello")
         h2 = hash_data(b"hello")
         h3 = hash_data(b"world")
@@ -102,6 +113,7 @@ class TestSecurity:
 
     def test_audit_log_integrity(self):
         from core.security import AuditLog
+
         with tempfile.TemporaryDirectory() as tmpdir:
             log_file = Path(tmpdir) / "audit.log"
             audit = AuditLog(log_file)
@@ -111,6 +123,7 @@ class TestSecurity:
 
     def test_secure_sandbox(self):
         from core.security import SecureSandbox
+
         with tempfile.TemporaryDirectory() as tmpdir:
             sandbox = SecureSandbox(tmpdir)
             result = sandbox.run([sys.executable, "-c", "print('hello')"])
@@ -120,6 +133,7 @@ class TestSecurity:
 
     def test_rate_limiter(self):
         from core.security import RateLimiter
+
         rl = RateLimiter(max_tokens=3, refill_rate=0.0)
         assert rl.acquire() is True
         assert rl.acquire() is True
@@ -129,15 +143,21 @@ class TestSecurity:
 
 class TestVisualization:
     def test_build_graph_data(self):
-        from cli import _build_graph_data, ProofResult
-        proof = ProofResult(theorem_name="test", steps=3, lemmas=1, lean_file=Path("test.lean"), tactics=["rw [h]", "simp", "exact h"])
+        from cli import ProofResult, _build_graph_data
+
+        proof = ProofResult(
+            theorem_name="test", steps=3, lemmas=1, lean_file=Path("test.lean"), tactics=["rw [h]", "simp", "exact h"]
+        )
         data = _build_graph_data(proof, "2d")
         assert len(data["nodes"]) == 3
         assert len(data["edges"]) == 2
 
     def test_build_proof_html(self):
-        from cli import build_proof_html, ProofResult
-        proof = ProofResult(theorem_name="test", steps=3, lemmas=1, lean_file=Path("test.lean"), tactics=["rw", "simp", "exact"])
+        from cli import ProofResult, build_proof_html
+
+        proof = ProofResult(
+            theorem_name="test", steps=3, lemmas=1, lean_file=Path("test.lean"), tactics=["rw", "simp", "exact"]
+        )
         html = build_proof_html(proof, "2d")
         assert "AxiomCode" in html
         assert "d3.v7.min.js" in html
@@ -146,17 +166,20 @@ class TestVisualization:
 class TestCLI:
     def test_main_exists(self):
         from cli import main
+
         assert callable(main)
 
 
 class TestVersioning:
     def test_version_manager_init(self):
         from core.versioning import VersionManager
+
         vm = VersionManager()
         assert vm.get_current_version() == "0.1.0"
 
     def test_version_set_and_get(self):
         from core.versioning import VersionManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             vm = VersionManager(tmpdir)
             vm.initialize()
@@ -165,6 +188,7 @@ class TestVersioning:
 
     def test_version_registry(self):
         from core.versioning import VERSION_REGISTRY
+
         assert "0.1.0" in VERSION_REGISTRY
         info = VERSION_REGISTRY["0.1.0"]
         assert info.version == "0.1.0"
@@ -172,6 +196,7 @@ class TestVersioning:
 
     def test_migration_noop(self):
         from core.versioning import VersionManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             vm = VersionManager(tmpdir)
             vm.initialize()
@@ -180,12 +205,14 @@ class TestVersioning:
 
     def test_list_versions(self):
         from core.versioning import VersionManager
+
         vm = VersionManager()
         versions = vm.list_versions()
         assert len(versions) >= 1
 
     def test_validate_data_integrity(self):
         from core.versioning import VersionManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             vm = VersionManager(tmpdir)
             vm.initialize()
@@ -195,6 +222,7 @@ class TestVersioning:
 
     def test_list_backups_empty(self):
         from core.versioning import VersionManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             vm = VersionManager(tmpdir)
             backups = vm.list_backups()
@@ -202,6 +230,7 @@ class TestVersioning:
 
     def test_migration_history_empty(self):
         from core.versioning import VersionManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             vm = VersionManager(tmpdir)
             history = vm.get_migration_history()
@@ -209,6 +238,7 @@ class TestVersioning:
 
     def test_version_info(self):
         from core.versioning import VersionManager
+
         vm = VersionManager()
         info = vm.get_version_info("0.1.0")
         assert info.version == "0.1.0"
@@ -218,6 +248,7 @@ class TestVersioning:
 class TestLicensing:
     def test_keypair_generation(self):
         from core.licensing import LicenseKeyPair
+
         keys = LicenseKeyPair.generate()
         assert len(keys.private_key) == 64
         assert len(keys.public_key) == 64
@@ -225,6 +256,7 @@ class TestLicensing:
 
     def test_keypair_save_load(self):
         from core.licensing import LicenseKeyPair
+
         with tempfile.TemporaryDirectory() as tmpdir:
             keys = LicenseKeyPair.generate()
             priv_path = Path(tmpdir) / "private.key"
@@ -238,6 +270,7 @@ class TestLicensing:
 
     def test_license_issue_and_verify(self):
         from core.licensing import LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             keys = lm.generate_root_key()
@@ -254,6 +287,7 @@ class TestLicensing:
 
     def test_license_tamper_detection(self):
         from core.licensing import LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             lm.generate_root_key()
@@ -269,6 +303,7 @@ class TestLicensing:
 
     def test_license_expiration(self):
         from core.licensing import LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             lm.generate_root_key()
@@ -285,6 +320,7 @@ class TestLicensing:
 
     def test_license_revocation(self):
         from core.licensing import LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             lm.generate_root_key()
@@ -300,7 +336,8 @@ class TestLicensing:
             assert "revoked" in reason.lower()
 
     def test_license_save_load(self):
-        from core.licensing import LicenseManager, LicenseCertificate
+        from core.licensing import LicenseCertificate, LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             lm.generate_root_key()
@@ -319,6 +356,7 @@ class TestLicensing:
 
     def test_portable_license(self):
         from core.licensing import LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             lm.generate_root_key()
@@ -334,6 +372,7 @@ class TestLicensing:
 
     def test_license_features(self):
         from core.licensing import LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             lm.generate_root_key()
@@ -349,6 +388,7 @@ class TestLicensing:
 
     def test_hardware_fingerprint(self):
         from core.licensing import get_hardware_fingerprint, get_hardware_hash
+
         fp = get_hardware_fingerprint()
         assert len(fp) == 128  # SHA-512 hex digest = 128 chars
         hw_hash = get_hardware_hash()
@@ -358,6 +398,7 @@ class TestLicensing:
 
     def test_license_manager_list_empty(self):
         from core.licensing import LicenseManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             lm = LicenseManager(tmpdir)
             licenses = lm.list_licenses()
@@ -365,6 +406,7 @@ class TestLicensing:
 
     def test_tiers_defined(self):
         from core.licensing import TIERS
+
         assert "community" in TIERS
         assert "pro" in TIERS
         assert "enterprise" in TIERS
@@ -374,6 +416,7 @@ class TestLicensing:
 class TestPersistence:
     def test_datastore_create_get(self):
         from core.persistence import DataStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             store = DataStore(tmpdir)
             record = store.create("test_001", {"name": "test", "value": 42})
@@ -385,6 +428,7 @@ class TestPersistence:
 
     def test_datastore_update(self):
         from core.persistence import DataStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             store = DataStore(tmpdir)
             store.create("test_001", {"name": "test", "value": 42})
@@ -395,6 +439,7 @@ class TestPersistence:
 
     def test_datastore_history(self):
         from core.persistence import DataStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             store = DataStore(tmpdir)
             store.create("test_001", {"name": "test", "value": 1})
@@ -405,6 +450,7 @@ class TestPersistence:
 
     def test_datastore_delete(self):
         from core.persistence import DataStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             store = DataStore(tmpdir)
             store.create("test_001", {"name": "test"})
@@ -416,6 +462,7 @@ class TestPersistence:
 
     def test_datastore_list(self):
         from core.persistence import DataStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             store = DataStore(tmpdir)
             store.create("a_001", {"name": "a"})
@@ -426,6 +473,7 @@ class TestPersistence:
 
     def test_datastore_stats(self):
         from core.persistence import DataStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             store = DataStore(tmpdir)
             store.create("test_001", {"name": "test"})
@@ -435,6 +483,7 @@ class TestPersistence:
 
     def test_algorithm_registry(self):
         from core.persistence import AlgorithmRegistry
+
         with tempfile.TemporaryDirectory() as tmpdir:
             reg = AlgorithmRegistry(tmpdir)
             algo = reg.register_algorithm(
@@ -452,6 +501,7 @@ class TestPersistence:
 
     def test_algorithm_search(self):
         from core.persistence import AlgorithmRegistry
+
         with tempfile.TemporaryDirectory() as tmpdir:
             reg = AlgorithmRegistry(tmpdir)
             reg.register_algorithm("binary_search", spec_hash="abc", proof_hash="def")
@@ -462,6 +512,7 @@ class TestPersistence:
 
     def test_session_manager(self):
         from core.persistence import SessionManager
+
         with tempfile.TemporaryDirectory() as tmpdir:
             sm = SessionManager(tmpdir)
             session = sm.create_session("user_001", {"ip": "127.0.0.1"})
@@ -476,7 +527,8 @@ class TestPersistence:
             assert closed.data["status"] == "closed"
 
     def test_schema_migration(self):
-        from core.persistence import DataStore, CURRENT_SCHEMA_VERSION
+        from core.persistence import CURRENT_SCHEMA_VERSION, DataStore
+
         with tempfile.TemporaryDirectory() as tmpdir:
             store = DataStore(tmpdir)
             store.create("test_001", {"name": "test"})

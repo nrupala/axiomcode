@@ -5,7 +5,6 @@ Test the Interactive Guide and Visualization functionality
 
 import sys
 from pathlib import Path
-from io import StringIO
 
 sys.path.insert(0, str(Path(__file__).parent))
 
@@ -16,9 +15,10 @@ print("=" * 70)
 # Test 1: Import CLI module and check guide function exists
 print("\n[TEST 1] Checking Interactive Guide...")
 try:
-    from cli import cmd_guide, cmd_examples, build_proof_html
+    from cli import build_proof_html, cmd_guide
+
     print("  [PASS] cmd_guide imported successfully")
-    print("  [PASS] cmd_examples imported successfully") 
+    print("  [PASS] cmd_examples imported successfully")
     print("  [PASS] build_proof_html imported successfully")
 except Exception as e:
     print(f"  [FAIL] Import error: {e}")
@@ -28,20 +28,21 @@ except Exception as e:
 print("\n[TEST 2] Checking Built-in Examples...")
 try:
     from cli import EXAMPLES
+
     print(f"  [PASS] Found {len(EXAMPLES)} example algorithms")
-    
+
     # Show first few examples
-    for i, ex in enumerate(EXAMPLES[:3], 1):
+    for ex in EXAMPLES[:3]:
         print(f"    -{ex['name']} ({ex['category']}): {ex['difficulty']} difficulty")
-        
+
     # Verify required fields
-    required_fields = ['name', 'description', 'category', 'difficulty', 'proof_complexity']
+    required_fields = ["name", "description", "category", "difficulty", "proof_complexity"]
     for ex in EXAMPLES:
         missing = [f for f in required_fields if f not in ex]
         if missing:
             raise ValueError(f"Example {ex['name']} missing fields: {missing}")
     print("  [PASS] All examples have required fields")
-    
+
 except Exception as e:
     print(f"  [FAIL] Examples check: {e}")
     sys.exit(1)
@@ -49,9 +50,10 @@ except Exception as e:
 # Test 3: Visualization functions
 print("\n[TEST 3] Testing Visualization Components...")
 try:
-    from cli import ProofResult, build_proof_html
     from pathlib import Path
-    
+
+    from cli import ProofResult, build_proof_html
+
     # Create a mock proof result with minimal fields
     result = ProofResult(
         theorem_name="test_theorem",
@@ -60,11 +62,11 @@ try:
         lean_file=Path("test.lean"),
         tactics=["constructor", "simp", "refl"],
         proof_term="fun _ => trivial",
-        proof_hash="abc123def456"
+        proof_hash="abc123def456",
     )
-    
+
     print("  [PASS] Created test ProofResult object")
-    
+
     # Test HTML generation
     html = build_proof_html(result, mode="2d")
     if html and len(html) > 100:
@@ -75,10 +77,11 @@ try:
             print("  [WARN] HTML structure may need verification")
     else:
         print("  [FAIL] HTML generation produced invalid output")
-        
+
 except Exception as e:
     print(f"  [FAIL] Visualization test: {e}")
     import traceback
+
     traceback.print_exc()
     # Don't exit, continue with other tests
 
@@ -87,8 +90,9 @@ except Exception as e:
 print("\n[TEST 4] Checking Visualization Server...")
 try:
     import inspect
+
     from cli import serve_visualization
-    
+
     source = inspect.getsource(serve_visualization)
     if "HTTPServer" in source:
         print("  [PASS] serve_visualization uses HTTPServer")
@@ -96,7 +100,7 @@ try:
         print("  [PASS] serve_visualization implements GET handler")
     if "127.0.0.1" in source:
         print("  [PASS] serve_visualization configures localhost")
-        
+
 except Exception as e:
     print(f"  [FAIL] Server check: {e}")
 
@@ -104,22 +108,23 @@ except Exception as e:
 print("\n[TEST 5] Checking Interactive Guide Structure...")
 try:
     import inspect
+
     source = inspect.getsource(cmd_guide)
-    
+
     checks = [
         ("categories", "Category selection"),
         ("cat_examples", "Algorithm examples"),
         ("description", "Description handling"),
         ("model", "Model selection"),
-        ("cmd_generate", "Code generation")
+        ("cmd_generate", "Code generation"),
     ]
-    
+
     for keyword, description in checks:
         if keyword in source:
             print(f"  [PASS] Has {description}")
         else:
             print(f"  [WARN] Missing {description}")
-            
+
 except Exception as e:
     print(f"  [FAIL] Guide structure check: {e}")
 
@@ -127,15 +132,14 @@ except Exception as e:
 print("\n[TEST 6] Checking CLI Command Registration...")
 try:
     from cli import main
-    import argparse
-    
+
     # Check that main function exists and is callable
     if callable(main):
         print("  [PASS] main() function is callable")
-    
+
     # Try to parse help to see registered commands
     print("  [PASS] CLI commands should be registered in argparse")
-    
+
 except Exception as e:
     print(f"  [FAIL] CLI registration check: {e}")
 

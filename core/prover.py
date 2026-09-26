@@ -17,14 +17,15 @@ the repair backend via AXIOMCODE_LLM_BACKEND / AXIOMCODE_LLM_MODEL.
 
 from __future__ import annotations
 
+import re as _re
 import shutil
 import subprocess
 import textwrap
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
-
 
 # ─── Lean toolchain detection ────────────────────────────────────────────────
+
 
 def lean_available(lean_bin: str = "lean", lake_bin: str = "lake") -> bool:
     return shutil.which(lean_bin) is not None and shutil.which(lake_bin) is not None
@@ -41,6 +42,7 @@ def lean_version(lean_bin: str = "lean") -> str:
 def pantograph_available() -> bool:
     try:
         import pantograph  # noqa: F401
+
         return True
     except ImportError:
         return False
@@ -48,12 +50,16 @@ def pantograph_available() -> bool:
 
 # ─── Lake build ──────────────────────────────────────────────────────────────
 
+
 def lake_build(project_dir: str | Path, lake_bin: str = "lake", timeout: int = 300) -> tuple[bool, str]:
     """Run `lake build` in the Lean project. Returns (success, combined log)."""
     try:
         result = subprocess.run(
-            [lake_bin, "build"], cwd=str(project_dir),
-            capture_output=True, text=True, timeout=timeout,
+            [lake_bin, "build"],
+            cwd=str(project_dir),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
         )
     except FileNotFoundError:
         return False, f"TOOLCHAIN_MISSING: {lake_bin} not found"
@@ -62,6 +68,7 @@ def lake_build(project_dir: str | Path, lake_bin: str = "lake", timeout: int = 3
 
 
 # ─── Pantograph checking ─────────────────────────────────────────────────────
+
 
 def check_with_pantograph(lean_code: str, project_dir: str | Path | None = None) -> tuple[bool, str]:
     """Typecheck Lean code through Pantograph's M2M API.
@@ -90,7 +97,6 @@ def check_with_pantograph(lean_code: str, project_dir: str | Path | None = None)
 
 # ─── Self-correction loop ────────────────────────────────────────────────────
 
-import re as _re
 
 def has_sorry(lean_code: str) -> bool:
     """Detect unfinished proofs. `sorry`/`admit` typecheck, so a bare

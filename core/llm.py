@@ -27,13 +27,13 @@ import hashlib
 import json
 import os
 import time
-import urllib.request
 import urllib.error
+import urllib.request
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable
-
 
 # ─── Tiny file cache (shared by all backends) ────────────────────────────────
+
 
 class LLMCache:
     """On-disk cache for LLM responses: same prompt + model = no second call."""
@@ -43,15 +43,16 @@ class LLMCache:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def _key(self, model: str, prompt: str) -> str:
-        return hashlib.sha256(f"{model}::{prompt}".encode("utf-8")).hexdigest()
+        return hashlib.sha256(f"{model}::{prompt}".encode()).hexdigest()
 
     def get(self, model: str, prompt: str) -> str | None:
         path = self.cache_dir / f"{self._key(model, prompt)}.json"
         if path.exists():
             try:
-                return json.loads(path.read_text(encoding="utf-8"))["response"]
+                cached = json.loads(path.read_text(encoding="utf-8"))["response"]
             except (json.JSONDecodeError, KeyError, OSError):
                 return None
+            return cached if isinstance(cached, str) else None
         return None
 
     def put(self, model: str, prompt: str, response: str) -> None:
@@ -66,6 +67,7 @@ _llm_cache = LLMCache()
 
 
 # ─── OpenAI-compatible chat core ─────────────────────────────────────────────
+
 
 def openai_compat_chat(
     model: str,
@@ -89,12 +91,14 @@ def openai_compat_chat(
     if cached:
         return cached
 
-    payload = json.dumps({
-        "model": model,
-        "messages": [{"role": "user", "content": prompt}],
-        "temperature": temperature,
-        "max_tokens": max_tokens,
-    }).encode("utf-8")
+    payload = json.dumps(
+        {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": temperature,
+            "max_tokens": max_tokens,
+        }
+    ).encode("utf-8")
 
     last_err: Exception | None = None
     for attempt in range(retries):
@@ -114,7 +118,7 @@ def openai_compat_chat(
             return result
         except Exception as e:  # noqa: BLE001 — retry then report
             last_err = e
-            time.sleep(2 ** attempt)
+            time.sleep(2**attempt)
     raise RuntimeError(
         f"LLM backend failed after {retries} attempts ({base_url}): {last_err}\n"
         f"Fix: serve a model on {base_url} (llama.cpp: `llama-server -m model.gguf`; "
@@ -142,6 +146,7 @@ def _extract_content(data: dict) -> str:
 
 # ─── Backend presets ─────────────────────────────────────────────────────────
 
+
 def _env_or(name: str, default: str) -> str:
     return os.environ.get(name, default)
 
@@ -149,7 +154,8 @@ def _env_or(name: str, default: str) -> str:
 def llamacpp_generate(model: str, prompt: str, base_url: str | None = None) -> str:
     """llama.cpp server — the primary local backend."""
     return openai_compat_chat(
-        model, prompt,
+        model,
+        prompt,
         base_url or _env_or("AXIOMCODE_LLAMACPP_URL", "http://localhost:8080"),
         cache_ns="llamacpp",
     )
@@ -158,7 +164,8 @@ def llamacpp_generate(model: str, prompt: str, base_url: str | None = None) -> s
 def vllm_generate(model: str, prompt: str, base_url: str | None = None) -> str:
     """vLLM — the production serving stack large agents run on."""
     return openai_compat_chat(
-        model, prompt,
+        model,
+        prompt,
         base_url or _env_or("AXIOMCODE_VLLM_URL", "http://localhost:8000"),
         cache_ns="vllm",
     )
@@ -167,7 +174,8 @@ def vllm_generate(model: str, prompt: str, base_url: str | None = None) -> str:
 def ollama_generate(model: str, prompt: str, base_url: str | None = None) -> str:
     """Ollama via its OpenAI-compatible endpoint (kept for compatibility)."""
     return openai_compat_chat(
-        model, prompt,
+        model,
+        prompt,
         base_url or _env_or("AXIOMCODE_OLLAMA_URL", "http://localhost:11434"),
         cache_ns="ollama",
     )
@@ -179,9 +187,11 @@ def mistral_generate(model: str, prompt: str, base_url: str | None = None) -> st
     if not key:
         raise RuntimeError("Set MISTRAL_API_KEY environment variable")
     return openai_compat_chat(
-        model, prompt,
+        model,
+        prompt,
         base_url or "https://api.mistral.ai",
-        api_key=key, cache_ns="mistral",
+        api_key=key,
+        cache_ns="mistral",
     )
 
 
@@ -191,8 +201,11 @@ def openai_generate(model: str, prompt: str, api_key: str | None = None) -> str:
     if not key:
         raise RuntimeError("Set OPENAI_API_KEY environment variable")
     return openai_compat_chat(
-        model, prompt, "https://api.openai.com",
-        api_key=key, cache_ns="openai",
+        model,
+        prompt,
+        "https://api.openai.com",
+        api_key=key,
+        cache_ns="openai",
     )
 
 
@@ -209,20 +222,30 @@ def anthropic_generate(model: str, prompt: str, api_key: str | None = None) -> s
     if cached:
         return cached
 
-    body = json.dumps({
-        "model": model, "max_tokens": 4096,
-        "messages": [{"role": "user", "content": prompt}],
-    }).encode("utf-8")
+    body = json.dumps(
+        {
+            "model": model,
+            "max_tokens": 4096,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+    ).encode("utf-8")
     conn = http.client.HTTPSConnection("api.anthropic.com", 443, timeout=120)
     try:
-        conn.request("POST", "/v1/messages", body=body, headers={
-            "Content-Type": "application/json",
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-        })
+        conn.request(
+            "POST",
+            "/v1/messages",
+            body=body,
+            headers={
+                "Content-Type": "application/json",
+                "x-api-key": key,
+                "anthropic-version": "2023-06-01",
+            },
+        )
         resp = conn.getresponse()
         data = json.loads(resp.read().decode("utf-8"))
         result = data["content"][0]["text"]
+        if not isinstance(result, str):
+            raise RuntimeError(f"Unexpected Anthropic response shape: {data!r}"[:200])
         _llm_cache.put(cache_key, prompt, result)
         return result
     finally:

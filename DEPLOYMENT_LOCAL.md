@@ -372,7 +372,7 @@ cert = lm.issue_license(
     name="Alice",
     tier="pro",
     seats=5,
-    expires_at=time.time() + 365*24*3600  # 1 year
+    expires_at=time.time() + 365 * 24 * 3600,  # 1 year
 )
 
 # Verify

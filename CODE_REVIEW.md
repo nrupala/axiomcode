@@ -64,7 +64,7 @@ def _encrypt_key(self, key_data: bytes, master_key: bytes) -> dict:
     # Expand keystream if needed
     while len(keystream) < len(key_data):
         keystream += hashlib.sha512(keystream[-64:] + nonce).digest()
-    encrypted = bytes(a ^ b for a, b in zip(key_data, keystream[:len(key_data)]))
+    encrypted = bytes(a ^ b for a, b in zip(key_data, keystream[: len(key_data)]))
 ```
 
 **Risks:**
@@ -85,21 +85,23 @@ import hashlib
 # Requires: pip install cryptography
 # Better option for production
 
+
 # Option 2: Authenticated XOR (better than current)
 def _encrypt_key(self, key_data: bytes, master_key: bytes) -> dict:
     nonce = secrets.token_bytes(NONCE_SIZE)
     keystream = hashlib.sha512(master_key + nonce).digest()
     # ... expand keystream ...
-    encrypted = bytes(a ^ b for a, b in zip(key_data, keystream[:len(key_data)]))
-    
+    encrypted = bytes(a ^ b for a, b in zip(key_data, keystream[: len(key_data)]))
+
     # ADD: Authentication tag
     tag = hmac.new(master_key, nonce + encrypted, "sha512").hexdigest()
-    
+
     return {
         "nonce": base64.b64encode(nonce).decode(),
         "data": base64.b64encode(encrypted).decode(),
         "tag": tag,  # NEW
     }
+
 
 def _decrypt_key(self, encrypted: dict, master_key: bytes) -> bytes:
     # VERIFY: Check tag before decryption
@@ -108,7 +110,7 @@ def _decrypt_key(self, encrypted: dict, master_key: bytes) -> bytes:
     expected_tag = hmac.new(master_key, nonce + data, "sha512").hexdigest()
     if not hmac.compare_digest(expected_tag, encrypted["tag"]):
         raise ValueError("Encryption tag verification failed")
-    
+
     # ... decrypt ...
 ```
 
@@ -118,8 +120,9 @@ def _decrypt_key(self, encrypted: dict, master_key: bytes) -> bytes:
 @dataclass
 class ProofCertificate:
     """Cryptographic certificate attesting to a verified proof."""
+
     # ... 15 fields defined ...
-    
+
     def sign(self, signing_key: bytes) -> "ProofCertificate":
         """Sign the certificate with a key."""
         self.signature = compute_hmac(signing_key, self._payload())
@@ -132,12 +135,12 @@ class ProofCertificate:
 
 ```python
 # All these are imported but not visible in provided code:
-SecureChannel           # ❌ Not implemented
-AuditLog                # ❌ Not implemented  
-SecureSandbox           # ❌ Not implemented
-RateLimiter             # ❌ Not implemented
-BinarySignature         # ❌ Not implemented
-sign_binary()           # ❌ Not implemented
+SecureChannel  # ❌ Not implemented
+AuditLog  # ❌ Not implemented
+SecureSandbox  # ❌ Not implemented
+RateLimiter  # ❌ Not implemented
+BinarySignature  # ❌ Not implemented
+sign_binary()  # ❌ Not implemented
 ```
 
 **Recommendation:** Complete these implementations or remove from exports. Currently breaks API contracts.
@@ -177,9 +180,9 @@ def get_hardware_fingerprint() -> str:
 ```python
 @dataclass
 class LicenseKeyPair:
-    private_key: bytes   # SECRET
-    public_key: bytes    # PUBLIC
-    
+    private_key: bytes  # SECRET
+    public_key: bytes  # PUBLIC
+
     @classmethod
     def generate(cls) -> "LicenseKeyPair":
         key = secrets.token_bytes(LICENSE_KEY_SIZE)
@@ -204,15 +207,16 @@ class LicenseKeyPair:
 # Use Ed25519 (recommended for 2026)
 from cryptography.hazmat.primitives.asymmetric import ed25519
 
+
 @classmethod
 def generate(cls) -> "LicenseKeyPair":
     private_key_obj = ed25519.Ed25519PrivateKey.generate()
     public_key_obj = private_key_obj.public_key()
-    
+
     # Serialize for storage
     private_pem = private_key_obj.private_bytes(...)
     public_pem = public_key_obj.public_bytes(...)
-    
+
     return cls(
         private_key=private_pem,
         public_key=public_pem,
@@ -227,6 +231,7 @@ def generate(cls) -> "LicenseKeyPair":
 def _history_path(self, record_id: str, timestamp: float) -> Path:
     """Get the file path for a historical record."""
     import random
+
     ts = str(timestamp).replace(".", "")
     suffix = random.randint(1000, 9999)  # ⚠️ NOT cryptographically secure
     return self.history_dir / f"{record_id}_{ts}_{suffix}.json"
@@ -347,10 +352,11 @@ def _create_backup(self, version: str) -> Path:
     backup_dir.mkdir(parents=True, exist_ok=True)
     timestamp = time.time()
     backup_path = backup_dir / f"backup_{version}_{timestamp}.tar.gz"
-    
+
     # Backup entire .axiomcode directory
-    shutil.make_archive(str(backup_path.with_suffix('')), 'gztar', self.data_dir)
+    shutil.make_archive(str(backup_path.with_suffix("")), "gztar", self.data_dir)
     return backup_path
+
 
 def rollback(self) -> dict:
     """Rollback to previous version."""
@@ -373,18 +379,17 @@ def rollback(self) -> dict:
 def _write_record(self, record: DataRecord) -> None:
     """Write record atomically using temporary file."""
     path = self._record_path(record.data_id)
-    
+
     # Write to temporary file first
-    with tempfile.NamedTemporaryFile(
-        mode='w', dir=self.store_dir, delete=False, suffix='.tmp'
-    ) as tmp:
+    with tempfile.NamedTemporaryFile(mode="w", dir=self.store_dir, delete=False, suffix=".tmp") as tmp:
         tmp_path = Path(tmp.name)
         json.dump(record.to_dict(), tmp, indent=2)
         tmp.flush()
         os.fsync(tmp.fileno())  # ✅ Ensure fs sync
-    
+
     # Atomic rename
     tmp_path.replace(path)
+
 
 def _save_to_history(self, record: DataRecord) -> None:
     """Preserve historical versions across updates/deletes."""
@@ -448,10 +453,9 @@ def _validate_schema(self, record: DataRecord) -> None:
     """Validate schema compatibility."""
     if record.schema_version > CURRENT_SCHEMA_VERSION:
         raise ValueError(
-            f"Cannot load record with schema v{record.schema_version} "
-            f"in app with schema v{CURRENT_SCHEMA_VERSION}"
+            f"Cannot load record with schema v{record.schema_version} in app with schema v{CURRENT_SCHEMA_VERSION}"
         )
-    
+
     # Call schema-specific validators
     if record.schema_version < CURRENT_SCHEMA_VERSION:
         record = self._upgrade_schema(record)
@@ -464,11 +468,15 @@ class SessionManager:
     def create_session(self, user_id: str, metadata: dict | None = None):
         """Create a new user session."""
         session_id = secrets.token_hex(16)
-        return self.store.create(f"session_{session_id}", {
-            "user_id": user_id,
-            "started_at": time.time(),
-        }, metadata=metadata)
-    
+        return self.store.create(
+            f"session_{session_id}",
+            {
+                "user_id": user_id,
+                "started_at": time.time(),
+            },
+            metadata=metadata,
+        )
+
     def get_user_sessions(self, user_id: str) -> list[DataRecord]:
         """Get all sessions for a user."""
         # ⚠️ Linear scan through all records
@@ -565,14 +573,13 @@ def load_key(self, name: str, passphrase: str) -> KeyPair:
 
 ```python
 # ✅ Good coverage
-def create_key(self, name: str, passphrase: str) -> KeyPair:
-    ...
+def create_key(self, name: str, passphrase: str) -> KeyPair: ...
 
-def list_algorithms(self) -> list[DataRecord]:
-    ...
 
-def is_valid(self, public_key: bytes) -> tuple[bool, str]:
-    ...
+def list_algorithms(self) -> list[DataRecord]: ...
+
+
+def is_valid(self, public_key: bytes) -> tuple[bool, str]: ...
 ```
 
 Minor nitpick: Use `Path | str` more consistently instead of mixing `str | Path`.
@@ -594,6 +601,7 @@ Based on [tests/test_core.py](tests/test_core.py):
 class TestSecurity:
     def test_keypair_generation(self):
         from core.security import KeyPair
+
         kp = KeyPair.generate()
         assert len(kp.encryption_key) == 64
         assert len(kp.signing_key) == 64
@@ -626,10 +634,11 @@ def test_keystore_encryption_roundtrip():
     """Test encryption is reversible and produces different ciphertext."""
     ks = KeyStore()
     key = ks.create_key("test", "secure_passphrase")
-    
+
     # Load and verify same key
     loaded = ks.load_key("test", "secure_passphrase")
     assert loaded.key_id == key.key_id
+
 
 def test_license_expiration():
     """Test expired licenses are detected."""
@@ -640,6 +649,7 @@ def test_license_expiration():
     is_valid, reason = cert.is_valid(manager.get_public_key())
     assert not is_valid
     assert "expired" in reason.lower()
+
 
 def test_hardware_binding():
     """Test hardware-bound license rejects different hardware."""
@@ -659,7 +669,9 @@ def get_hardware_fingerprint() -> str:
     # Subprocess call on Windows
     result = subprocess.run(
         ["wmic", "cpu", "get", "ProcessorId"],
-        capture_output=True, text=True, timeout=5  # ✅ Good: Has timeout
+        capture_output=True,
+        text=True,
+        timeout=5,  # ✅ Good: Has timeout
     )
 ```
 
@@ -670,11 +682,12 @@ def get_hardware_fingerprint() -> str:
 ```python
 _HW_FINGERPRINT_CACHE = None
 
+
 def get_hardware_fingerprint() -> str:
     global _HW_FINGERPRINT_CACHE
     if _HW_FINGERPRINT_CACHE is not None:
         return _HW_FINGERPRINT_CACHE
-    
+
     # ... compute ...
     _HW_FINGERPRINT_CACHE = result
     return result
@@ -698,7 +711,8 @@ For production scale (1000s of algorithms), implement indexing:
 ```python
 def search_algorithms(self, query: str) -> list[DataRecord]:
     return [
-        r for r in self.list_algorithms()  # Loads ALL records
+        r
+        for r in self.list_algorithms()  # Loads ALL records
         if query.lower() in r.data.get("name", "").lower()
     ]
 ```
@@ -813,49 +827,51 @@ import hmac
 import hashlib
 from secrets import token_bytes
 
+
 def encrypt_authenticated(key: bytes, data: bytes) -> dict:
     """Encrypt with authentication."""
     nonce = token_bytes(32)
     # Derive subkeys
     enc_key = hashlib.sha512(key + b"encrypt" + nonce).digest()[:32]
     auth_key = hashlib.sha512(key + b"auth" + nonce).digest()
-    
+
     # Encrypt (using your XOR approach or better)
     keystream = hashlib.sha512(enc_key).digest()
     while len(keystream) < len(data):
         keystream += hashlib.sha512(keystream[-64:] + enc_key).digest()
-    ciphertext = bytes(a ^ b for a, b in zip(data, keystream[:len(data)]))
-    
+    ciphertext = bytes(a ^ b for a, b in zip(data, keystream[: len(data)]))
+
     # Authenticate
     tag = hmac.new(auth_key, nonce + ciphertext, "sha512").digest()
-    
+
     return {
         "nonce": nonce.hex(),
         "ciphertext": ciphertext.hex(),
         "tag": tag.hex(),
     }
 
+
 def decrypt_authenticated(key: bytes, encrypted: dict) -> bytes:
     """Decrypt and verify authentication."""
     nonce = bytes.fromhex(encrypted["nonce"])
     ciphertext = bytes.fromhex(encrypted["ciphertext"])
     tag = bytes.fromhex(encrypted["tag"])
-    
+
     # Derive subkeys
     enc_key = hashlib.sha512(key + b"encrypt" + nonce).digest()[:32]
     auth_key = hashlib.sha512(key + b"auth" + nonce).digest()
-    
+
     # Verify before decrypting
     expected_tag = hmac.new(auth_key, nonce + ciphertext, "sha512").digest()
     if not hmac.compare_digest(tag, expected_tag):
         raise ValueError("Authentication failed")
-    
+
     # Decrypt
     keystream = hashlib.sha512(enc_key).digest()
     while len(keystream) < len(ciphertext):
         keystream += hashlib.sha512(keystream[-64:] + enc_key).digest()
-    plaintext = bytes(a ^ b for a, b in zip(ciphertext, keystream[:len(ciphertext)]))
-    
+    plaintext = bytes(a ^ b for a, b in zip(ciphertext, keystream[: len(ciphertext)]))
+
     return plaintext
 ```
 

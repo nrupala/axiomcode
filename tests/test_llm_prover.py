@@ -5,15 +5,18 @@ Pure unit tests — no network, no Lean toolchain required.
 
 import os
 import sys
-import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from core.llm import (
-    BACKENDS, resolve_backend, list_backends,
-    _extract_content, llamacpp_generate, vllm_generate, ollama_generate,
+    _extract_content,
+    list_backends,
+    llamacpp_generate,
+    ollama_generate,
+    resolve_backend,
+    vllm_generate,
 )
-from core.prover import has_sorry, extract_lean_block
+from core.prover import extract_lean_block, has_sorry
 
 
 class TestBackendRegistry:
@@ -52,6 +55,7 @@ class TestBackendRegistry:
     def test_no_per_server_sdk_imports(self):
         # The whole point: stdlib HTTP only.
         import core.llm as m
+
         src = open(m.__file__, encoding="utf-8").read()
         for sdk in ["import openai", "import anthropic", "import ollama", "import vllm"]:
             assert sdk not in src

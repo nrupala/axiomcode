@@ -16,17 +16,15 @@ No external crypto libraries. No attack surface from dependencies.
 from __future__ import annotations
 
 import base64
+import binascii
 import hashlib
 import hmac
 import json
 import os
 import secrets
-import struct
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
-
 
 # ─── Cryptographic Constants ────────────────────────────────────────────────
 
@@ -40,16 +38,18 @@ PROOF_CERT_VERSION = 1
 
 # ─── Key Management ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class KeyPair:
     """Symmetric key pair for encryption and signing."""
+
     encryption_key: bytes  # For data encryption
-    signing_key: bytes     # For code/proof signing
-    key_id: str            # Unique key identifier
-    created_at: float      # Creation timestamp
+    signing_key: bytes  # For code/proof signing
+    key_id: str  # Unique key identifier
+    created_at: float  # Creation timestamp
 
     @classmethod
-    def generate(cls) -> "KeyPair":
+    def generate(cls) -> KeyPair:
         """Generate a cryptographically secure key pair."""
         return cls(
             encryption_key=secrets.token_bytes(KEY_SIZE),
@@ -67,7 +67,7 @@ class KeyPair:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "KeyPair":
+    def from_dict(cls, data: dict) -> KeyPair:
         return cls(
             encryption_key=base64.b64decode(data["encryption_key"]),
             signing_key=base64.b64decode(data["signing_key"]),
@@ -104,7 +104,7 @@ class KeyStore:
         # Expand keystream if needed
         while len(keystream) < len(key_data):
             keystream += hashlib.sha512(keystream[-64:] + nonce).digest()
-        encrypted = bytes(a ^ b for a, b in zip(key_data, keystream[:len(key_data)]))
+        encrypted = bytes(a ^ b for a, b in zip(key_data, keystream[: len(key_data)], strict=True))
         return {
             "nonce": base64.b64encode(nonce).decode(),
             "data": base64.b64encode(encrypted).decode(),
@@ -117,7 +117,7 @@ class KeyStore:
         keystream = hashlib.sha512(master_key + nonce).digest()
         while len(keystream) < len(data):
             keystream += hashlib.sha512(keystream[-64:] + nonce).digest()
-        return bytes(a ^ b for a, b in zip(data, keystream[:len(data)]))
+        return bytes(a ^ b for a, b in zip(data, keystream[: len(data)], strict=True))
 
     def create_key(self, name: str, passphrase: str) -> KeyPair:
         """Create and store a new key pair."""
@@ -130,18 +130,23 @@ class KeyStore:
         )
 
         key_file = self.store_dir / f"{name}.key"
-        key_file.write_text(json.dumps({
-            "version": PROOF_CERT_VERSION,
-            "salt": base64.b64encode(salt).decode(),
-            "encrypted": encrypted,
-        }, indent=2))
+        key_file.write_text(
+            json.dumps(
+                {
+                    "version": PROOF_CERT_VERSION,
+                    "salt": base64.b64encode(salt).decode(),
+                    "encrypted": encrypted,
+                },
+                indent=2,
+            )
+        )
 
         self._cache[name] = keypair
         return keypair
 
     def load_key(self, name: str, passphrase: str) -> KeyPair:
         """Load a key pair from storage.
-        
+
         Always validates the passphrase — never returns cached key without verification.
         This ensures security-sensitive operations always verify user credentials.
         """
@@ -150,13 +155,13 @@ class KeyStore:
             raise FileNotFoundError(f"Key not found: {name}")
 
         try:
-            data = json.loads(key_file.read_text(encoding='utf-8'))
+            data = json.loads(key_file.read_text(encoding="utf-8"))
         except (json.JSONDecodeError, UnicodeDecodeError) as e:
-            raise ValueError(f"Invalid key file: {e}")
-        
+            raise ValueError(f"Invalid key file: {e}") from e
+
         if not isinstance(data, dict) or "salt" not in data or "encrypted" not in data:
             raise ValueError("Invalid key file format")
-        
+
         try:
             salt = base64.b64decode(data["salt"])
             master_key = self._derive_master_key(passphrase, salt)
@@ -166,8 +171,8 @@ class KeyStore:
             if not isinstance(decrypted_dict, dict) or "key_id" not in decrypted_dict:
                 raise ValueError("Invalid decrypted key structure - wrong passphrase?")
             keypair = KeyPair.from_dict(decrypted_dict)
-        except (base64.binascii.Error, json.JSONDecodeError, ValueError) as e:
-            raise ValueError(f"Failed to decrypt key: {e}")
+        except (binascii.Error, json.JSONDecodeError, ValueError) as e:
+            raise ValueError(f"Failed to decrypt key: {e}") from e
 
         self._cache[name] = keypair
         return keypair
@@ -183,6 +188,7 @@ class KeyStore:
 
 
 # ─── Cryptographic Hashing ──────────────────────────────────────────────────
+
 
 def hash_data(data: bytes, algorithm: str = HASH_ALGORITHM) -> str:
     """Compute cryptographic hash of data."""
@@ -213,6 +219,7 @@ def verify_hmac(key: bytes, data: bytes, expected: str, algorithm: str = HMAC_AL
 
 # ─── Proof Certificates ─────────────────────────────────────────────────────
 
+
 @dataclass
 class ProofCertificate:
     """Cryptographic certificate attesting to a generated artifact.
@@ -225,26 +232,27 @@ class ProofCertificate:
     `verification_status` ("verified" / "unverified" / "failed"); a signature
     alone never implies proofhood.
     """
+
     version: int = PROOF_CERT_VERSION
     algorithm_name: str = ""
-    spec_hash: str = ""           # Hash of the Lean 4 specification
-    proof_hash: str = ""          # Hash of the proof term
-    c_binary_hash: str = ""       # Hash of the compiled C binary
-    python_hash: str = ""         # Hash of the Python package
-    theorem: str = ""             # The theorem statement
+    spec_hash: str = ""  # Hash of the Lean 4 specification
+    proof_hash: str = ""  # Hash of the proof term
+    c_binary_hash: str = ""  # Hash of the compiled C binary
+    python_hash: str = ""  # Hash of the Python package
+    theorem: str = ""  # The theorem statement
     tactics: list[str] = field(default_factory=list)
     steps: int = 0
     lemmas: int = 0
     model_used: str = ""
     generated_at: float = 0.0
-    signature: str = ""           # HMAC signature of the certificate
-    key_id: str = ""              # Key used for signing
+    signature: str = ""  # HMAC signature of the certificate
+    key_id: str = ""  # Key used for signing
     # Honest verification accounting. "verified" ONLY when a proof assistant
     # machine-checked the proof; "unverified"/"failed" otherwise. The signature
     # attests to provenance and integrity — never to proofhood by itself.
     verification_status: str = "unverified"
-    lean_version: str = ""        # Lean toolchain version that checked the proof
-    build_log_hash: str = ""      # Hash of the (truncated) build log
+    lean_version: str = ""  # Lean toolchain version that checked the proof
+    build_log_hash: str = ""  # Hash of the (truncated) build log
 
     def _payload(self) -> bytes:
         """Get the certificate payload (excluding signature)."""
@@ -268,7 +276,7 @@ class ProofCertificate:
         }
         return json.dumps(data, sort_keys=True).encode("utf-8")
 
-    def sign(self, signing_key: bytes) -> "ProofCertificate":
+    def sign(self, signing_key: bytes) -> ProofCertificate:
         """Sign the certificate with a key."""
         self.signature = compute_hmac(signing_key, self._payload())
         return self
@@ -279,37 +287,40 @@ class ProofCertificate:
 
     def to_json(self) -> str:
         """Export certificate as JSON."""
-        return json.dumps({
-            "version": self.version,
-            "algorithm_name": self.algorithm_name,
-            "spec_hash": self.spec_hash,
-            "proof_hash": self.proof_hash,
-            "c_binary_hash": self.c_binary_hash,
-            "python_hash": self.python_hash,
-            "theorem": self.theorem,
-            "tactics": self.tactics,
-            "steps": self.steps,
-            "lemmas": self.lemmas,
-            "model_used": self.model_used,
-            "generated_at": self.generated_at,
-            "signature": self.signature,
-            "key_id": self.key_id,
-            "verification_status": self.verification_status,
-            "lean_version": self.lean_version,
-            "build_log_hash": self.build_log_hash,
-        }, indent=2)
+        return json.dumps(
+            {
+                "version": self.version,
+                "algorithm_name": self.algorithm_name,
+                "spec_hash": self.spec_hash,
+                "proof_hash": self.proof_hash,
+                "c_binary_hash": self.c_binary_hash,
+                "python_hash": self.python_hash,
+                "theorem": self.theorem,
+                "tactics": self.tactics,
+                "steps": self.steps,
+                "lemmas": self.lemmas,
+                "model_used": self.model_used,
+                "generated_at": self.generated_at,
+                "signature": self.signature,
+                "key_id": self.key_id,
+                "verification_status": self.verification_status,
+                "lean_version": self.lean_version,
+                "build_log_hash": self.build_log_hash,
+            },
+            indent=2,
+        )
 
     @classmethod
-    def from_json(cls, data: str) -> "ProofCertificate":
+    def from_json(cls, data: str) -> ProofCertificate:
         """Import certificate from JSON."""
         try:
             d = json.loads(data)
         except json.JSONDecodeError as e:
-            raise ValueError(f"Invalid JSON in proof certificate: {e}")
-        
+            raise ValueError(f"Invalid JSON in proof certificate: {e}") from e
+
         if not isinstance(d, dict):
             raise ValueError("Proof certificate JSON must be an object")
-        
+
         return cls(
             version=d.get("version", PROOF_CERT_VERSION),
             algorithm_name=d.get("algorithm_name", ""),
@@ -336,25 +347,27 @@ class ProofCertificate:
         path.write_text(self.to_json())
 
     @classmethod
-    def load(cls, path: Path) -> "ProofCertificate":
+    def load(cls, path: Path) -> ProofCertificate:
         """Load certificate from file."""
         path = Path(path)
         if not path.is_file():
             raise FileNotFoundError(f"Certificate file not found: {path}")
-        
+
         try:
-            content = path.read_text(encoding='utf-8')
+            content = path.read_text(encoding="utf-8")
         except UnicodeDecodeError as e:
-            raise ValueError(f"Certificate file is not valid UTF-8: {e}")
-        
+            raise ValueError(f"Certificate file is not valid UTF-8: {e}") from e
+
         return cls.from_json(content)
 
 
 # ─── Binary Signing ─────────────────────────────────────────────────────────
 
+
 @dataclass
 class BinarySignature:
     """Signature for a compiled binary (C or Python)."""
+
     file_hash: str
     signature: str
     key_id: str
@@ -375,12 +388,15 @@ class BinarySignature:
         actual_hash = hash_file(file_path)
         if actual_hash != self.file_hash:
             return False
-        payload = json.dumps({
-            "file_hash": self.file_hash,
-            "file_type": self.file_type,
-            "key_id": self.key_id,
-            "signed_at": self.signed_at,
-        }, sort_keys=True).encode("utf-8")
+        payload = json.dumps(
+            {
+                "file_hash": self.file_hash,
+                "file_type": self.file_type,
+                "key_id": self.key_id,
+                "signed_at": self.signed_at,
+            },
+            sort_keys=True,
+        ).encode("utf-8")
         return verify_hmac(signing_key, payload, self.signature)
 
 
@@ -388,12 +404,15 @@ def sign_binary(file_path: Path, signing_key: bytes, key_id: str, file_type: str
     """Sign a binary file."""
     file_hash = hash_file(file_path)
     signed_at = time.time()  # Use same timestamp for both
-    payload = json.dumps({
-        "file_hash": file_hash,
-        "file_type": file_type,
-        "key_id": key_id,
-        "signed_at": signed_at,
-    }, sort_keys=True).encode("utf-8")
+    payload = json.dumps(
+        {
+            "file_hash": file_hash,
+            "file_type": file_type,
+            "key_id": key_id,
+            "signed_at": signed_at,
+        },
+        sort_keys=True,
+    ).encode("utf-8")
     signature = compute_hmac(signing_key, payload)
 
     return BinarySignature(
@@ -406,6 +425,7 @@ def sign_binary(file_path: Path, signing_key: bytes, key_id: str, file_type: str
 
 
 # ─── Secure Communication ───────────────────────────────────────────────────
+
 
 class SecureChannel:
     """Zero-knowledge secure communication channel.
@@ -425,7 +445,7 @@ class SecureChannel:
         keystream = hashlib.sha512(self.key + nonce).digest()
         while len(keystream) < len(data):
             keystream += hashlib.sha512(keystream[-64:] + nonce).digest()
-        encrypted = bytes(a ^ b for a, b in zip(data, keystream[:len(data)]))
+        encrypted = bytes(a ^ b for a, b in zip(data, keystream[: len(data)], strict=True))
 
         # Add HMAC for integrity
         mac = compute_hmac(self.key, nonce + encrypted)
@@ -449,10 +469,11 @@ class SecureChannel:
         keystream = hashlib.sha512(self.key + nonce).digest()
         while len(keystream) < len(data):
             keystream += hashlib.sha512(keystream[-64:] + nonce).digest()
-        return bytes(a ^ b for a, b in zip(data, keystream[:len(data)]))
+        return bytes(a ^ b for a, b in zip(data, keystream[: len(data)], strict=True))
 
 
 # ─── Audit Log ──────────────────────────────────────────────────────────────
+
 
 class AuditLog:
     """Tamper-evident audit log for compliance.
@@ -473,7 +494,7 @@ class AuditLog:
         lines = self.log_file.read_text().strip().split("\n")
         if lines:
             last = json.loads(lines[-1])
-            return last.get("entry_hash", "0" * 64)
+            return str(last.get("entry_hash", "0" * 64))
         return "0" * 64
 
     def add_entry(self, action: str, details: dict, user: str = "system") -> str:
@@ -507,13 +528,16 @@ class AuditLog:
             if entry.get("previous_hash") != prev_hash:
                 return False
             expected_hash = hash_data(
-                json.dumps({
-                    "timestamp": entry["timestamp"],
-                    "user": entry["user"],
-                    "action": entry["action"],
-                    "details": entry["details"],
-                    "previous_hash": entry["previous_hash"],
-                }, sort_keys=True).encode()
+                json.dumps(
+                    {
+                        "timestamp": entry["timestamp"],
+                        "user": entry["user"],
+                        "action": entry["action"],
+                        "details": entry["details"],
+                        "previous_hash": entry["previous_hash"],
+                    },
+                    sort_keys=True,
+                ).encode()
             )
             if entry.get("entry_hash") != expected_hash:
                 return False
@@ -523,6 +547,7 @@ class AuditLog:
 
 
 # ─── Secure Sandbox ─────────────────────────────────────────────────────────
+
 
 class SecureSandbox:
     """Sandboxed execution environment for untrusted code.
@@ -583,12 +608,14 @@ class SecureSandbox:
     def cleanup(self) -> None:
         """Clean up sandbox directory."""
         import shutil
+
         if self.work_dir.exists():
             shutil.rmtree(self.work_dir)
         self.work_dir.mkdir(parents=True, exist_ok=True)
 
 
 # ─── Rate Limiter ───────────────────────────────────────────────────────────
+
 
 class RateLimiter:
     """Token bucket rate limiter for API calls."""

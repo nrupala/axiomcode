@@ -1,7 +1,8 @@
 """
 Example 2: GCD — Euclidean algorithm with termination proof.
 
-Run: axiomcode "implement the Euclidean algorithm for greatest common divisor, prove it always terminates and returns the correct GCD"
+Run: axiomcode "implement the Euclidean algorithm for greatest common divisor,
+    prove it always terminates and returns the correct GCD"
 """
 
 # What AxiomCode generates internally:
