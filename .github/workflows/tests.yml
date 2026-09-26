@@ -24,6 +24,17 @@ jobs:
           pip install pytest cffi
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
+      - name: Proof-honesty gate (no sorry/admit in verified library)
+        # `sorry`/`admit` typecheck, so a green `lake build` is not enough.
+        # lean/src/ holds ONLY machine-checked proofs; drafts live in lean/drafts/.
+        # `shell: bash` — the step uses bash syntax and must not run under PowerShell on Windows.
+        shell: bash
+        run: |
+          if grep -rEn '\b(sorry|admit)\b' lean/src/ --include='*.lean'; then
+            echo "::error::sorry/admit found under lean/src/ — verified library must be machine-checked. Move drafts to lean/drafts/."
+            exit 1
+          fi
+          echo "proof-honesty gate: clean"
       - name: Security tests
         run: python -m pytest tests/test_core.py::TestSecurity -v
       - name: Licensing tests

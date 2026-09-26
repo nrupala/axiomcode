@@ -10,12 +10,11 @@ All stdlib. Zero external dependencies.
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Callable
 
 # ─── Version Constants ──────────────────────────────────────────────────────
 
@@ -29,6 +28,7 @@ DATA_DIR = ".axiomcode"
 @dataclass
 class VersionInfo:
     """Metadata about an AxiomCode version."""
+
     version: str
     released_at: str
     schema_version: int
@@ -51,7 +51,7 @@ class VersionInfo:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> "VersionInfo":
+    def from_dict(cls, data: dict) -> VersionInfo:
         return cls(**data)
 
 
@@ -99,6 +99,7 @@ VERSION_REGISTRY: dict[str, VersionInfo] = {
 
 # ─── Migration Functions ────────────────────────────────────────────────────
 
+
 def migrate_v1_to_v2(data_dir: Path) -> dict:
     """Migration: v0.1.0 -> v0.2.0 (example)."""
     changes = []
@@ -142,6 +143,7 @@ MIGRATIONS: dict[tuple[str, str], Callable[[Path], dict]] = {
 
 # ─── Version Manager ────────────────────────────────────────────────────────
 
+
 class VersionManager:
     """Manages version upgrades, downgrades, and data persistence."""
 
@@ -156,14 +158,14 @@ class VersionManager:
         """Get the current installed version."""
         if self.version_file.exists():
             data = json.loads(self.version_file.read_text())
-            return data.get("version", CURRENT_VERSION)
+            return str(data.get("version", CURRENT_VERSION))
         return CURRENT_VERSION
 
     def get_schema_version(self) -> int:
         """Get the current schema version."""
         if self.version_file.exists():
             data = json.loads(self.version_file.read_text())
-            return data.get("schema_version", 1)
+            return int(data.get("schema_version", 1))
         return 1
 
     def set_version(self, version: str) -> None:
@@ -171,7 +173,9 @@ class VersionManager:
         self.data_dir.mkdir(parents=True, exist_ok=True)
         info = VERSION_REGISTRY.get(version)
         if not info:
-            info = VersionInfo(version=version, released_at=time.strftime("%Y-%m-%d"), schema_version=1, data_format="json-v1")
+            info = VersionInfo(
+                version=version, released_at=time.strftime("%Y-%m-%d"), schema_version=1, data_format="json-v1"
+            )
         self.version_file.write_text(json.dumps(info.to_dict(), indent=2))
 
     def initialize(self) -> None:
@@ -287,7 +291,9 @@ class VersionManager:
             if not path:
                 # No migration path found -- force version update
                 self.set_version(target_version)
-                self._log_migration("FORCE", current, target_version, "No migration path, version updated without data changes")
+                self._log_migration(
+                    "FORCE", current, target_version, "No migration path, version updated without data changes"
+                )
                 return {
                     "status": "warning",
                     "from_version": current,
@@ -324,12 +330,13 @@ class VersionManager:
 
         # Build adjacency graph from migration keys
         graph: dict[str, list[str]] = {v: [] for v in known_versions}
-        for (src, dst) in MIGRATIONS:
+        for src, dst in MIGRATIONS:
             if src in graph:
                 graph[src].append(dst)
 
         # BFS
         from collections import deque
+
         queue = deque([(from_ver, [from_ver])])
         visited = {from_ver}
 
@@ -373,12 +380,14 @@ class VersionManager:
         backups = []
         for b in sorted(self.backup_dir.glob("backup_*")):
             parts = b.name.split("_")
-            backups.append({
-                "name": b.name,
-                "version": parts[1] if len(parts) > 1 else "unknown",
-                "timestamp": int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0,
-                "path": str(b),
-            })
+            backups.append(
+                {
+                    "name": b.name,
+                    "version": parts[1] if len(parts) > 1 else "unknown",
+                    "timestamp": int(parts[2]) if len(parts) > 2 and parts[2].isdigit() else 0,
+                    "path": str(b),
+                }
+            )
         return backups
 
     def get_migration_history(self) -> list[dict]:
@@ -394,7 +403,9 @@ class VersionManager:
     def get_version_info(self, version: str | None = None) -> VersionInfo:
         """Get version info for a specific version or current."""
         ver = version or self.get_current_version()
-        return VERSION_REGISTRY.get(ver, VersionInfo(version=ver, released_at="unknown", schema_version=1, data_format="json-v1"))
+        return VERSION_REGISTRY.get(
+            ver, VersionInfo(version=ver, released_at="unknown", schema_version=1, data_format="json-v1")
+        )
 
     def list_versions(self) -> list[VersionInfo]:
         """List all known versions."""
@@ -417,7 +428,9 @@ class VersionManager:
                 try:
                     data = json.loads(key_file.read_text())
                     if data.get("version") != schema:
-                        issues.append(f"Key file {key_file.name} has schema version {data.get('version')}, expected {schema}")
+                        issues.append(
+                            f"Key file {key_file.name} has schema version {data.get('version')}, expected {schema}"
+                        )
                 except Exception:
                     issues.append(f"Key file {key_file.name} is corrupted")
 
@@ -428,7 +441,9 @@ class VersionManager:
                 try:
                     data = json.loads(cert_file.read_text())
                     if data.get("version") != schema:
-                        issues.append(f"Certificate {cert_file.name} has schema version {data.get('version')}, expected {schema}")
+                        issues.append(
+                            f"Certificate {cert_file.name} has schema version {data.get('version')}, expected {schema}"
+                        )
                 except Exception:
                     issues.append(f"Certificate {cert_file.name} is corrupted")
 

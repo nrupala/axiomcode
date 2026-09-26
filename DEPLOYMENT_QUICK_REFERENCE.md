@@ -178,11 +178,7 @@ keystore.create_key("root", "my-passphrase")
 
 # Issue license
 license_cert = license_mgr.issue_license(
-    user="alice@example.com",
-    name="Alice",
-    tier="pro",
-    seats=5,
-    expires_at=time.time() + 365*24*3600
+    user="alice@example.com", name="Alice", tier="pro", seats=5, expires_at=time.time() + 365 * 24 * 3600
 )
 
 # Verify license
@@ -190,11 +186,7 @@ is_valid = license_mgr.verify_license(license_cert)
 print(f"License valid: {is_valid}")  # ✅ True
 
 # Store data
-record = data_store.create("algorithm_001", {
-    "name": "binary_search",
-    "proof_hash": "abc123...",
-    "certified": True
-})
+record = data_store.create("algorithm_001", {"name": "binary_search", "proof_hash": "abc123...", "certified": True})
 
 # Persist encrypted key
 keystore.save_key("root", "my-passphrase")

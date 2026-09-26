@@ -7,7 +7,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-
 MERMAID_ARCHITECTURE = """
 ```mermaid
 graph TB

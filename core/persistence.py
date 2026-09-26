@@ -24,8 +24,7 @@ import tempfile
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
-
+from typing import Any, List  # noqa: UP035
 
 # ─── Schema Version ─────────────────────────────────────────────────────────
 
@@ -34,9 +33,11 @@ CURRENT_SCHEMA_VERSION = 1
 
 # ─── Data Store ─────────────────────────────────────────────────────────────
 
+
 @dataclass
 class DataRecord:
     """A single data record with metadata."""
+
     id: str
     schema_version: int
     created_at: float
@@ -55,7 +56,7 @@ class DataRecord:
         }
 
     @classmethod
-    def from_dict(cls, d: dict) -> "DataRecord":
+    def from_dict(cls, d: dict) -> DataRecord:
         return cls(
             id=d["id"],
             schema_version=d.get("schema_version", CURRENT_SCHEMA_VERSION),
@@ -72,23 +73,23 @@ class DataStore:
 
     Usage:
         store = DataStore(".axiomcode/data")
-        
+
         # Create a record
         record = store.create("algorithm_001", {
             "name": "binary_search",
             "spec_hash": "abc123",
             "proof_hash": "def456",
         })
-        
+
         # Read a record
         record = store.get("algorithm_001")
-        
+
         # Update a record
         store.update("algorithm_001", {"status": "verified"})
-        
+
         # Get history
         history = store.get_history("algorithm_001")
-        
+
         # List all records
         all_records = store.list()
     """
@@ -107,6 +108,7 @@ class DataStore:
         """Get the file path for a historical record."""
         # Use nanosecond precision + counter to avoid collisions
         import random
+
         ts = str(timestamp).replace(".", "")
         suffix = random.randint(1000, 9999)
         return self.history_dir / f"{record_id}_{ts}_{suffix}.json"
@@ -171,9 +173,9 @@ class DataStore:
             path.unlink()
         return True
 
-    def list(self) -> list[DataRecord]:
+    def list(self) -> List[DataRecord]:  # noqa: UP006
         """List all records."""
-        records: list[DataRecord] = []
+        records: List[DataRecord] = []  # noqa: UP006
         for path in self.store_dir.glob("*.json"):
             if path.name == "index.json":
                 continue
@@ -186,7 +188,7 @@ class DataStore:
                 continue
         return sorted(records, key=lambda r: r.created_at)
 
-    def get_history(self, record_id: str) -> list[DataRecord]:
+    def get_history(self, record_id: str) -> List[DataRecord]:  # noqa: UP006
         """Get the full history of a record."""
         history = []
         for path in self.history_dir.glob(f"{record_id}_*.json"):
@@ -285,6 +287,7 @@ class DataStore:
 
 # ─── Session Manager ────────────────────────────────────────────────────────
 
+
 class SessionManager:
     """
     Manages user sessions with persistence.
@@ -297,10 +300,14 @@ class SessionManager:
     def create_session(self, user_id: str, metadata: dict | None = None) -> DataRecord:
         """Create a new user session."""
         session_id = f"session_{user_id}_{int(time.time())}"
-        return self.store.create(session_id, {
-            "user_id": user_id,
-            "status": "active",
-        }, metadata=metadata or {})
+        return self.store.create(
+            session_id,
+            {
+                "user_id": user_id,
+                "status": "active",
+            },
+            metadata=metadata or {},
+        )
 
     def get_user_sessions(self, user_id: str) -> list[DataRecord]:
         """Get all sessions for a user."""
@@ -323,15 +330,18 @@ class SessionManager:
         for session in sessions:
             session_history = self.store.get_history(session.id)
             for h in session_history:
-                history.append({
-                    "session_id": session.id,
-                    "timestamp": h.updated_at,
-                    "data": h.data,
-                })
+                history.append(
+                    {
+                        "session_id": session.id,
+                        "timestamp": h.updated_at,
+                        "data": h.data,
+                    }
+                )
         return sorted(history, key=lambda x: x["timestamp"])
 
 
 # ─── Algorithm Registry ─────────────────────────────────────────────────────
+
 
 class AlgorithmRegistry:
     """
@@ -342,20 +352,31 @@ class AlgorithmRegistry:
     def __init__(self, store_dir: str | Path = ".axiomcode/algorithms"):
         self.store = DataStore(store_dir)
 
-    def register_algorithm(self, name: str, spec_hash: str, proof_hash: str,
-                          c_binary_hash: str = "", python_hash: str = "",
-                          certificate_path: str = "", metadata: dict | None = None) -> DataRecord:
+    def register_algorithm(
+        self,
+        name: str,
+        spec_hash: str,
+        proof_hash: str,
+        c_binary_hash: str = "",
+        python_hash: str = "",
+        certificate_path: str = "",
+        metadata: dict | None = None,
+    ) -> DataRecord:
         """Register a newly generated algorithm."""
-        return self.store.create(name, {
-            "name": name,
-            "spec_hash": spec_hash,
-            "proof_hash": proof_hash,
-            "c_binary_hash": c_binary_hash,
-            "python_hash": python_hash,
-            "certificate_path": certificate_path,
-            "status": "verified",
-            "generated_at": time.time(),
-        }, metadata=metadata or {})
+        return self.store.create(
+            name,
+            {
+                "name": name,
+                "spec_hash": spec_hash,
+                "proof_hash": proof_hash,
+                "c_binary_hash": c_binary_hash,
+                "python_hash": python_hash,
+                "certificate_path": certificate_path,
+                "status": "verified",
+                "generated_at": time.time(),
+            },
+            metadata=metadata or {},
+        )
 
     def get_algorithm(self, name: str) -> DataRecord | None:
         """Get an algorithm by name."""

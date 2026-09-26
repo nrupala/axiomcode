@@ -20,11 +20,11 @@ pip install -e ".[all]"
 ### Option A: Local (Recommended — No API Key Needed)
 
 ```bash
-# Make sure Ollama is running
-ollama serve
+# Start a local backend (llama.cpp shown; vLLM/the LLM backend also work)
+llama-server -m <model.gguf> --port 8080
 
 # Pull a code-capable model
-ollama pull qwen2.5-coder:14b
+# serve your GGUF with llama-server (see above)
 ```
 
 ### Option B: Cloud (OpenAI)

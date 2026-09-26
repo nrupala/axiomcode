@@ -12,32 +12,46 @@ Domain: axiom-code.com
 from __future__ import annotations
 
 import argparse
-import http.client
+import getpass
 import json
 import os
-import shlex
-import ssl
+import re
 import subprocess
 import sys
 import textwrap
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any
-from urllib.parse import urlparse
+
+from core.licensing import (
+    TIERS,
+    LicenseCertificate,
+    LicenseManager,
+    get_hardware_fingerprint,
+    get_hardware_hash,
+)
+
+# LLM backends: one OpenAI-compatible HTTP layer (llama.cpp first, vLLM-ready)
+from core.llm import (
+    BACKENDS,
+    list_backends,
+    resolve_backend,
+)
+from core.prover import (
+    iterative_proof_search,
+    lean_available,
+    lean_version,
+)
 
 # Import security layer
 from core.security import (
-    KeyStore, KeyPair,
-    ProofCertificate, BinarySignature, sign_binary,
-    SecureChannel, AuditLog, SecureSandbox, RateLimiter,
-    hash_data, hash_file, compute_hmac, verify_hmac,
+    AuditLog,
+    KeyStore,
+    ProofCertificate,
+    hash_data,
+    hash_file,
 )
-from core.versioning import VersionManager, CURRENT_VERSION
-from core.licensing import (
-    LicenseManager, LicenseCertificate, LicenseKeyPair,
-    get_hardware_fingerprint, get_hardware_hash, TIERS,
-)
+from core.versioning import VersionManager
 
 # ─── Banner ─────────────────────────────────────────────────────────────────
 
@@ -51,12 +65,66 @@ BANNER = """
 # ─── Examples ───────────────────────────────────────────────────────────────
 
 EXAMPLES = [
-    {"name": "Binary Search", "description": "implement binary search on a sorted array that returns the index of the target element, prove it always finds the element if present", "difficulty": "Easy", "category": "Searching", "proof_complexity": "Medium"},
-    {"name": "Insertion Sort", "description": "implement insertion sort that sorts a list of natural numbers, prove the output is sorted and contains the same elements as the input", "difficulty": "Easy", "category": "Sorting", "proof_complexity": "Medium"},
-    {"name": "Merge Sort", "description": "implement merge sort using divide and conquer, prove it produces a sorted list that is a permutation of the input", "difficulty": "Medium", "category": "Sorting", "proof_complexity": "High"},
-    {"name": "GCD (Euclidean Algorithm)", "description": "implement the Euclidean algorithm for greatest common divisor, prove it always terminates and returns the correct GCD", "difficulty": "Easy", "category": "Number Theory", "proof_complexity": "Low"},
-    {"name": "Linked List Reverse", "description": "implement an in-place linked list reversal, prove the reversed list has the same length and elements in reverse order", "difficulty": "Medium", "category": "Data Structures", "proof_complexity": "High"},
-    {"name": "Stack with Max", "description": "implement a stack data structure that supports push, pop, and get-max in O(1) time, prove all operations maintain the stack invariant", "difficulty": "Medium", "category": "Data Structures", "proof_complexity": "Medium"},
+    {
+        "name": "Binary Search",
+        "description": (
+            "implement binary search on a sorted array that returns the index of the target element, prove it "
+            "always finds the element if present"
+        ),
+        "difficulty": "Easy",
+        "category": "Searching",
+        "proof_complexity": "Medium",
+    },
+    {
+        "name": "Insertion Sort",
+        "description": (
+            "implement insertion sort that sorts a list of natural numbers, prove the output is sorted and contains "
+            "the same elements as the input"
+        ),
+        "difficulty": "Easy",
+        "category": "Sorting",
+        "proof_complexity": "Medium",
+    },
+    {
+        "name": "Merge Sort",
+        "description": (
+            "implement merge sort using divide and conquer, prove it produces a sorted list that is a permutation "
+            "of the input"
+        ),
+        "difficulty": "Medium",
+        "category": "Sorting",
+        "proof_complexity": "High",
+    },
+    {
+        "name": "GCD (Euclidean Algorithm)",
+        "description": (
+            "implement the Euclidean algorithm for greatest common divisor, prove it always terminates and returns "
+            "the correct GCD"
+        ),
+        "difficulty": "Easy",
+        "category": "Number Theory",
+        "proof_complexity": "Low",
+    },
+    {
+        "name": "Linked List Reverse",
+        "description": (
+            "implement an in-place linked list reversal, prove the reversed list has the same length and elements "
+            "in reverse order"
+        ),
+        "difficulty": "Medium",
+        "category": "Data Structures",
+        "proof_complexity": "High",
+    },
+    {
+        "name": "Stack with Max",
+        "description": (
+            "implement a stack data structure that supports push, pop, and get-max in O(1) time, prove all "
+            "operations maintain the stack invariant"
+        ),
+        "difficulty": "Medium",
+        "category": "Data Structures",
+        "proof_complexity": "Medium",
+    },
 ]
 
 # ─── Help Text ──────────────────────────────────────────────────────────────
@@ -115,7 +183,7 @@ FAQ:
      Cloud: OpenAI (GPT-4o), Anthropic (Claude).
 
   Q: Is my data sent to external servers?
-  A: Only if you use cloud providers (OpenAI/Anthropic). Local Ollama
+  A: Only if you use cloud providers (OpenAI/Anthropic). Local llama.cpp
      runs entirely on your machine. No telemetry, no tracking.
 
   Q: How are generated code artifacts secured?
@@ -127,12 +195,16 @@ FAQ:
      cryptographic certificates of authenticity.
 
 TROUBLESHOOTING:
-  Ollama connection refused:
-    ollama serve
-    ollama pull stable-code:3b-code-q4_0
+  LLM backend connection refused:
+    # llama.cpp (default local backend)
+    llama-server -m <model.gguf> --port 8080
+    # vLLM (production serving)
+    vllm serve <model>
+    # then: python cli.py models
 
   Lean 4 not found:
     Install from https://lean-lang.org/
+    (Without it, specs are saved as UNVERIFIED DRAFTS — never certified as proven.)
 
   Proof search timeout:
     Try a simpler algorithm or use --model openai.
@@ -186,6 +258,7 @@ Next: Try "python cli.py guide" for interactive mode.
 
 # ─── Data Classes ───────────────────────────────────────────────────────────
 
+
 @dataclass
 class LeanSpec:
     theorem: str
@@ -217,109 +290,29 @@ class ProofResult:
     tactics: list[str] = field(default_factory=list)
     proof_term: str = ""
     proof_hash: str = ""
+    # Honest verification accounting: "verified" only when Lean (or Pantograph)
+    # actually checked the proof. Anything else is "unverified" or "failed".
+    verification_status: str = "unverified"
+    lean_version: str = ""
+    build_log: str = ""
+    proof_attempts: int = 0
 
     def compute_hash(self) -> str:
         self.proof_hash = hash_data(self.proof_term.encode())
         return self.proof_hash
 
 
-# ─── LLM Cache ──────────────────────────────────────────────────────────────
+def _theorem_name(theorem_text: str) -> str:
+    """Extract a filesystem-safe theorem name.
 
-class LLMCache:
-    """Persistent cache for LLM responses. Reduces cost and latency."""
-
-    def __init__(self, cache_dir: str | Path = ".axiomcode/cache"):
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-
-    def _key(self, model: str, prompt: str) -> str:
-        return hash_data(f"{model}:{prompt}".encode())[:16]
-
-    def get(self, model: str, prompt: str) -> str | None:
-        key = self._key(model, prompt)
-        cache_file = self.cache_dir / f"{key}.json"
-        if cache_file.exists():
-            data = json.loads(cache_file.read_text(encoding="utf-8"))
-            # Cache expires after 24 hours
-            if time.time() - data.get("timestamp", 0) < 86400:
-                return data.get("response")
-        return None
-
-    def put(self, model: str, prompt: str, response: str) -> None:
-        key = self._key(model, prompt)
-        cache_file = self.cache_dir / f"{key}.json"
-        cache_file.write_text(json.dumps({
-            "model": model,
-            "prompt_hash": hash_data(prompt.encode())[:16],
-            "response": response,
-            "timestamp": time.time(),
-        }), encoding="utf-8")
+    Matches the identifier after the `theorem` keyword only — never the
+    binders — so `theorem myadd_zero (n : Nat) : ...` yields `myadd_zero`.
+    """
+    m = re.search(r"\btheorem\s+([A-Za-z_][A-Za-z0-9_']*)", theorem_text)
+    return m.group(1).lower() if m else "unnamed_theorem"
 
 
-# ─── HTTP Client (stdlib only) ──────────────────────────────────────────────
-
-def http_post_json(url: str, data: dict, headers: dict | None = None, timeout: int = 180) -> dict:
-    """POST JSON using stdlib http.client."""
-    parsed = urlparse(url)
-    host = str(parsed.hostname or "localhost")
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    path = parsed.path or "/"
-    if parsed.query:
-        path += "?" + parsed.query
-
-    body = json.dumps(data).encode("utf-8")
-    req_headers = {
-        "Content-Type": "application/json",
-        "Content-Length": str(len(body)),
-        "Accept": "application/json",
-    }
-    if headers:
-        req_headers.update(headers)
-
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    if parsed.scheme == "https":
-        conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=timeout)
-    else:
-        conn = http.client.HTTPConnection(host, port, timeout=timeout)
-
-    try:
-        conn.request("POST", path, body=body, headers=req_headers)
-        resp = conn.getresponse()
-        resp_body = resp.read().decode("utf-8")
-        if resp.status >= 400:
-            raise RuntimeError(f"HTTP {resp.status}: {resp_body}")
-        return json.loads(resp_body) if resp_body.strip() else {}
-    finally:
-        conn.close()
-
-
-def http_get_json(url: str, timeout: int = 10) -> dict:
-    """GET JSON using stdlib http.client."""
-    parsed = urlparse(url)
-    host = str(parsed.hostname or "localhost")
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    path = parsed.path or "/"
-    if parsed.query:
-        path += "?" + parsed.query
-
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    if parsed.scheme == "https":
-        conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=timeout)
-    else:
-        conn = http.client.HTTPConnection(host, port, timeout=timeout)
-
-    try:
-        conn.request("GET", path, headers={"Accept": "application/json"})
-        resp = conn.getresponse()
-        resp_body = resp.read().decode("utf-8")
-        if resp.status >= 400:
-            raise RuntimeError(f"HTTP {resp.status}: {resp_body}")
-        return json.loads(resp_body) if resp_body.strip() else {}
-    finally:
-        conn.close()
-
-
-# ─── LLM Backends ───────────────────────────────────────────────────────────
+# ─── Spec Generator ─────────────────────────────────────────────────────────
 
 SPEC_PROMPT = """You are an expert in Lean 4 formal verification.
 Convert the following natural language algorithm description into a Lean 4 formal specification.
@@ -330,7 +323,9 @@ Rules:
 3. Define any helper types/structures needed.
 4. State the main theorem with a clear name.
 5. The theorem should capture the full correctness specification.
-6. Use `by sorry` as the proof placeholder.
+6. Write complete proofs wherever you can. If a step truly resists you, you may
+   mark it with `by sorry` -- the iterative proof-search loop will attempt to
+   discharge it, but final acceptance requires ZERO `sorry`/`admit`.
 
 Natural language description:
 {description}
@@ -341,135 +336,28 @@ import Mathlib
 import Aesop
 
 /-- docstring -/
-theorem algorithm_correctness : ... := by sorry
+theorem algorithm_correctness : ... := by
+  ...
 ```
 """
 
-_llm_cache = LLMCache()
-
-def ollama_generate(model: str, prompt: str, base_url: str = "http://localhost:11434") -> str:
-    """Generate text using Ollama via HTTP with caching and retry."""
-    cached = _llm_cache.get(f"ollama/{model}", prompt)
-    if cached:
-        return cached
-
-    for attempt in range(3):
-        try:
-            resp = http_post_json(
-                f"{base_url}/v1/chat/completions",
-                {
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.2,
-                    "max_tokens": 4096,
-                },
-                timeout=180,
-            )
-            result = ""
-            if isinstance(resp, dict):
-                choices = resp.get("choices", [])
-                if choices:
-                    first = choices[0]
-                    if isinstance(first.get("message"), dict):
-                        result = first["message"].get("content", "")
-                    elif isinstance(first.get("content"), list):
-                        result = first["content"][0].get("text", "")
-                    else:
-                        result = first.get("text", "")
-            result = result or resp.get("response", "")
-            _llm_cache.put(f"ollama/{model}", prompt, result)
-            return result
-        except Exception as e:
-            if attempt == 2:
-                raise RuntimeError(f"Ollama failed after 3 attempts: {e}\nFix: Run 'ollama pull {model}' and 'ollama serve'")
-            time.sleep(2 ** attempt)
-    return ""
-
-
-def mistral_generate(model: str, prompt: str, base_url: str = "http://localhost:11434") -> str:
-    return ollama_generate(model, prompt, base_url)
-
-
-def openai_generate(model: str, prompt: str, api_key: str | None = None) -> str:
-    """Generate text using OpenAI API via HTTP (no SDK)."""
-    key = api_key or os.environ.get("OPENAI_API_KEY", "")
-    if not key:
-        raise RuntimeError("Set OPENAI_API_KEY environment variable")
-
-    cached = _llm_cache.get(f"openai/{model}", prompt)
-    if cached:
-        return cached
-
-    body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
-    parsed = urlparse("https://api.openai.com/v1/chat/completions")
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    conn = http.client.HTTPSConnection(str(parsed.hostname), 443, timeout=120)
-    try:
-        conn.request("POST", parsed.path, body=body, headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {key}",
-        })
-        resp = conn.getresponse()
-        data = json.loads(resp.read().decode("utf-8"))
-        result = data["choices"][0]["message"]["content"]
-        _llm_cache.put(f"openai/{model}", prompt, result)
-        return result
-    finally:
-        conn.close()
-
-
-def anthropic_generate(model: str, prompt: str, api_key: str | None = None) -> str:
-    """Generate text using Anthropic API via HTTP (no SDK)."""
-    key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        raise RuntimeError("Set ANTHROPIC_API_KEY environment variable")
-
-    cached = _llm_cache.get(f"anthropic/{model}", prompt)
-    if cached:
-        return cached
-
-    body = json.dumps({"model": model, "max_tokens": 4096, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
-    parsed = urlparse("https://api.anthropic.com/v1/messages")
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    conn = http.client.HTTPSConnection(str(parsed.hostname), 443, timeout=120)
-    try:
-        conn.request("POST", parsed.path, body=body, headers={
-            "Content-Type": "application/json",
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-        })
-        resp = conn.getresponse()
-        data = json.loads(resp.read().decode("utf-8"))
-        result = data["content"][0]["text"]
-        _llm_cache.put(f"anthropic/{model}", prompt, result)
-        return result
-    finally:
-        conn.close()
-
-
-BACKENDS = {
-    "local": ("stable-code:3b-code-q4_0", ollama_generate),
-    "ollama": ("stable-code:3b-code-q4_0", ollama_generate),
-    "mistral": ("mistral:7b", mistral_generate),
-    "openai": ("gpt-4o", openai_generate),
-    "anthropic": ("claude-sonnet-4-20250514", anthropic_generate),
-    "claude": ("claude-sonnet-4-20250514", anthropic_generate),
-}
-
-
-# ─── Spec Generator ─────────────────────────────────────────────────────────
 
 def generate_spec(description: str, model: str = "local") -> LeanSpec:
-    """Generate a Lean 4 specification from natural language."""
-    backend_name = model if model in BACKENDS else "local"
-    default_model, gen_fn = BACKENDS[backend_name]
+    """Generate a Lean 4 specification from natural language.
+
+    `model` selects the LLM backend: llama.cpp (default local), vllm,
+    ollama, mistral, openai, anthropic. Env overrides: AXIOMCODE_LLM_BACKEND,
+    AXIOMCODE_LLM_MODEL, AXIOMCODE_LLM_BASE_URL, AXIOMCODE_LLM_API_KEY.
+    """
+    backend_name, default_model, gen_fn = resolve_backend(model)
     prompt = SPEC_PROMPT.format(description=description)
 
     start = time.monotonic()
     raw = gen_fn(default_model, prompt)
     elapsed = (time.monotonic() - start) * 1000
 
-    return _parse_spec(raw, description, elapsed, backend_name)
+    spec = _parse_spec(raw, description, elapsed, f"{backend_name}/{default_model}")
+    return spec
 
 
 def _parse_spec(raw: str, source_nl: str, elapsed: float, backend: str) -> LeanSpec:
@@ -505,9 +393,13 @@ def _parse_spec(raw: str, source_nl: str, elapsed: float, backend: str) -> LeanS
         imports = ["Mathlib", "Aesop"]
 
     spec = LeanSpec(
-        theorem=theorem, definitions=definitions, imports=imports,
-        docstring=docstring, source_nl=source_nl,
-        model_used=backend, generation_time_ms=elapsed,
+        theorem=theorem,
+        definitions=definitions,
+        imports=imports,
+        docstring=docstring,
+        source_nl=source_nl,
+        model_used=backend,
+        generation_time_ms=elapsed,
     )
     spec.compute_hash()
     return spec
@@ -515,33 +407,93 @@ def _parse_spec(raw: str, source_nl: str, elapsed: float, backend: str) -> LeanS
 
 # ─── Proof Engine ───────────────────────────────────────────────────────────
 
-def run_proof(spec: LeanSpec, lean_bin: str = "lean", lake_bin: str = "lake") -> ProofResult:
-    """Run Lean 4 to verify a specification."""
+
+def run_proof(
+    spec: LeanSpec,
+    lean_bin: str = "lean",
+    lake_bin: str = "lake",
+    llm_backend: str = "local",
+    max_attempts: int = 3,
+) -> ProofResult:
+    """Verify a specification with Lean 4, using the iterative proof-search loop.
+
+    - Toolchain present: write spec, `lake build`, and on failure feed the
+      compiler errors back to the LLM for repair (up to `max_attempts`).
+      Optional Pantograph M2M check when installed.
+    - Toolchain missing: the spec is saved but the result is honestly marked
+      "unverified" — it is never presented as a verified proof.
+    """
     project_dir = Path(__file__).parent / "lean"
-    algo_dir = project_dir / "src" / "Algorithms"
-    algo_dir.mkdir(parents=True, exist_ok=True)
+    drafts_dir = project_dir / "drafts"
+    drafts_dir.mkdir(parents=True, exist_ok=True)
 
-    name = spec.theorem.split(":")[0].replace("theorem", "").strip().lower()
-    lean_file = algo_dir / f"{name}.lean"
-    lean_file.write_text(spec.to_lean(), encoding="utf-8")
+    name = _theorem_name(spec.theorem)
+    initial_code = spec.to_lean()
 
-    try:
-        result = subprocess.run([lake_bin, "build"], cwd=project_dir, capture_output=True, text=True, timeout=300)
-        if result.returncode != 0:
-            raise RuntimeError(f"Lean build failed:\n{result.stderr}")
-    except FileNotFoundError:
-        print(f"  [!] Lean 4 not found. Install from https://lean-lang.org/")
-        print(f"  [!] Proof search skipped. Spec saved to {lean_file}")
-        proof = ProofResult(theorem_name=name, steps=0, lemmas=len(spec.definitions), lean_file=lean_file, tactics=[], proof_term=spec.to_lean())
+    if not lean_available(lean_bin, lake_bin):
+        # Honest path: no toolchain, no verification claim.
+        lean_file = drafts_dir / f"{name}.lean"
+        lean_file.write_text(initial_code, encoding="utf-8")
+        print("  [!] Lean 4 toolchain not found (need `lean` and `lake`).")
+        print(f"  [!] Spec saved as UNVERIFIED DRAFT: {lean_file}")
+        print("  [!] Install Lean 4 from https://lean-lang.org/ to verify.")
+        proof = ProofResult(
+            theorem_name=name,
+            steps=0,
+            lemmas=len(spec.definitions),
+            lean_file=lean_file,
+            tactics=[],
+            proof_term=initial_code,
+            verification_status="unverified",
+            build_log="toolchain missing: lean/lake not found",
+        )
         proof.compute_hash()
         return proof
+
+    # Toolchain present: verified artifacts live under src/Algorithms.
+    algo_dir = project_dir / "src" / "Algorithms"
+    algo_dir.mkdir(parents=True, exist_ok=True)
+    lean_file = algo_dir / f"{name}.lean"
+
+    def _write(code: str) -> Path:
+        lean_file.write_text(code, encoding="utf-8")
+        return lean_file
+
+    backend_name, model, gen_fn = resolve_backend(llm_backend)
+    verified, final_code, attempts, build_log = iterative_proof_search(
+        _write,
+        project_dir,
+        initial_code,
+        gen_fn,
+        model,
+        max_attempts=max_attempts,
+        lake_bin=lake_bin,
+    )
+
+    status = "verified" if verified else "failed"
+    if verified:
+        print(f"  [+] Proof verified by Lean 4 ({lean_version(lean_bin)}) after {attempts} attempt(s)")
+    else:
+        print(f"  [!] Proof search FAILED after {attempts} attempt(s); spec kept as draft")
+        # A failed proof must not masquerade as a library member.
+        draft_file = drafts_dir / f"{name}.lean"
+        draft_file.write_text(final_code, encoding="utf-8")
+        lean_file = draft_file
 
     olean_file = lean_file.with_suffix(".olean")
     tactics = _extract_tactics(lean_file)
     proof = ProofResult(
-        theorem_name=name, steps=len(tactics), lemmas=len(spec.definitions),
-        lean_file=lean_file, olean_file=olean_file if olean_file.exists() else None,
-        tactics=tactics, proof_term=lean_file.read_text(encoding="utf-8"),
+        theorem_name=name,
+        steps=len(tactics),
+        lemmas=len(spec.definitions),
+        lean_file=lean_file,
+        olean_file=olean_file if olean_file.exists() else None,
+        tactics=tactics,
+        proof_term=final_code,
+        verification_status=status,
+        lean_version=lean_version(lean_bin),
+        build_log=build_log[-4000:],
+        proof_attempts=attempts,
     )
     proof.compute_hash()
     return proof
@@ -549,8 +501,28 @@ def run_proof(spec: LeanSpec, lean_bin: str = "lean", lake_bin: str = "lake") ->
 
 def _extract_tactics(lean_file: Path) -> list[str]:
     content = lean_file.read_text(encoding="utf-8")
-    keywords = ["rw", "simp", "induction", "cases", "apply", "exact", "have", "let", "calc", "refine", "constructor", "tauto", "linarith", "ring"]
-    return [line.strip() for line in content.split("\n") for kw in keywords if line.strip().startswith(kw) or f" {kw} " in line.strip()]
+    keywords = [
+        "rw",
+        "simp",
+        "induction",
+        "cases",
+        "apply",
+        "exact",
+        "have",
+        "let",
+        "calc",
+        "refine",
+        "constructor",
+        "tauto",
+        "linarith",
+        "ring",
+    ]
+    return [
+        line.strip()
+        for line in content.split("\n")
+        for kw in keywords
+        if line.strip().startswith(kw) or f" {kw} " in line.strip()
+    ]
 
 
 def load_proof(name: str) -> ProofResult:
@@ -566,22 +538,27 @@ def load_proof(name: str) -> ProofResult:
 
 # ─── Code Extractor ─────────────────────────────────────────────────────────
 
+
 def extract_c(proof: ProofResult, lean_bin: str = "lean") -> Path:
     output_dir = Path(__file__).parent / "build" / "c"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{proof.theorem_name}.c"
 
     try:
-        result = subprocess.run([lean_bin, "--c", str(output_file), str(proof.lean_file)], capture_output=True, text=True, timeout=120)
+        result = subprocess.run(
+            [lean_bin, "--c", str(output_file), str(proof.lean_file)], capture_output=True, text=True, timeout=120
+        )
         if result.returncode != 0:
             raise RuntimeError(f"C extraction failed:\n{result.stderr}")
     except FileNotFoundError:
-        print(f"  [!] Lean 4 not found. C extraction skipped.")
+        print("  [!] Lean 4 not found. C extraction skipped.")
         return output_file
 
     so_file = output_file.with_suffix(".so")
     try:
-        subprocess.run(["gcc", "-shared", "-fPIC", "-O2", "-o", str(so_file), str(output_file)], capture_output=True, text=True)
+        subprocess.run(
+            ["gcc", "-shared", "-fPIC", "-O2", "-o", str(so_file), str(output_file)], capture_output=True, text=True
+        )
         return so_file if so_file.exists() else output_file
     except FileNotFoundError:
         print(f"  [!] gcc not found. C source saved to {output_file}")
@@ -604,7 +581,7 @@ def extract_python(proof: ProofResult) -> Path:
     init_py.write_text(init_text, encoding="utf-8")
 
     bindings_py = pkg_dir / "bindings.py"
-    bindings_text = textwrap.dedent(f'''
+    bindings_text = textwrap.dedent(f"""
         import cffi
         from pathlib import Path
 
@@ -618,11 +595,11 @@ def extract_python(proof: ProofResult) -> Path:
             raise ImportError(f"Verified binary not found: {{_lib_path}}")
 
         {proof.theorem_name} = _lib
-    ''').lstrip()
+    """).lstrip()
     bindings_py.write_text(bindings_text, encoding="utf-8")
 
     setup_py = pkg_dir / "setup.py"
-    setup_text = textwrap.dedent(f'''
+    setup_text = textwrap.dedent(f"""
         from setuptools import setup, find_packages
         setup(
             name="axiomcode-{proof.theorem_name}",
@@ -630,7 +607,7 @@ def extract_python(proof: ProofResult) -> Path:
             description="Formally verified {proof.theorem_name} by AxiomCode",
             packages=find_packages(),
         )
-    ''').lstrip()
+    """).lstrip()
     setup_py.write_text(setup_text, encoding="utf-8")
 
     return pkg_dir
@@ -638,8 +615,16 @@ def extract_python(proof: ProofResult) -> Path:
 
 # ─── Certificate Generator ──────────────────────────────────────────────────
 
-def generate_certificate(spec: LeanSpec, proof: ProofResult, c_path: Path | None, py_path: Path | None, signing_key: bytes, key_id: str) -> ProofCertificate:
-    """Generate a cryptographic certificate for a verified algorithm."""
+
+def generate_certificate(
+    spec: LeanSpec, proof: ProofResult, c_path: Path | None, py_path: Path | None, signing_key: bytes, key_id: str
+) -> ProofCertificate:
+    """Generate a cryptographic certificate for a generated algorithm.
+
+    The certificate binds the artifact hashes and signs them; the
+    `verification_status` field honestly records whether the proof was
+    machine-checked ("verified") or not ("unverified"/"failed").
+    """
     cert = ProofCertificate(
         algorithm_name=proof.theorem_name,
         spec_hash=spec.spec_hash,
@@ -653,12 +638,16 @@ def generate_certificate(spec: LeanSpec, proof: ProofResult, c_path: Path | None
         model_used=spec.model_used,
         generated_at=time.time(),
         key_id=key_id,
+        verification_status=proof.verification_status,
+        lean_version=proof.lean_version,
+        build_log_hash=hash_data(proof.build_log.encode()) if proof.build_log else "",
     )
     cert.sign(signing_key)
     return cert
 
 
 # ─── Visualization ──────────────────────────────────────────────────────────
+
 
 def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
     graph_data = _build_graph_data(proof, mode)
@@ -670,17 +659,21 @@ def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
     <style>
         * {{ margin: 0; padding: 0; box-sizing: border-box; }}
         body {{ font-family: system-ui, sans-serif; background: #0a0a0f; color: #e0e0e0; }}
-        .header {{ padding: 20px 30px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center; }}
+        .header {{ padding: 20px 30px; border-bottom: 1px solid #222;
+                         display: flex; justify-content: space-between; align-items: center; }}
         .header h1 {{ font-size: 1.2rem; font-weight: 600; }}
         .header h1 span {{ color: #4a90d9; }}
         .mode-switch {{ display: flex; gap: 8px; }}
-        .mode-btn {{ padding: 6px 16px; border: 1px solid #333; background: transparent; color: #888; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }}
+        .mode-btn {{ padding: 6px 16px; border: 1px solid #333; background: transparent;
+                           color: #888; border-radius: 6px; cursor: pointer; font-size: 0.85rem; }}
         .mode-btn.active {{ background: #4a90d9; color: white; border-color: #4a90d9; }}
         .container {{ display: flex; height: calc(100vh - 70px); }}
         .graph-panel {{ flex: 1; position: relative; }}
-        .info-panel {{ width: 320px; border-left: 1px solid #222; padding: 20px; overflow-y: auto; background: #0d0d12; }}
+        .info-panel {{ width: 320px; border-left: 1px solid #222; padding: 20px;
+                            overflow-y: auto; background: #0d0d12; }}
         .info-panel h3 {{ font-size: 0.9rem; color: #4a90d9; margin-bottom: 12px; }}
-        .info-panel pre {{ background: #151520; padding: 12px; border-radius: 8px; font-size: 0.8rem; overflow-x: auto; line-height: 1.5; }}
+        .info-panel pre {{ background: #151520; padding: 12px; border-radius: 8px;
+                               font-size: 0.8rem; overflow-x: auto; line-height: 1.5; }}
         .stats {{ display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }}
         .stat {{ background: #151520; padding: 12px; border-radius: 8px; text-align: center; }}
         .stat-value {{ font-size: 1.5rem; font-weight: 700; color: #4a90d9; }}
@@ -692,16 +685,20 @@ def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
     <div class="header">
         <h1><span>AxiomCode</span> -- {proof.theorem_name}</h1>
         <div class="mode-switch">
-            <button class="mode-btn {'active' if mode == '2d' else ''}" onclick="location.search='?mode=2d'">2D Port Graph</button>
-            <button class="mode-btn {'active' if mode == 'force' else ''}" onclick="location.search='?mode=force'">Force Graph</button>
-            <button class="mode-btn {'active' if mode == '3d' else ''}" onclick="location.search='?mode=3d'">3D Layout</button>
+            <button class="mode-btn {"active" if mode == "2d" else ""}"
+                                onclick="location.search='?mode=2d'">2D Port Graph</button>
+            <button class="mode-btn {"active" if mode == "force" else ""}"
+                                onclick="location.search='?mode=force'">Force Graph</button>
+            <button class="mode-btn {"active" if mode == "3d" else ""}"
+                                onclick="location.search='?mode=3d'">3D Layout</button>
         </div>
     </div>
     <div class="container">
         <div class="graph-panel" id="graph-panel"></div>
         <div class="info-panel">
             <div class="stats">
-                <div class="stat"><div class="stat-value">{proof.steps}</div><div class="stat-label">Proof Steps</div></div>
+                <div class="stat"><div class="stat-value">{proof.steps}</div>
+                                 <div class="stat-label">Proof Steps</div></div>
                 <div class="stat"><div class="stat-value">{proof.lemmas}</div><div class="stat-label">Lemmas</div></div>
             </div>
             <h3>Proof Term</h3>
@@ -713,32 +710,53 @@ def build_proof_html(proof: ProofResult, mode: str = "2d") -> str:
         const mode = "{mode}";
         function render2D() {{
             const panel = document.getElementById('graph-panel');
-            const svg = d3.select(panel).append('svg').attr('width', panel.clientWidth).attr('height', panel.clientHeight);
-            const color = {{ axiom: '#4a90d9', lemma: '#50c878', theorem: '#ffd700', tactic: '#9b59b6', qed: '#e74c3c' }};
+            const svg = d3.select(panel).append('svg')
+                            .attr('width', panel.clientWidth).attr('height', panel.clientHeight);
+            const color = {{ axiom: '#4a90d9', lemma: '#50c878',
+                                       theorem: '#ffd700', tactic: '#9b59b6', qed: '#e74c3c' }};
             const nodes = svg.selectAll('g').data(proofData.nodes).join('g');
-            nodes.append('rect').attr('x', (d, i) => 50 + (i % 6) * 180).attr('y', (d, i) => 50 + Math.floor(i / 6) * 120).attr('width', 150).attr('height', 80).attr('rx', 10).attr('fill', d => color[d.kind] || '#555').attr('stroke', '#333').attr('stroke-width', 2);
-            nodes.append('text').attr('x', (d, i) => 125 + (i % 6) * 180).attr('y', (d, i) => 95 + Math.floor(i / 6) * 120).attr('text-anchor', 'middle').attr('fill', 'white').attr('font-size', '12px').text(d => d.label.slice(0, 20));
+            nodes.append('rect').attr('x', (d, i) => 50 + (i % 6) * 180)
+                            .attr('y', (d, i) => 50 + Math.floor(i / 6) * 120).attr('width', 150).attr('height', 80)
+                            .attr('rx', 10).attr('fill', d => color[d.kind] || '#555')
+                            .attr('stroke', '#333').attr('stroke-width', 2);
+            nodes.append('text').attr('x', (d, i) => 125 + (i % 6) * 180)
+                            .attr('y', (d, i) => 95 + Math.floor(i / 6) * 120).attr('text-anchor', 'middle')
+                            .attr('fill', 'white').attr('font-size', '12px')
+                            .text(d => d.label.slice(0, 20));
         }}
         function renderForce() {{
             const panel = document.getElementById('graph-panel');
-            const svg = d3.select(panel).append('svg').attr('width', panel.clientWidth).attr('height', panel.clientHeight);
+            const svg = d3.select(panel).append('svg')
+                            .attr('width', panel.clientWidth).attr('height', panel.clientHeight);
             const color = {{ theorem: '#ffd700', tactic: '#9b59b6', qed: '#e74c3c' }};
-            const simulation = d3.forceSimulation(proofData.nodes).force('link', d3.forceLink(proofData.edges).distance(120)).force('charge', d3.forceManyBody().strength(-300)).force('center', d3.forceCenter(panel.clientWidth / 2, panel.clientHeight / 2));
-            const link = svg.append('g').selectAll('line').data(proofData.edges).join('line').attr('stroke', '#333').attr('stroke-width', 2);
-            const node = svg.append('g').selectAll('circle').data(proofData.nodes).join('circle').attr('r', 20).attr('fill', d => color[d.kind] || '#555');
-            simulation.on('tick', () => {{ link.attr('x1', d => d.source.x).attr('y1', d => d.source.y).attr('x2', d => d.target.x).attr('y2', d => d.target.y); node.attr('cx', d => d.x).attr('cy', d => d.y); }});
+            const simulation = d3.forceSimulation(proofData.nodes)
+                            .force('link', d3.forceLink(proofData.edges).distance(120))
+                            .force('charge', d3.forceManyBody().strength(-300))
+                            .force('center', d3.forceCenter(panel.clientWidth / 2, panel.clientHeight / 2));
+            const link = svg.append('g').selectAll('line').data(proofData.edges)
+                            .join('line').attr('stroke', '#333').attr('stroke-width', 2);
+            const node = svg.append('g').selectAll('circle').data(proofData.nodes)
+                            .join('circle').attr('r', 20).attr('fill', d => color[d.kind] || '#555');
+            simulation.on('tick', () => {{ link.attr('x1', d => d.source.x).attr('y1', d => d.source.y)
+                            .attr('x2', d => d.target.x).attr('y2', d => d.target.y);
+                            node.attr('cx', d => d.x).attr('cy', d => d.y); }});
         }}
         if (mode === '2d') render2D();
         else if (mode === 'force') renderForce();
-        else document.getElementById('graph-panel').innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100%;color:#666;">3D view -- Three.js integration pending (Phase 2)</div>';
+        else document.getElementById('graph-panel').innerHTML = '<div style="display:flex;align-items:center;
+                justify-content:center;height:100%;color:#666;">'
+                + '3D view -- Three.js integration pending (Phase 2)</div>';
     </script>
 </body>
 </html>"""
 
 
 def _build_graph_data(proof: ProofResult, mode: str) -> dict:
-    nodes = [{"id": f"step_{i}", "label": t[:30], "kind": "qed" if i == len(proof.tactics) - 1 else "tactic"} for i, t in enumerate(proof.tactics)]
-    edges = [{"source": f"step_{i-1}", "target": f"step_{i}"} for i in range(1, len(proof.tactics))]
+    nodes = [
+        {"id": f"step_{i}", "label": t[:30], "kind": "qed" if i == len(proof.tactics) - 1 else "tactic"}
+        for i, t in enumerate(proof.tactics)
+    ]
+    edges = [{"source": f"step_{i - 1}", "target": f"step_{i}"} for i in range(1, len(proof.tactics))]
     return {"nodes": nodes, "edges": edges}
 
 
@@ -747,7 +765,8 @@ def _esc(s: str) -> str:
 
 
 def serve_visualization(proof: ProofResult, mode: str = "2d", port: int = 8765):
-    from http.server import HTTPServer, BaseHTTPRequestHandler
+    from http.server import BaseHTTPRequestHandler, HTTPServer
+
     html = build_proof_html(proof, mode)
 
     class Handler(BaseHTTPRequestHandler):
@@ -756,12 +775,13 @@ def serve_visualization(proof: ProofResult, mode: str = "2d", port: int = 8765):
             self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(html.encode("utf-8"))
+
         def log_message(self, format, *args):
             pass
 
     server = HTTPServer(("127.0.0.1", port), Handler)
     print(f"  Visualization server running at http://127.0.0.1:{port}")
-    print(f"  Press Ctrl+C to stop")
+    print("  Press Ctrl+C to stop")
     try:
         server.serve_forever()
     except KeyboardInterrupt:
@@ -770,7 +790,24 @@ def serve_visualization(proof: ProofResult, mode: str = "2d", port: int = 8765):
 
 # ─── CLI Commands ───────────────────────────────────────────────────────────
 
-def cmd_generate(description: str, lang: str = "python", model: str = "local", visualize: bool = False, passphrase: str = ""):
+
+def _resolve_passphrase(passphrase: str = "") -> str:
+    """Resolve the keystore passphrase. No hardcoded defaults: explicit
+    --passphrase, AXIOMCODE_PASSPHRASE, or an interactive prompt. Refuses to
+    silently use a guessable default."""
+    if passphrase:
+        return passphrase
+    env = os.environ.get("AXIOMCODE_PASSPHRASE", "")
+    if env:
+        return env
+    if sys.stdin.isatty():
+        return getpass.getpass("Keystore passphrase: ")
+    raise RuntimeError("No passphrase provided. Pass --passphrase, set AXIOMCODE_PASSPHRASE, or run interactively.")
+
+
+def cmd_generate(
+    description: str, lang: str = "python", model: str = "local", visualize: bool = False, passphrase: str = ""
+):
     """Generate formally verified code from natural language."""
     print(BANNER)
 
@@ -780,11 +817,12 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
 
     ks = KeyStore()
     key_name = "default"
+    resolved = _resolve_passphrase(passphrase)
     try:
-        signing_key = ks.load_key(key_name, passphrase or "axiomcode-default").signing_key
-        key_id = ks.load_key(key_name, passphrase or "axiomcode-default").key_id
+        loaded = ks.load_key(key_name, resolved)
+        signing_key, key_id = loaded.signing_key, loaded.key_id
     except FileNotFoundError:
-        kp = ks.create_key(key_name, passphrase or "axiomcode-default")
+        kp = ks.create_key(key_name, resolved)
         signing_key, key_id = kp.signing_key, kp.key_id
 
     # Step 1: Generate specification
@@ -792,7 +830,7 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     try:
         spec = generate_spec(description, model)
         print(f"  [+] Specification generated ({spec.model_used}, {spec.generation_time_ms:.0f}ms)")
-        print(f"      Theorem: {spec.theorem.split(':')[0].strip()}")
+        print(f"      Theorem: {_theorem_name(spec.theorem)}")
         print(f"      Hash: {spec.spec_hash[:16]}...")
     except Exception as e:
         print(f"  [-] Spec generation failed: {e}")
@@ -802,15 +840,32 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     # Step 2: Search for proof
     print("[2/4] Searching for proof...")
     try:
-        proof = run_proof(spec)
-        print(f"  [+] Proof verified ({proof.steps} steps, {proof.lemmas} lemmas)")
+        proof = run_proof(spec, llm_backend=model)
+        if proof.verification_status == "verified":
+            print(
+                f"  [+] Proof VERIFIED ({proof.steps} steps, {proof.lemmas} lemmas, {proof.proof_attempts} attempt(s))"
+            )
+        elif proof.verification_status == "failed":
+            print(
+                f"  [!] Proof search FAILED after {proof.proof_attempts} attempt(s) — "
+                f"artifact will be certified as UNVERIFIED provenance only"
+            )
+        else:
+            print(
+                "  [!] Proof UNVERIFIED (no Lean toolchain) — artifact will be certified as UNVERIFIED provenance only"
+            )
         print(f"      Proof hash: {proof.proof_hash[:16]}...")
     except Exception as e:
         print(f"  [!] Proof search incomplete: {e}")
         proof = ProofResult(
-            theorem_name=spec.theorem.split(":")[0].replace("theorem", "").strip().lower(),
-            steps=0, lemmas=len(spec.definitions),
-            lean_file=Path("unknown"), tactics=[], proof_term=spec.to_lean(),
+            theorem_name=_theorem_name(spec.theorem),
+            steps=0,
+            lemmas=len(spec.definitions),
+            lean_file=Path("unknown"),
+            tactics=[],
+            proof_term=spec.to_lean(),
+            verification_status="failed",
+            build_log=str(e)[-4000:],
         )
         proof.compute_hash()
 
@@ -832,14 +887,19 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     cert_path = cert_dir / f"{proof.theorem_name}.cert.json"
     cert.save(cert_path)
     print(f"  [+] Certificate: {cert_path}")
+    print(f"      Verification status: {cert.verification_status.upper()}")
     print(f"      Signature: {cert.signature[:32]}...")
 
-    audit.add_entry("generate_complete", {
-        "algorithm": proof.theorem_name,
-        "steps": proof.steps,
-        "lemmas": proof.lemmas,
-        "certificate": str(cert_path),
-    })
+    audit.add_entry(
+        "generate_complete",
+        {
+            "algorithm": proof.theorem_name,
+            "steps": proof.steps,
+            "lemmas": proof.lemmas,
+            "verification_status": proof.verification_status,
+            "certificate": str(cert_path),
+        },
+    )
 
     if visualize:
         print("\nOpening proof visualization...")
@@ -876,7 +936,7 @@ def cmd_guide():
     except (ValueError, IndexError):
         selected = cat_examples[0]
 
-    print(f"\nStep 3: Algorithm description:")
+    print("\nStep 3: Algorithm description:")
     print(f"  {selected['description']}")
     use_default = input("Use this description? [Y/n]: ").strip().lower() != "n"
     description = selected["description"] if use_default else input("Enter your description: ")
@@ -890,7 +950,7 @@ def cmd_guide():
     model_map = {"1": "local", "2": "mistral", "3": "openai", "4": "anthropic"}
     model = model_map.get(model_choice, "local")
 
-    print(f"\nStep 5: Generating verified code...")
+    print("\nStep 5: Generating verified code...")
     print(f"  Algorithm: {selected['name']}")
     print(f"  Model: {model}\n")
     cmd_generate(description, lang="both", model=model)
@@ -905,7 +965,7 @@ def cmd_examples():
     for i, ex in enumerate(EXAMPLES, 1):
         print(f"{i:<3} {ex['name']:<28} {ex['category']:<18} {ex['difficulty']:<12} {ex['proof_complexity']}")
     print()
-    print('Run: python cli.py guide  (interactive mode)')
+    print("Run: python cli.py guide  (interactive mode)")
     print('Run: python cli.py "description"  (quick generate)')
 
 
@@ -924,25 +984,16 @@ def cmd_walkthrough():
 
 def cmd_models():
     print(BANNER)
-    print("Available LLM Backends")
-    print("-" * 65)
-    print(f"{'Backend':<18} {'Default Model':<22} {'Type':<8} {'Speed':<8} {'Quality'}")
-    print("-" * 65)
-    for name, model, type_, speed, quality in [
-        ("local (Ollama)", "stable-code:3b-code-q4_0", "Local", "Fast", "Good"),
-        ("mistral", "mistral:7b", "Local", "Fast", "Good"),
-        ("openai", "gpt-4o", "Cloud", "Medium", "Excellent"),
-        ("anthropic", "claude-sonnet-4", "Cloud", "Medium", "Excellent"),
-    ]:
-        print(f"{name:<18} {model:<22} {type_:<8} {speed:<8} {quality}")
-
-    print("\nLocally available models:")
-    try:
-        resp = http_get_json("http://localhost:11434/api/tags", timeout=5)
-        for m in resp.get("models", []):
-            print(f"  [+] {m['name']}")
-    except Exception:
-        print("  [!] Ollama not reachable. Run 'ollama serve'")
+    print("Available LLM Backends (one OpenAI-compatible HTTP layer)")
+    print("-" * 72)
+    print(f"{'Backend':<14} {'Default model':<26} Description")
+    print("-" * 72)
+    for bname, model, desc in list_backends():
+        print(f"{bname:<14} {model:<26} {desc}")
+    print()
+    print("Env overrides: AXIOMCODE_LLM_BACKEND, AXIOMCODE_LLM_MODEL,")
+    print("               AXIOMCODE_LLM_BASE_URL, AXIOMCODE_LLM_API_KEY")
+    print("Defaults: llama.cpp -> http://localhost:8080 | vLLM -> http://localhost:8000")
 
 
 def cmd_visualize(name: str, mode: str = "2d", port: int = 8765):
@@ -968,7 +1019,7 @@ def cmd_publish(name: str, pypi: bool = False, github: bool = False):
         cert = ProofCertificate.load(cert_path)
         print(f"  [+] Certificate verified: {cert.signature[:32]}...")
     else:
-        print(f"  [!] No certificate found. Generate the algorithm first.")
+        print("  [!] No certificate found. Generate the algorithm first.")
 
     if pypi:
         wheel_dir = Path(__file__).parent / "build" / "python"
@@ -998,30 +1049,37 @@ def cmd_verify(name: str):
     if cert_path.exists():
         cert = ProofCertificate.load(cert_path)
         print(f"  Certificate: {cert_path}")
+        print(f"  Verification status: {cert.verification_status.upper()}")
+        if cert.verification_status != "verified":
+            print("  [!] This certificate attests to PROVENANCE ONLY — the proof was not machine-checked.")
         print(f"  Spec hash: {cert.spec_hash[:16]}...")
         print(f"  Proof hash: {cert.proof_hash[:16]}...")
         print(f"  Signature: {cert.signature[:32]}...")
         print(f"  Key ID: {cert.key_id}")
+        if cert.lean_version:
+            print(f"  Lean toolchain: {cert.lean_version}")
 
         # Verify binary integrity
         c_path = Path(__file__).parent / "build" / "c" / f"{name}.so"
         if c_path.exists() and cert.c_binary_hash:
             actual = hash_file(c_path)
             if actual == cert.c_binary_hash:
-                print(f"  [+] C binary integrity verified")
+                print("  [+] C binary integrity verified")
             else:
-                print(f"  [-] C binary integrity FAILED")
+                print("  [-] C binary integrity FAILED")
 
     # Verify Lean proof
     try:
         proof = load_proof(name)
-        result = subprocess.run(["lean", "--c", "/dev/null", str(proof.lean_file)], capture_output=True, text=True, timeout=300)
+        result = subprocess.run(
+            ["lean", "--c", "/dev/null", str(proof.lean_file)], capture_output=True, text=True, timeout=300
+        )
         if result.returncode == 0:
-            print(f"  [+] Lean proof verified")
+            print("  [+] Lean proof verified")
         else:
-            print(f"  [-] Lean proof verification failed")
+            print("  [-] Lean proof verification failed")
     except FileNotFoundError:
-        print(f"  [-] No Lean proof found")
+        print("  [-] No Lean proof found")
     except Exception as e:
         print(f"  [-] Verification failed: {e}")
 
@@ -1042,7 +1100,7 @@ def cmd_key_create(name: str, passphrase: str = ""):
     """Create a signing key."""
     print(BANNER)
     ks = KeyStore()
-    kp = ks.create_key(name, passphrase or "axiomcode-default")
+    kp = ks.create_key(name, _resolve_passphrase(passphrase))
     print(f"[+] Key created: {name}")
     print(f"    Key ID: {kp.key_id}")
     print(f"    Created: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(kp.created_at))}")
@@ -1070,15 +1128,46 @@ def cmd_audit():
         print()
         for line in audit.log_file.read_text(encoding="utf-8").strip().split("\n"):
             entry = json.loads(line)
-            print(f"  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(entry['timestamp']))} | {entry['user']} | {entry['action']}")
+            print(
+                f"  {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(entry['timestamp']))} "
+                f"| {entry['user']} | {entry['action']}"
+            )
     else:
         print("No audit log entries yet.")
 
 
 # ─── Main ───────────────────────────────────────────────────────────────────
 
+
 def main():
-    parser = argparse.ArgumentParser(prog="axiomcode", description="Natural language to formally verified code", formatter_class=argparse.RawDescriptionHelpFormatter, epilog=HELP_TEXT)
+    # Bare-description UX (documented in README): `cli.py "implement binary
+    # search"` routes to `generate`. argparse would otherwise reject the
+    # positional as an invalid subcommand choice before we ever see it.
+    _commands = {
+        "generate",
+        "guide",
+        "examples",
+        "help",
+        "walkthrough",
+        "models",
+        "visualize",
+        "publish",
+        "verify",
+        "cert",
+        "key",
+        "audit",
+        "version",
+        "license",
+    }
+    if len(sys.argv) > 1 and sys.argv[1] not in _commands and not sys.argv[1].startswith("-"):
+        sys.argv.insert(1, "generate")
+
+    parser = argparse.ArgumentParser(
+        prog="axiomcode",
+        description="Natural language to formally verified code",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=HELP_TEXT,
+    )
     sub = parser.add_subparsers(dest="command")
 
     p_gen = sub.add_parser("generate", help="Generate verified code from NL")
@@ -1118,13 +1207,20 @@ def main():
 
     # Version management
     p_ver_cmd = sub.add_parser("version", help="Version management")
-    p_ver_cmd.add_argument("action", nargs="?", default="show", choices=["show", "migrate", "rollback", "backups", "history", "validate"])
+    p_ver_cmd.add_argument(
+        "action", nargs="?", default="show", choices=["show", "migrate", "rollback", "backups", "history", "validate"]
+    )
     p_ver_cmd.add_argument("--to", default=None, help="Target version for migration")
     p_ver_cmd.add_argument("--force", action="store_true", help="Force migration without confirmation")
 
     # License management
     p_lic = sub.add_parser("license", help="License management")
-    p_lic.add_argument("action", nargs="?", default="show", choices=["show", "issue", "verify", "revoke", "list", "tiers", "keygen", "fingerprint"])
+    p_lic.add_argument(
+        "action",
+        nargs="?",
+        default="show",
+        choices=["show", "issue", "verify", "revoke", "list", "tiers", "keygen", "fingerprint"],
+    )
     p_lic.add_argument("--user", default=None, help="User ID (email)")
     p_lic.add_argument("--name", default=None, help="User name")
     p_lic.add_argument("--tier", default="community", choices=["community", "pro", "enterprise"])
@@ -1147,7 +1243,8 @@ def main():
 
     if args.command == "generate":
         if not args.description:
-            print("Error: description is required"); sys.exit(1)
+            print("Error: description is required")
+            sys.exit(1)
         cmd_generate(args.description, args.lang, args.model, args.visualize, args.passphrase)
     elif args.command == "guide":
         cmd_guide()
@@ -1210,7 +1307,7 @@ def cmd_version(action: str, target: str | None = None, force: bool = False):
             for f in info.new_features:
                 print(f"  [+] {f}")
         if info.breaking_changes:
-            print(f"\nBreaking changes:")
+            print("\nBreaking changes:")
             for b in info.breaking_changes:
                 print(f"  [!] {b}")
 
@@ -1256,9 +1353,9 @@ def cmd_version(action: str, target: str | None = None, force: bool = False):
             print("No backups found.")
             return
         print("Available backups:")
-        for b in backups:
-            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(b["timestamp"]))
-            print(f"  {b['name']} (v{b['version']}, {ts})")
+        for bk in backups:
+            ts = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(bk["timestamp"]))
+            print(f"  {bk['name']} (v{bk['version']}, {ts})")
 
     elif action == "history":
         history = vm.get_migration_history()
@@ -1283,11 +1380,19 @@ def cmd_version(action: str, target: str | None = None, force: bool = False):
             print("All data is consistent with the current version.")
 
 
-def cmd_license(action: str, user: str | None = None, name: str | None = None,
-                tier: str = "community", key_path: str | None = None,
-                passphrase: str = "", output: str | None = None,
-                license_file: str | None = None, reason: str = "",
-                portable: bool = False, expires: str | None = None):
+def cmd_license(
+    action: str,
+    user: str | None = None,
+    name: str | None = None,
+    tier: str = "community",
+    key_path: str | None = None,
+    passphrase: str = "",
+    output: str | None = None,
+    license_file: str | None = None,
+    reason: str = "",
+    portable: bool = False,
+    expires: str | None = None,
+):
     """License management: show, issue, verify, revoke, list, tiers, keygen, fingerprint."""
     print(BANNER)
     lm = LicenseManager()
@@ -1325,7 +1430,7 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         keys.save_private(priv_path, passphrase or "axiomcode-root")
         keys.save_public(pub_path)
 
-        print(f"[+] Root key pair generated")
+        print("[+] Root key pair generated")
         print(f"    Private key: {priv_path} (KEEP SECRET)")
         print(f"    Public key:  {pub_path} (ship with software)")
         print(f"    Key ID:      {keys.key_id}")
@@ -1348,24 +1453,29 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         expires_at = 0.0
         if expires:
             from datetime import datetime
+
             dt = datetime.strptime(expires, "%Y-%m-%d")
             expires_at = dt.timestamp()
 
         if portable:
             license = lm.issue_portable_license(
-                user_id=user, user_name=name, tier=tier,
+                user_id=user,
+                user_name=name,
+                tier=tier,
                 expires_at=expires_at,
             )
         else:
             license = lm.issue_license(
-                user_id=user, user_name=name, tier=tier,
+                user_id=user,
+                user_name=name,
+                tier=tier,
                 expires_at=expires_at,
             )
 
         out_path = Path(output or f".axiomcode/licenses/{name.replace(' ', '_').lower()}.license.json")
         license.save(out_path)
 
-        print(f"[+] License issued")
+        print("[+] License issued")
         print(f"    License ID: {license.license_id}")
         print(f"    User:       {license.user_name} ({license.user_id})")
         print(f"    Tier:       {license.tier}")
@@ -1374,7 +1484,7 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         if expires_at > 0:
             print(f"    Expires:    {time.strftime('%Y-%m-%d', time.localtime(expires_at))}")
         else:
-            print(f"    Expires:    Never")
+            print("    Expires:    Never")
         print(f"    Saved to:   {out_path}")
 
     elif action == "verify":
@@ -1382,9 +1492,9 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         lic_path = license_file or ".axiomcode/licenses/default.license.json"
         if not Path(lic_path).exists():
             # Try to find any license
-            licenses = list(Path(".axiomcode/licenses").glob("*.license.json"))
-            if licenses:
-                lic_path = str(licenses[0])
+            license_files = list(Path(".axiomcode/licenses").glob("*.license.json"))
+            if license_files:
+                lic_path = str(license_files[0])
             else:
                 print(f"[-] No license file found at {lic_path}")
                 return
@@ -1409,7 +1519,7 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
         if license.expires_at > 0:
             print(f"  Expires:    {time.strftime('%Y-%m-%d', time.localtime(license.expires_at))}")
         else:
-            print(f"  Expires:    Never")
+            print("  Expires:    Never")
         print(f"  Hardware:   {'Portable' if not license.hardware_hash else 'Bound'}")
         print()
         if valid:
@@ -1449,8 +1559,8 @@ def cmd_license(action: str, user: str | None = None, name: str | None = None,
             print(f"  Price: {tinfo['price']}")
             print(f"  Max seats: {tinfo['max_seats'] if tinfo['max_seats'] > 0 else 'Unlimited'}")
             print(f"  Expires: {'Yes' if tinfo['expires'] else 'No'}")
-            print(f"  Features:")
-            for f in tinfo['features']:
+            print("  Features:")
+            for f in tinfo["features"]:
                 print(f"    - {f}")
 
     elif action == "fingerprint":
