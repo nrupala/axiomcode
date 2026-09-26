@@ -819,16 +819,20 @@ class TestModuleImports:
 
 
 class TestPerformance:
-    def test_generate_100_specs_under_1s(self):
+    # Budget is 2s, not 1s: shared CI runners (notably windows-latest) are
+    # noisy — the same loop measured 1.02s and 1.06s on back-to-back runs.
+    # The intent is catching pathological slowness (e.g. accidentally calling
+    # a real LLM, which would take minutes for 100 specs), not benchmarking.
+    def test_generate_100_specs_under_2s(self):
         from batch_generate import ALGORITHMS, generate_mock_spec
 
         start = time.monotonic()
         for a in ALGORITHMS:
             generate_mock_spec(a)
         elapsed = time.monotonic() - start
-        assert elapsed < 1.0, f"Generating 100 specs took {elapsed:.2f}s, expected < 1s"
+        assert elapsed < 2.0, f"Generating 100 specs took {elapsed:.2f}s, expected < 2s"
 
-    def test_validate_100_specs_under_1s(self):
+    def test_validate_100_specs_under_2s(self):
         from batch_generate import ALGORITHMS, generate_mock_spec, validate_spec
 
         start = time.monotonic()
@@ -836,7 +840,7 @@ class TestPerformance:
             spec = generate_mock_spec(a)
             validate_spec(spec)
         elapsed = time.monotonic() - start
-        assert elapsed < 1.0, f"Validating 100 specs took {elapsed:.2f}s, expected < 1s"
+        assert elapsed < 2.0, f"Validating 100 specs took {elapsed:.2f}s, expected < 2s"
 
     def test_full_batch_under_5s(self):
         from batch_generate import ALGORITHMS, run_batch_test

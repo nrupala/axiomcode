@@ -1248,8 +1248,6 @@ def generate_mock_spec(algo: dict) -> LeanSpec:
         imports.append("Mathlib.NumberTheory")
 
     start = time.perf_counter()
-    time.sleep(0.001)  # Simulate minimal processing time
-    elapsed = (time.perf_counter() - start) * 1000
 
     import_block = "\nimport ".join(imports)
     raw_output = f"""```lean
@@ -1258,6 +1256,11 @@ import {import_block}
 /-- {desc} -/
 {theorem}
 ```"""
+
+    # Measure after the templating work. No artificial sleep: the mock should
+    # be fast. perf_counter has sub-microsecond resolution, so this always
+    # measures as a small positive elapsed time (the validator requires > 0).
+    elapsed = (time.perf_counter() - start) * 1000
 
     spec = _parse_spec(raw_output, desc, elapsed, "mock")
     return spec
