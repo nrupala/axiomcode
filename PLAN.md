@@ -24,7 +24,7 @@ A system where users describe algorithms in natural language, and the system gen
 ┌──────────────────────────▼──────────────────────────────────┐
 │                 LLM SPECIFICATION ENGINE                     │
 │   NL → Formal Specification (Lean 4 theorem statements)      │
-│   Backends: Ollama (local), Mistral, OpenAI, Anthropic       │
+│   Backends: llama.cpp (local), vLLM, Ollama, Mistral, OpenAI, Anthropic │
 │   Features: Caching, retry, rate limiting                    │
 └──────────────────────────┬──────────────────────────────────┘
                            │
@@ -81,7 +81,7 @@ A system where users describe algorithms in natural language, and the system gen
 | Proof Assistant | **Lean 4** | Fast, built-in C compiler, active AI research |
 | LLM Interface | **Pantograph** | Purpose-built M2M Lean 4 API |
 | Automated Proving | **Goedel-Prover** | Open-source ATP, state-of-the-art for Lean 4 |
-| LLM Backends | **Ollama, OpenAI, Anthropic** | Local + cloud, zero SDKs |
+| LLM Backends | **llama.cpp, vLLM, Ollama, Mistral, OpenAI, Anthropic** | One OpenAI-compatible HTTP layer, zero SDKs |
 | Visualization | **D3.js (HTML)** | Interactive, browser-based, no server |
 | C Compilation | **Lean 4 `lean --c`** | Native, no extraction layer |
 | Python Bindings | **cffi** | Only external dependency |
@@ -96,7 +96,7 @@ A system where users describe algorithms in natural language, and the system gen
 ### Phase 1: MVP — Complete ✅
 
 **Delivered:**
-- [x] NL → Lean 4 spec generation (4 LLM backends, zero SDKs)
+- [x] NL → Lean 4 spec generation (llama.cpp / vLLM / Ollama / Mistral / OpenAI / Anthropic via one OpenAI-compatible HTTP layer, zero SDKs)
 - [x] Proof engine with Pantograph integration
 - [x] C binary extraction via `lean --c`
 - [x] Python package generation with cffi bindings
@@ -110,7 +110,7 @@ A system where users describe algorithms in natural language, and the system gen
 - [x] Version management with upgrade/downgrade/rollback
 - [x] Automatic backup before migrations
 - [x] Tamper-evident audit log
-- [x] 28 tests passing
+- [x] 134 tests passing
 - [x] Comprehensive documentation (FEATURES.md, TEST_PLAN.md, QUICKSTART.md, ARCHITECTURE.md)
 
 ### Phase 2: Domain-Specific Libraries (Months 3-6)
@@ -164,7 +164,7 @@ axiomcode/
 │       └── Algorithms/
 │           └── insertion_sort.lean  # Example verified algorithm
 ├── tests/
-│   └── test_core.py            # 28 tests passing
+│   └── test_core.py            # 134 tests passing
 ├── docs/
 │   ├── QUICKSTART.md           # 5-minute quickstart
 │   ├── ARCHITECTURE.md         # Architecture diagrams and flowcharts
@@ -198,3 +198,4 @@ axiomcode/
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1.0 | 2026-03-31 | Initial release — all Phase 1 features |
+| 0.1.1 (unreleased) | — | Fix batch, code brought up to docs standard: llama.cpp-first OpenAI-compatible LLM layer (vLLM-ready); Pantograph M2M integration + iterative proof-search with self-correction; `verification_status` on certificates and honest CLI reporting; `sorry`-quarantine (`lean/drafts/`) + CI proof-honesty gate; no hardcoded keystore passphrase; theorem-name extraction fix; bare-description CLI UX; proprietary license |

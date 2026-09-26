@@ -3,7 +3,7 @@
 > **Natural Language to Formally Verified Code**  
 > **Domain:** axiom-code.com  
 > **Version:** 0.1.0  
-> **License:** MIT  
+> **License:** Proprietary — see [LICENSE](LICENSE)  
 > **Dependencies:** Zero (pure Python stdlib + cffi)
 
 ---
@@ -29,7 +29,7 @@ Built for commercialization. Designed to surpass Python and agent-based LLM code
 - **Pure Python stdlib** — no pip packages to install (except cffi for bindings)
 - **No attack surface** from third-party libraries
 - **No supply chain vulnerabilities** — no requests, no Flask, no SDKs
-- **HTTP via stdlib** `http.client` — direct API calls to Ollama, OpenAI, Anthropic
+- **HTTP via stdlib** `http.client` — direct API calls to llama.cpp, OpenAI, Anthropic
 - **Crypto via stdlib** `hashlib`, `hmac`, `secrets` — no cryptography package needed
 
 ### 3. Zero-Trust Security Model
@@ -44,7 +44,7 @@ Built for commercialization. Designed to surpass Python and agent-based LLM code
 ### 4. Multi-Backend LLM Support
 | Backend | Type | Default Model | Speed | Quality |
 |---------|------|---------------|-------|---------|
-| Ollama | Local | qwen2.5-coder:14b | Fast | Good |
+| llama.cpp | Local | qwen2.5-coder:14b | Fast | Good |
 | Mistral | Local | mistral:7b | Fast | Good |
 | OpenAI | Cloud | gpt-4o | Medium | Excellent |
 | Anthropic | Cloud | claude-sonnet-4 | Medium | Excellent |
@@ -276,7 +276,7 @@ Every generated algorithm comes with a signed certificate containing:
 | Security features | 9 |
 | License tiers | 3 |
 | Version management | Full (upgrade/downgrade/rollback) |
-| License | MIT |
+| License | Proprietary |
 | Domain | axiom-code.com |
 
 ---

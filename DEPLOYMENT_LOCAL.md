@@ -3,7 +3,13 @@
 > **Status:** ✅ Ready for local testing  
 > **Version:** 0.1.0 (Alpha)  
 > **Deployment Type:** Local Python + Optional External Services  
-> **Last Updated:** April 2, 2026
+> **Last Updated:** September 26, 2026
+>
+> **Backend direction (2026-09-26):** the primary local LLM backend is now
+> **llama.cpp** server (`llama-server`, default `http://localhost:8080`), with
+> **vLLM** (`http://localhost:8000`) as the production-serving path — both via
+> one OpenAI-compatible HTTP layer. Ollama remains as a compatibility alias.
+> Sections below that still say "Ollama" apply to any backend; prefer llama.cpp.
 
 ---
 

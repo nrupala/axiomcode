@@ -3,18 +3,18 @@
 > **Natural Language to Formally Verified Code**  
 > **Domain:** axiom-code.com  
 > **Version:** 0.1.0  
-> **License:** MIT  
+> **License:** Proprietary — see [LICENSE](LICENSE)  
 > **Dependencies:** Zero (pure Python stdlib + cffi)
 
 [![Tests](https://github.com/nrupala/axiomcode/actions/workflows/tests.yml/badge.svg)](https://github.com/nrupala/axiomcode/actions)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 ---
 
 ## What Is AxiomCode?
 
-AxiomCode converts **natural language descriptions** of algorithms into **mathematically proven-correct code** in Python and C. Every generated artifact comes with a cryptographic certificate of verification that can be independently audited.
+AxiomCode converts **natural language descriptions** of algorithms into **mathematically proven-correct code** in Python and C. Every generated artifact comes with a cryptographic certificate that can be independently audited — and the certificate honestly records whether the proof was machine-checked (`verified`) or not (`unverified`/`failed`). A signature attests to provenance and integrity; only a `verified` status means Lean 4 checked the proof.
 
 ```
 Natural Language → Lean 4 Spec → Formal Proof → C Binary → Python Package
@@ -128,7 +128,7 @@ python cli.py version history
 ┌──────────────────────────▼──────────────────────────────────┐
 │                 LLM SPECIFICATION ENGINE                     │
 │   NL → Formal Specification (Lean 4 theorem statements)      │
-│   Backends: Ollama (local), Mistral, OpenAI, Anthropic       │
+│   Backends: llama.cpp (local), vLLM, Ollama, Mistral, OpenAI, Anthropic │
 └──────────────────────────┬──────────────────────────────────┘
                            │
 ┌──────────────────────────▼──────────────────────────────────┐
@@ -203,7 +203,8 @@ python -m mypy cli.py core/
 
 - Python 3.10+
 - cffi (only external dependency)
-- Ollama (for local LLM) — optional
+- llama.cpp server (for local LLM) — optional
+- vLLM (for production serving) — optional
 - Lean 4 (for proof verification) — optional
 
 ## Contributing
@@ -216,7 +217,7 @@ python -m mypy cli.py core/
 
 ## License
 
-MIT License — see [LICENSE](LICENSE) file for details.
+Proprietary — see [LICENSE](LICENSE) file for details.
 
 ## Contact
 
