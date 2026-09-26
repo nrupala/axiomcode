@@ -12,9 +12,11 @@ Domain: axiom-code.com
 from __future__ import annotations
 
 import argparse
+import getpass
 import http.client
 import json
 import os
+import re
 import shlex
 import ssl
 import subprocess
@@ -37,6 +39,16 @@ from core.versioning import VersionManager, CURRENT_VERSION
 from core.licensing import (
     LicenseManager, LicenseCertificate, LicenseKeyPair,
     get_hardware_fingerprint, get_hardware_hash, TIERS,
+)
+# LLM backends: one OpenAI-compatible HTTP layer (llama.cpp first, vLLM-ready)
+from core.llm import (
+    BACKENDS, LLMCache, list_backends, resolve_backend,
+    llamacpp_generate, vllm_generate,
+    ollama_generate, mistral_generate, openai_generate, anthropic_generate,
+)
+from core.prover import (
+    lean_available, lean_version,
+    iterative_proof_search,
 )
 
 # ─── Banner ─────────────────────────────────────────────────────────────────
@@ -115,7 +127,7 @@ FAQ:
      Cloud: OpenAI (GPT-4o), Anthropic (Claude).
 
   Q: Is my data sent to external servers?
-  A: Only if you use cloud providers (OpenAI/Anthropic). Local Ollama
+  A: Only if you use cloud providers (OpenAI/Anthropic). Local llama.cpp
      runs entirely on your machine. No telemetry, no tracking.
 
   Q: How are generated code artifacts secured?
@@ -127,12 +139,16 @@ FAQ:
      cryptographic certificates of authenticity.
 
 TROUBLESHOOTING:
-  Ollama connection refused:
-    ollama serve
-    ollama pull stable-code:3b-code-q4_0
+  LLM backend connection refused:
+    # llama.cpp (default local backend)
+    llama-server -m <model.gguf> --port 8080
+    # vLLM (production serving)
+    vllm serve <model>
+    # then: python cli.py models
 
   Lean 4 not found:
     Install from https://lean-lang.org/
+    (Without it, specs are saved as UNVERIFIED DRAFTS — never certified as proven.)
 
   Proof search timeout:
     Try a simpler algorithm or use --model openai.
@@ -217,109 +233,29 @@ class ProofResult:
     tactics: list[str] = field(default_factory=list)
     proof_term: str = ""
     proof_hash: str = ""
+    # Honest verification accounting: "verified" only when Lean (or Pantograph)
+    # actually checked the proof. Anything else is "unverified" or "failed".
+    verification_status: str = "unverified"
+    lean_version: str = ""
+    build_log: str = ""
+    proof_attempts: int = 0
 
     def compute_hash(self) -> str:
         self.proof_hash = hash_data(self.proof_term.encode())
         return self.proof_hash
 
 
-# ─── LLM Cache ──────────────────────────────────────────────────────────────
+def _theorem_name(theorem_text: str) -> str:
+    """Extract a filesystem-safe theorem name.
 
-class LLMCache:
-    """Persistent cache for LLM responses. Reduces cost and latency."""
-
-    def __init__(self, cache_dir: str | Path = ".axiomcode/cache"):
-        self.cache_dir = Path(cache_dir)
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
-
-    def _key(self, model: str, prompt: str) -> str:
-        return hash_data(f"{model}:{prompt}".encode())[:16]
-
-    def get(self, model: str, prompt: str) -> str | None:
-        key = self._key(model, prompt)
-        cache_file = self.cache_dir / f"{key}.json"
-        if cache_file.exists():
-            data = json.loads(cache_file.read_text(encoding="utf-8"))
-            # Cache expires after 24 hours
-            if time.time() - data.get("timestamp", 0) < 86400:
-                return data.get("response")
-        return None
-
-    def put(self, model: str, prompt: str, response: str) -> None:
-        key = self._key(model, prompt)
-        cache_file = self.cache_dir / f"{key}.json"
-        cache_file.write_text(json.dumps({
-            "model": model,
-            "prompt_hash": hash_data(prompt.encode())[:16],
-            "response": response,
-            "timestamp": time.time(),
-        }), encoding="utf-8")
+    Matches the identifier after the `theorem` keyword only — never the
+    binders — so `theorem myadd_zero (n : Nat) : ...` yields `myadd_zero`.
+    """
+    m = re.search(r"\btheorem\s+([A-Za-z_][A-Za-z0-9_']*)", theorem_text)
+    return m.group(1).lower() if m else "unnamed_theorem"
 
 
-# ─── HTTP Client (stdlib only) ──────────────────────────────────────────────
-
-def http_post_json(url: str, data: dict, headers: dict | None = None, timeout: int = 180) -> dict:
-    """POST JSON using stdlib http.client."""
-    parsed = urlparse(url)
-    host = str(parsed.hostname or "localhost")
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    path = parsed.path or "/"
-    if parsed.query:
-        path += "?" + parsed.query
-
-    body = json.dumps(data).encode("utf-8")
-    req_headers = {
-        "Content-Type": "application/json",
-        "Content-Length": str(len(body)),
-        "Accept": "application/json",
-    }
-    if headers:
-        req_headers.update(headers)
-
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    if parsed.scheme == "https":
-        conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=timeout)
-    else:
-        conn = http.client.HTTPConnection(host, port, timeout=timeout)
-
-    try:
-        conn.request("POST", path, body=body, headers=req_headers)
-        resp = conn.getresponse()
-        resp_body = resp.read().decode("utf-8")
-        if resp.status >= 400:
-            raise RuntimeError(f"HTTP {resp.status}: {resp_body}")
-        return json.loads(resp_body) if resp_body.strip() else {}
-    finally:
-        conn.close()
-
-
-def http_get_json(url: str, timeout: int = 10) -> dict:
-    """GET JSON using stdlib http.client."""
-    parsed = urlparse(url)
-    host = str(parsed.hostname or "localhost")
-    port = parsed.port or (443 if parsed.scheme == "https" else 80)
-    path = parsed.path or "/"
-    if parsed.query:
-        path += "?" + parsed.query
-
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    if parsed.scheme == "https":
-        conn = http.client.HTTPSConnection(host, port, context=ssl.create_default_context(), timeout=timeout)
-    else:
-        conn = http.client.HTTPConnection(host, port, timeout=timeout)
-
-    try:
-        conn.request("GET", path, headers={"Accept": "application/json"})
-        resp = conn.getresponse()
-        resp_body = resp.read().decode("utf-8")
-        if resp.status >= 400:
-            raise RuntimeError(f"HTTP {resp.status}: {resp_body}")
-        return json.loads(resp_body) if resp_body.strip() else {}
-    finally:
-        conn.close()
-
-
-# ─── LLM Backends ───────────────────────────────────────────────────────────
+# ─── Spec Generator ─────────────────────────────────────────────────────────
 
 SPEC_PROMPT = """You are an expert in Lean 4 formal verification.
 Convert the following natural language algorithm description into a Lean 4 formal specification.
@@ -330,7 +266,9 @@ Rules:
 3. Define any helper types/structures needed.
 4. State the main theorem with a clear name.
 5. The theorem should capture the full correctness specification.
-6. Use `by sorry` as the proof placeholder.
+6. Write complete proofs wherever you can. If a step truly resists you, you may
+   mark it with `by sorry` -- the iterative proof-search loop will attempt to
+   discharge it, but final acceptance requires ZERO `sorry`/`admit`.
 
 Natural language description:
 {description}
@@ -341,135 +279,27 @@ import Mathlib
 import Aesop
 
 /-- docstring -/
-theorem algorithm_correctness : ... := by sorry
+theorem algorithm_correctness : ... := by
+  ...
 ```
 """
 
-_llm_cache = LLMCache()
-
-def ollama_generate(model: str, prompt: str, base_url: str = "http://localhost:11434") -> str:
-    """Generate text using Ollama via HTTP with caching and retry."""
-    cached = _llm_cache.get(f"ollama/{model}", prompt)
-    if cached:
-        return cached
-
-    for attempt in range(3):
-        try:
-            resp = http_post_json(
-                f"{base_url}/v1/chat/completions",
-                {
-                    "model": model,
-                    "messages": [{"role": "user", "content": prompt}],
-                    "temperature": 0.2,
-                    "max_tokens": 4096,
-                },
-                timeout=180,
-            )
-            result = ""
-            if isinstance(resp, dict):
-                choices = resp.get("choices", [])
-                if choices:
-                    first = choices[0]
-                    if isinstance(first.get("message"), dict):
-                        result = first["message"].get("content", "")
-                    elif isinstance(first.get("content"), list):
-                        result = first["content"][0].get("text", "")
-                    else:
-                        result = first.get("text", "")
-            result = result or resp.get("response", "")
-            _llm_cache.put(f"ollama/{model}", prompt, result)
-            return result
-        except Exception as e:
-            if attempt == 2:
-                raise RuntimeError(f"Ollama failed after 3 attempts: {e}\nFix: Run 'ollama pull {model}' and 'ollama serve'")
-            time.sleep(2 ** attempt)
-    return ""
-
-
-def mistral_generate(model: str, prompt: str, base_url: str = "http://localhost:11434") -> str:
-    return ollama_generate(model, prompt, base_url)
-
-
-def openai_generate(model: str, prompt: str, api_key: str | None = None) -> str:
-    """Generate text using OpenAI API via HTTP (no SDK)."""
-    key = api_key or os.environ.get("OPENAI_API_KEY", "")
-    if not key:
-        raise RuntimeError("Set OPENAI_API_KEY environment variable")
-
-    cached = _llm_cache.get(f"openai/{model}", prompt)
-    if cached:
-        return cached
-
-    body = json.dumps({"model": model, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
-    parsed = urlparse("https://api.openai.com/v1/chat/completions")
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    conn = http.client.HTTPSConnection(str(parsed.hostname), 443, timeout=120)
-    try:
-        conn.request("POST", parsed.path, body=body, headers={
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {key}",
-        })
-        resp = conn.getresponse()
-        data = json.loads(resp.read().decode("utf-8"))
-        result = data["choices"][0]["message"]["content"]
-        _llm_cache.put(f"openai/{model}", prompt, result)
-        return result
-    finally:
-        conn.close()
-
-
-def anthropic_generate(model: str, prompt: str, api_key: str | None = None) -> str:
-    """Generate text using Anthropic API via HTTP (no SDK)."""
-    key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
-    if not key:
-        raise RuntimeError("Set ANTHROPIC_API_KEY environment variable")
-
-    cached = _llm_cache.get(f"anthropic/{model}", prompt)
-    if cached:
-        return cached
-
-    body = json.dumps({"model": model, "max_tokens": 4096, "messages": [{"role": "user", "content": prompt}]}).encode("utf-8")
-    parsed = urlparse("https://api.anthropic.com/v1/messages")
-    conn: http.client.HTTPConnection | http.client.HTTPSConnection
-    conn = http.client.HTTPSConnection(str(parsed.hostname), 443, timeout=120)
-    try:
-        conn.request("POST", parsed.path, body=body, headers={
-            "Content-Type": "application/json",
-            "x-api-key": key,
-            "anthropic-version": "2023-06-01",
-        })
-        resp = conn.getresponse()
-        data = json.loads(resp.read().decode("utf-8"))
-        result = data["content"][0]["text"]
-        _llm_cache.put(f"anthropic/{model}", prompt, result)
-        return result
-    finally:
-        conn.close()
-
-
-BACKENDS = {
-    "local": ("stable-code:3b-code-q4_0", ollama_generate),
-    "ollama": ("stable-code:3b-code-q4_0", ollama_generate),
-    "mistral": ("mistral:7b", mistral_generate),
-    "openai": ("gpt-4o", openai_generate),
-    "anthropic": ("claude-sonnet-4-20250514", anthropic_generate),
-    "claude": ("claude-sonnet-4-20250514", anthropic_generate),
-}
-
-
-# ─── Spec Generator ─────────────────────────────────────────────────────────
-
 def generate_spec(description: str, model: str = "local") -> LeanSpec:
-    """Generate a Lean 4 specification from natural language."""
-    backend_name = model if model in BACKENDS else "local"
-    default_model, gen_fn = BACKENDS[backend_name]
+    """Generate a Lean 4 specification from natural language.
+
+    `model` selects the LLM backend: llama.cpp (default local), vllm,
+    ollama, mistral, openai, anthropic. Env overrides: AXIOMCODE_LLM_BACKEND,
+    AXIOMCODE_LLM_MODEL, AXIOMCODE_LLM_BASE_URL, AXIOMCODE_LLM_API_KEY.
+    """
+    backend_name, default_model, gen_fn = resolve_backend(model)
     prompt = SPEC_PROMPT.format(description=description)
 
     start = time.monotonic()
     raw = gen_fn(default_model, prompt)
     elapsed = (time.monotonic() - start) * 1000
 
-    return _parse_spec(raw, description, elapsed, backend_name)
+    spec = _parse_spec(raw, description, elapsed, f"{backend_name}/{default_model}")
+    return spec
 
 
 def _parse_spec(raw: str, source_nl: str, elapsed: float, backend: str) -> LeanSpec:
@@ -515,33 +345,79 @@ def _parse_spec(raw: str, source_nl: str, elapsed: float, backend: str) -> LeanS
 
 # ─── Proof Engine ───────────────────────────────────────────────────────────
 
-def run_proof(spec: LeanSpec, lean_bin: str = "lean", lake_bin: str = "lake") -> ProofResult:
-    """Run Lean 4 to verify a specification."""
+def run_proof(
+    spec: LeanSpec,
+    lean_bin: str = "lean",
+    lake_bin: str = "lake",
+    llm_backend: str = "local",
+    max_attempts: int = 3,
+) -> ProofResult:
+    """Verify a specification with Lean 4, using the iterative proof-search loop.
+
+    - Toolchain present: write spec, `lake build`, and on failure feed the
+      compiler errors back to the LLM for repair (up to `max_attempts`).
+      Optional Pantograph M2M check when installed.
+    - Toolchain missing: the spec is saved but the result is honestly marked
+      "unverified" — it is never presented as a verified proof.
+    """
     project_dir = Path(__file__).parent / "lean"
-    algo_dir = project_dir / "src" / "Algorithms"
-    algo_dir.mkdir(parents=True, exist_ok=True)
+    drafts_dir = project_dir / "drafts"
+    drafts_dir.mkdir(parents=True, exist_ok=True)
 
-    name = spec.theorem.split(":")[0].replace("theorem", "").strip().lower()
-    lean_file = algo_dir / f"{name}.lean"
-    lean_file.write_text(spec.to_lean(), encoding="utf-8")
+    name = _theorem_name(spec.theorem)
+    initial_code = spec.to_lean()
 
-    try:
-        result = subprocess.run([lake_bin, "build"], cwd=project_dir, capture_output=True, text=True, timeout=300)
-        if result.returncode != 0:
-            raise RuntimeError(f"Lean build failed:\n{result.stderr}")
-    except FileNotFoundError:
-        print(f"  [!] Lean 4 not found. Install from https://lean-lang.org/")
-        print(f"  [!] Proof search skipped. Spec saved to {lean_file}")
-        proof = ProofResult(theorem_name=name, steps=0, lemmas=len(spec.definitions), lean_file=lean_file, tactics=[], proof_term=spec.to_lean())
+    if not lean_available(lean_bin, lake_bin):
+        # Honest path: no toolchain, no verification claim.
+        lean_file = drafts_dir / f"{name}.lean"
+        lean_file.write_text(initial_code, encoding="utf-8")
+        print("  [!] Lean 4 toolchain not found (need `lean` and `lake`).")
+        print(f"  [!] Spec saved as UNVERIFIED DRAFT: {lean_file}")
+        print("  [!] Install Lean 4 from https://lean-lang.org/ to verify.")
+        proof = ProofResult(
+            theorem_name=name, steps=0, lemmas=len(spec.definitions),
+            lean_file=lean_file, tactics=[], proof_term=initial_code,
+            verification_status="unverified",
+            build_log="toolchain missing: lean/lake not found",
+        )
         proof.compute_hash()
         return proof
+
+    # Toolchain present: verified artifacts live under src/Algorithms.
+    algo_dir = project_dir / "src" / "Algorithms"
+    algo_dir.mkdir(parents=True, exist_ok=True)
+    lean_file = algo_dir / f"{name}.lean"
+
+    def _write(code: str) -> Path:
+        lean_file.write_text(code, encoding="utf-8")
+        return lean_file
+
+    backend_name, model, gen_fn = resolve_backend(llm_backend)
+    verified, final_code, attempts, build_log = iterative_proof_search(
+        _write, project_dir, initial_code, gen_fn, model,
+        max_attempts=max_attempts, lake_bin=lake_bin,
+    )
+
+    status = "verified" if verified else "failed"
+    if verified:
+        print(f"  [+] Proof verified by Lean 4 ({lean_version(lean_bin)}) after {attempts} attempt(s)")
+    else:
+        print(f"  [!] Proof search FAILED after {attempts} attempt(s); spec kept as draft")
+        # A failed proof must not masquerade as a library member.
+        draft_file = drafts_dir / f"{name}.lean"
+        draft_file.write_text(final_code, encoding="utf-8")
+        lean_file = draft_file
 
     olean_file = lean_file.with_suffix(".olean")
     tactics = _extract_tactics(lean_file)
     proof = ProofResult(
         theorem_name=name, steps=len(tactics), lemmas=len(spec.definitions),
         lean_file=lean_file, olean_file=olean_file if olean_file.exists() else None,
-        tactics=tactics, proof_term=lean_file.read_text(encoding="utf-8"),
+        tactics=tactics, proof_term=final_code,
+        verification_status=status,
+        lean_version=lean_version(lean_bin),
+        build_log=build_log[-4000:],
+        proof_attempts=attempts,
     )
     proof.compute_hash()
     return proof
@@ -639,7 +515,12 @@ def extract_python(proof: ProofResult) -> Path:
 # ─── Certificate Generator ──────────────────────────────────────────────────
 
 def generate_certificate(spec: LeanSpec, proof: ProofResult, c_path: Path | None, py_path: Path | None, signing_key: bytes, key_id: str) -> ProofCertificate:
-    """Generate a cryptographic certificate for a verified algorithm."""
+    """Generate a cryptographic certificate for a generated algorithm.
+
+    The certificate binds the artifact hashes and signs them; the
+    `verification_status` field honestly records whether the proof was
+    machine-checked ("verified") or not ("unverified"/"failed").
+    """
     cert = ProofCertificate(
         algorithm_name=proof.theorem_name,
         spec_hash=spec.spec_hash,
@@ -653,6 +534,9 @@ def generate_certificate(spec: LeanSpec, proof: ProofResult, c_path: Path | None
         model_used=spec.model_used,
         generated_at=time.time(),
         key_id=key_id,
+        verification_status=proof.verification_status,
+        lean_version=proof.lean_version,
+        build_log_hash=hash_data(proof.build_log.encode()) if proof.build_log else "",
     )
     cert.sign(signing_key)
     return cert
@@ -770,6 +654,23 @@ def serve_visualization(proof: ProofResult, mode: str = "2d", port: int = 8765):
 
 # ─── CLI Commands ───────────────────────────────────────────────────────────
 
+def _resolve_passphrase(passphrase: str = "") -> str:
+    """Resolve the keystore passphrase. No hardcoded defaults: explicit
+    --passphrase, AXIOMCODE_PASSPHRASE, or an interactive prompt. Refuses to
+    silently use a guessable default."""
+    if passphrase:
+        return passphrase
+    env = os.environ.get("AXIOMCODE_PASSPHRASE", "")
+    if env:
+        return env
+    if sys.stdin.isatty():
+        return getpass.getpass("Keystore passphrase: ")
+    raise RuntimeError(
+        "No passphrase provided. Pass --passphrase, set AXIOMCODE_PASSPHRASE, "
+        "or run interactively."
+    )
+
+
 def cmd_generate(description: str, lang: str = "python", model: str = "local", visualize: bool = False, passphrase: str = ""):
     """Generate formally verified code from natural language."""
     print(BANNER)
@@ -780,11 +681,12 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
 
     ks = KeyStore()
     key_name = "default"
+    resolved = _resolve_passphrase(passphrase)
     try:
-        signing_key = ks.load_key(key_name, passphrase or "axiomcode-default").signing_key
-        key_id = ks.load_key(key_name, passphrase or "axiomcode-default").key_id
+        loaded = ks.load_key(key_name, resolved)
+        signing_key, key_id = loaded.signing_key, loaded.key_id
     except FileNotFoundError:
-        kp = ks.create_key(key_name, passphrase or "axiomcode-default")
+        kp = ks.create_key(key_name, resolved)
         signing_key, key_id = kp.signing_key, kp.key_id
 
     # Step 1: Generate specification
@@ -792,7 +694,7 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     try:
         spec = generate_spec(description, model)
         print(f"  [+] Specification generated ({spec.model_used}, {spec.generation_time_ms:.0f}ms)")
-        print(f"      Theorem: {spec.theorem.split(':')[0].strip()}")
+        print(f"      Theorem: {_theorem_name(spec.theorem)}")
         print(f"      Hash: {spec.spec_hash[:16]}...")
     except Exception as e:
         print(f"  [-] Spec generation failed: {e}")
@@ -802,15 +704,21 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     # Step 2: Search for proof
     print("[2/4] Searching for proof...")
     try:
-        proof = run_proof(spec)
-        print(f"  [+] Proof verified ({proof.steps} steps, {proof.lemmas} lemmas)")
+        proof = run_proof(spec, llm_backend=model)
+        if proof.verification_status == "verified":
+            print(f"  [+] Proof VERIFIED ({proof.steps} steps, {proof.lemmas} lemmas, {proof.proof_attempts} attempt(s))")
+        elif proof.verification_status == "failed":
+            print(f"  [!] Proof search FAILED after {proof.proof_attempts} attempt(s) — artifact will be certified as UNVERIFIED provenance only")
+        else:
+            print("  [!] Proof UNVERIFIED (no Lean toolchain) — artifact will be certified as UNVERIFIED provenance only")
         print(f"      Proof hash: {proof.proof_hash[:16]}...")
     except Exception as e:
         print(f"  [!] Proof search incomplete: {e}")
         proof = ProofResult(
-            theorem_name=spec.theorem.split(":")[0].replace("theorem", "").strip().lower(),
+            theorem_name=_theorem_name(spec.theorem),
             steps=0, lemmas=len(spec.definitions),
             lean_file=Path("unknown"), tactics=[], proof_term=spec.to_lean(),
+            verification_status="failed", build_log=str(e)[-4000:],
         )
         proof.compute_hash()
 
@@ -832,12 +740,14 @@ def cmd_generate(description: str, lang: str = "python", model: str = "local", v
     cert_path = cert_dir / f"{proof.theorem_name}.cert.json"
     cert.save(cert_path)
     print(f"  [+] Certificate: {cert_path}")
+    print(f"      Verification status: {cert.verification_status.upper()}")
     print(f"      Signature: {cert.signature[:32]}...")
 
     audit.add_entry("generate_complete", {
         "algorithm": proof.theorem_name,
         "steps": proof.steps,
         "lemmas": proof.lemmas,
+        "verification_status": proof.verification_status,
         "certificate": str(cert_path),
     })
 
@@ -924,25 +834,16 @@ def cmd_walkthrough():
 
 def cmd_models():
     print(BANNER)
-    print("Available LLM Backends")
-    print("-" * 65)
-    print(f"{'Backend':<18} {'Default Model':<22} {'Type':<8} {'Speed':<8} {'Quality'}")
-    print("-" * 65)
-    for name, model, type_, speed, quality in [
-        ("local (Ollama)", "stable-code:3b-code-q4_0", "Local", "Fast", "Good"),
-        ("mistral", "mistral:7b", "Local", "Fast", "Good"),
-        ("openai", "gpt-4o", "Cloud", "Medium", "Excellent"),
-        ("anthropic", "claude-sonnet-4", "Cloud", "Medium", "Excellent"),
-    ]:
-        print(f"{name:<18} {model:<22} {type_:<8} {speed:<8} {quality}")
-
-    print("\nLocally available models:")
-    try:
-        resp = http_get_json("http://localhost:11434/api/tags", timeout=5)
-        for m in resp.get("models", []):
-            print(f"  [+] {m['name']}")
-    except Exception:
-        print("  [!] Ollama not reachable. Run 'ollama serve'")
+    print("Available LLM Backends (one OpenAI-compatible HTTP layer)")
+    print("-" * 72)
+    print(f"{'Backend':<14} {'Default model':<26} Description")
+    print("-" * 72)
+    for bname, model, desc in list_backends():
+        print(f"{bname:<14} {model:<26} {desc}")
+    print()
+    print("Env overrides: AXIOMCODE_LLM_BACKEND, AXIOMCODE_LLM_MODEL,")
+    print("               AXIOMCODE_LLM_BASE_URL, AXIOMCODE_LLM_API_KEY")
+    print("Defaults: llama.cpp -> http://localhost:8080 | vLLM -> http://localhost:8000")
 
 
 def cmd_visualize(name: str, mode: str = "2d", port: int = 8765):
@@ -998,10 +899,15 @@ def cmd_verify(name: str):
     if cert_path.exists():
         cert = ProofCertificate.load(cert_path)
         print(f"  Certificate: {cert_path}")
+        print(f"  Verification status: {cert.verification_status.upper()}")
+        if cert.verification_status != "verified":
+            print("  [!] This certificate attests to PROVENANCE ONLY — the proof was not machine-checked.")
         print(f"  Spec hash: {cert.spec_hash[:16]}...")
         print(f"  Proof hash: {cert.proof_hash[:16]}...")
         print(f"  Signature: {cert.signature[:32]}...")
         print(f"  Key ID: {cert.key_id}")
+        if cert.lean_version:
+            print(f"  Lean toolchain: {cert.lean_version}")
 
         # Verify binary integrity
         c_path = Path(__file__).parent / "build" / "c" / f"{name}.so"
@@ -1042,7 +948,7 @@ def cmd_key_create(name: str, passphrase: str = ""):
     """Create a signing key."""
     print(BANNER)
     ks = KeyStore()
-    kp = ks.create_key(name, passphrase or "axiomcode-default")
+    kp = ks.create_key(name, _resolve_passphrase(passphrase))
     print(f"[+] Key created: {name}")
     print(f"    Key ID: {kp.key_id}")
     print(f"    Created: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(kp.created_at))}")
@@ -1078,6 +984,15 @@ def cmd_audit():
 # ─── Main ───────────────────────────────────────────────────────────────────
 
 def main():
+    # Bare-description UX (documented in README): `cli.py "implement binary
+    # search"` routes to `generate`. argparse would otherwise reject the
+    # positional as an invalid subcommand choice before we ever see it.
+    _COMMANDS = {"generate", "guide", "examples", "help", "walkthrough",
+                 "models", "visualize", "publish", "verify", "cert",
+                 "key", "audit", "version", "license"}
+    if len(sys.argv) > 1 and sys.argv[1] not in _COMMANDS and not sys.argv[1].startswith("-"):
+        sys.argv.insert(1, "generate")
+
     parser = argparse.ArgumentParser(prog="axiomcode", description="Natural language to formally verified code", formatter_class=argparse.RawDescriptionHelpFormatter, epilog=HELP_TEXT)
     sub = parser.add_subparsers(dest="command")
 

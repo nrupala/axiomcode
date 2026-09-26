@@ -215,11 +215,15 @@ def verify_hmac(key: bytes, data: bytes, expected: str, algorithm: str = HMAC_AL
 
 @dataclass
 class ProofCertificate:
-    """Cryptographic certificate attesting to a verified proof.
+    """Cryptographic certificate attesting to a generated artifact.
 
-    This is the core of AxiomCode's zero-trust model.
-    Every generated algorithm comes with a signed certificate
-    that can be independently verified.
+    This is the core of AxiomCode's zero-trust model. Every generated
+    algorithm comes with a signed certificate that can be independently
+    verified. The signature attests to *provenance and integrity* — who
+    generated the artifact, when, from what spec, and with what toolchain.
+    Whether the proof was actually machine-checked is recorded honestly in
+    `verification_status` ("verified" / "unverified" / "failed"); a signature
+    alone never implies proofhood.
     """
     version: int = PROOF_CERT_VERSION
     algorithm_name: str = ""
@@ -235,6 +239,12 @@ class ProofCertificate:
     generated_at: float = 0.0
     signature: str = ""           # HMAC signature of the certificate
     key_id: str = ""              # Key used for signing
+    # Honest verification accounting. "verified" ONLY when a proof assistant
+    # machine-checked the proof; "unverified"/"failed" otherwise. The signature
+    # attests to provenance and integrity — never to proofhood by itself.
+    verification_status: str = "unverified"
+    lean_version: str = ""        # Lean toolchain version that checked the proof
+    build_log_hash: str = ""      # Hash of the (truncated) build log
 
     def _payload(self) -> bytes:
         """Get the certificate payload (excluding signature)."""
@@ -252,6 +262,9 @@ class ProofCertificate:
             "model_used": self.model_used,
             "generated_at": self.generated_at,
             "key_id": self.key_id,
+            "verification_status": self.verification_status,
+            "lean_version": self.lean_version,
+            "build_log_hash": self.build_log_hash,
         }
         return json.dumps(data, sort_keys=True).encode("utf-8")
 
@@ -281,6 +294,9 @@ class ProofCertificate:
             "generated_at": self.generated_at,
             "signature": self.signature,
             "key_id": self.key_id,
+            "verification_status": self.verification_status,
+            "lean_version": self.lean_version,
+            "build_log_hash": self.build_log_hash,
         }, indent=2)
 
     @classmethod
@@ -309,6 +325,9 @@ class ProofCertificate:
             generated_at=d.get("generated_at", 0.0),
             signature=d.get("signature", ""),
             key_id=d.get("key_id", ""),
+            verification_status=d.get("verification_status", "unverified"),
+            lean_version=d.get("lean_version", ""),
+            build_log_hash=d.get("build_log_hash", ""),
         )
 
     def save(self, path: Path) -> None:
