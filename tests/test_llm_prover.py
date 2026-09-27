@@ -1,10 +1,13 @@
 """Tests for the LLM backend layer (core/llm.py) and proof engine (core/prover.py).
 
-Pure unit tests — no network, no Lean toolchain required.
-"""
+Mostly pure unit tests — no network required. The TestBrokenCodeHonesty class
+needs a real Lean toolchain on PATH (skipped otherwise)."""
 
 import os
+import subprocess
 import sys
+from pathlib import Path
+from unittest.mock import patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -16,7 +19,13 @@ from core.llm import (
     resolve_backend,
     vllm_generate,
 )
-from core.prover import extract_lean_block, has_sorry
+from core.prover import (
+    _module_target_for,
+    extract_lean_block,
+    has_sorry,
+    iterative_proof_search,
+    lake_build,
+)
 
 
 class TestBackendRegistry:
@@ -103,3 +112,158 @@ class TestExtractLeanBlock:
 
     def test_no_fence_passthrough(self):
         assert extract_lean_block("theorem z := 3") == "theorem z := 3"
+
+
+# ─── Prover honesty regression tests ─────────────────────────────────────────
+# These lock in the fix for the vacuous-verification bug: a bare `lake build`
+# exits 0 while building nothing on current Lake releases, so the prover must
+# always pass an explicit module target and must reject "Nothing to build".
+
+
+class TestModuleTargetDerivation:
+    def test_src_prefix_stripped(self, tmp_path):
+        proj = tmp_path / "proj"
+        (proj / "src").mkdir(parents=True)
+        f = proj / "src" / "Spec.lean"
+        f.touch()
+        assert _module_target_for(f, proj) == "Spec"
+
+    def test_nested_module_dotted(self, tmp_path):
+        proj = tmp_path / "proj"
+        (proj / "src" / "Algorithms").mkdir(parents=True)
+        f = proj / "src" / "Algorithms" / "Foo.lean"
+        f.touch()
+        assert _module_target_for(f, proj) == "Algorithms.Foo"
+
+    def test_no_src_prefix_kept(self, tmp_path):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        f = proj / "Top.lean"
+        f.touch()
+        assert _module_target_for(f, proj) == "Top"
+
+    def test_outside_project_returns_none(self, tmp_path):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        elsewhere = tmp_path / "other" / "X.lean"
+        elsewhere.parent.mkdir()
+        elsewhere.touch()
+        assert _module_target_for(elsewhere, proj) is None
+
+
+class TestVacuousBuildRejection:
+    def _run(self, returncode, stdout):
+        completed = subprocess.CompletedProcess(
+            args=["lake", "build"],
+            returncode=returncode,
+            stdout=stdout,
+            stderr="",
+        )
+        with patch("core.prover.subprocess.run", return_value=completed) as m:
+            ok, log = lake_build("/tmp/fake-proj")
+        return ok, log, m
+
+    def test_nothing_to_build_is_failure(self):
+        ok, log, m = self._run(0, "Nothing to build.\n")
+        assert ok is False
+        assert "BUILD_VACUOUS" in log
+        # the bug: bare `lake build` with no target
+        assert m.call_args[0][0] == ["lake", "build"]
+
+    def test_nothing_to_build_case_insensitive(self):
+        ok, log, _ = self._run(0, "warning: nothing to BUILD\n")
+        assert ok is False
+        assert "BUILD_VACUOUS" in log
+
+    def test_real_success_passes(self):
+        ok, log, m = self._run(0, "✔ [3/3] Built Spec\nBuild completed successfully.\n")
+        assert ok is True
+        assert "BUILD_VACUOUS" not in log
+
+    def test_explicit_target_reaches_command(self):
+        completed = subprocess.CompletedProcess(
+            args=["lake", "build", "Spec"],
+            returncode=0,
+            stdout="✔ Built Spec\n",
+            stderr="",
+        )
+        with patch("core.prover.subprocess.run", return_value=completed) as m:
+            ok, _ = lake_build("/tmp/fake-proj", target="Spec")
+        assert ok is True
+        assert m.call_args[0][0] == ["lake", "build", "Spec"]
+
+    def test_failed_build_is_failure(self):
+        ok, _, _ = self._run(1, "error: unknown identifier `foo`\n")
+        assert ok is False
+
+
+class TestBrokenCodeHonesty:
+    """End-to-end honesty: broken Lean must never report verified=True.
+
+    Uses the real Lean toolchain in a scratch project (no Mathlib dep, so it
+    is fast). Skipped when `lake` is unavailable.
+    """
+
+    @staticmethod
+    def _scratch_project(tmp_path):
+        proj = tmp_path / "proj"
+        proj.mkdir()
+        (proj / "lean-toolchain").write_text("leanprover/lean4:v4.35.0-rc3")
+        (proj / "lakefile.lean").write_text(
+            "import Lake\nopen Lake DSL\npackage e2e where\nlean_lib E2E where\n  roots := #[`E2E]\n"
+        )
+        return proj
+
+    def test_broken_code_not_verified(self, tmp_path):
+        import shutil
+
+        if shutil.which("lake") is None:
+            import pytest
+
+            pytest.skip("lake not on PATH")
+        proj = self._scratch_project(tmp_path)
+        src = proj / "E2E.lean"
+
+        def writer(code: str) -> Path:
+            src.write_text(code)
+            return src
+
+        broken = "theorem two_plus_three : 2 + 3 = 5 := rfl_wrong_tactic\n"
+        ok, _, attempts, _ = iterative_proof_search(
+            writer,
+            proj,
+            broken,
+            None,
+            "none",
+            max_attempts=1,
+            use_pantograph=False,
+        )
+        assert ok is False
+        assert attempts == 1
+
+    def test_good_code_verified(self, tmp_path):
+        import shutil
+
+        if shutil.which("lake") is None:
+            import pytest
+
+            pytest.skip("lake not on PATH")
+        proj = self._scratch_project(tmp_path)
+        src = proj / "E2E.lean"
+
+        def writer(code: str) -> Path:
+            src.write_text(code)
+            return src
+
+        good = "theorem two_plus_three : 2 + 3 = 5 := rfl\n"
+        ok, _, attempts, _ = iterative_proof_search(
+            writer,
+            proj,
+            good,
+            None,
+            "none",
+            max_attempts=1,
+            use_pantograph=False,
+        )
+        assert ok is True
+        assert attempts == 1
