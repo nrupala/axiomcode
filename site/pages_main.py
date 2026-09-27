@@ -62,7 +62,7 @@ f"""<div class="hero"><div class="wrap">
 <section class="block" style="background:var(--wash)"><div class="wrap"><div class="prose">
 <div class="kicker">Honest scope</div>
 <h2>What we certify today &mdash; and what we don&rsquo;t.</h2>
-<p>Today the engine verifies <strong>Lean 4 specifications</strong>: it compiles the artifact you submit and checks the proof the toolchain actually ran. The certificate says exactly what was checked &mdash; the artifact hash, the toolchain version, the verdict &mdash; and nothing more. We do not claim your whole system is correct, your spec matches your intent, or your deployment matches the artifact. Read the <a href="/paperwork/certificate-policy/">Certificate Policy</a> for the precise meaning of every field.</p>
+<p>Today the engine verifies <strong>Lean 4 specifications</strong>. The certificate credentials the code: it is our assessment that the submitted artifact was built to its specification, as mechanically checked &mdash; recorded as the artifact hash, the toolchain version, and the verdict. <strong>We hold no responsibility beyond this assessment.</strong> We do not claim your whole system is correct, your spec matches your intent, or your deployment matches the artifact. Read the <a href="/paperwork/certificate-policy/">Certificate Policy</a> for the precise meaning of every field.</p>
 <div class="note">Verification is evidence, not opinion. The evidence is bounded, and we publish the bounds.</div>
 </div></div></section>
 """, ORG_JSONLD)
@@ -88,7 +88,7 @@ page("/how-it-works/", "How it works",
 <p>A pass means one thing: the toolchain compiled your artifact and the proof checked. The full transcript ships with the verdict.</p>
 
 <h2>3. The certificate seals the evidence</h2>
-<p>On <span class="badge b-pass">PASSED</span>, the certification authority issues a signed certificate containing:</p>
+<p>On <span class="badge b-pass">PASSED</span>, the certification authority issues a signed certificate. The certificate credentials the code &mdash; our assessment that the artifact was built to its specification, as mechanically checked &mdash; and we hold no responsibility beyond this assessment. It contains:</p>
 <table class="spec">
 <tr><th>Field</th><th>Meaning</th></tr>
 <tr><td><code class="inline">artifact_sha256</code></td><td>Hash of exactly the code that was checked</td></tr>

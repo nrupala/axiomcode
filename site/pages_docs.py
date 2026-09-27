@@ -46,7 +46,7 @@ theorem add_comm_nat (a b : Nat) : a + b = b + a := by
 <h2 id="scope">Scope &amp; limits</h2>
 <ul>
 <li><strong>Language:</strong> Lean 4 only, today.</li>
-<li><strong>What &ldquo;verified&rdquo; means:</strong> the submitted artifact compiled under the stated toolchain and its proofs checked. Nothing about intent, deployment, or the rest of your system.</li>
+<li><strong>What &ldquo;verified&rdquo; means:</strong> the certificate credentials the code &mdash; our assessment that the submitted artifact was built to its specification, as mechanically checked. We hold no responsibility beyond this assessment. Nothing about intent, deployment, or the rest of your system.</li>
 <li><strong>Validity:</strong> 90 days from issuance. Re-verify after changes.</li>
 <li><strong>Revocation:</strong> if we discover a toolchain or engine defect that undermines a verdict, the certificate is revoked publicly. There is no silent un-verification.</li>
 </ul>

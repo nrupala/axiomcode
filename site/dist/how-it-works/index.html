@@ -125,7 +125,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <p>A pass means one thing: the toolchain compiled your artifact and the proof checked. The full transcript ships with the verdict.</p>
 
 <h2>3. The certificate seals the evidence</h2>
-<p>On <span class="badge b-pass">PASSED</span>, the certification authority issues a signed certificate containing:</p>
+<p>On <span class="badge b-pass">PASSED</span>, the certification authority issues a signed certificate. The certificate credentials the code &mdash; our assessment that the artifact was built to its specification, as mechanically checked &mdash; and we hold no responsibility beyond this assessment. It contains:</p>
 <table class="spec">
 <tr><th>Field</th><th>Meaning</th></tr>
 <tr><td><code class="inline">artifact_sha256</code></td><td>Hash of exactly the code that was checked</td></tr>

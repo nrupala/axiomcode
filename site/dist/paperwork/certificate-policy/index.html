@@ -114,7 +114,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <p><strong>1.1 Overview.</strong> AxiomCode operates a certification authority (&ldquo;AxiomCode CA&rdquo;) that issues certificates binding a software artifact&rsquo;s hash to a machine-checked verification verdict. Verification-as-evidence, not verification-as-opinion: every certificate carries the evidence needed to re-check it.</p>
 <p><strong>1.2 Document name.</strong> AxiomCode Certificate Policy and Certification Practice Statement, version 1.0 (2026-09-26).</p>
 <p><strong>1.3 Participants.</strong> The CA (AxiomCode), subscribers (paying customers who request verification), and relying parties (anyone who validates a certificate).</p>
-<p><strong>1.4 Certificate usage.</strong> Certificates assert: <em>on the stated date, the AxiomCode engine compiled the artifact with the stated hash under the stated toolchain, and the proof checked.</em> Appropriate uses: audit evidence, procurement deliverables, counterparty assurance. Prohibited reliance: treating a certificate as a warranty of safety, fitness, or intent &mdash; see &sect;9.</p>
+<p><strong>1.4 Certificate usage.</strong> Each certificate credentials the code submitted: it is our assessment that the artifact with the stated hash was built to its specification, as mechanically checked by the stated toolchain on the stated date. <strong>We hold no responsibility beyond this assessment.</strong> Appropriate uses: audit evidence, procurement deliverables, counterparty assurance. Prohibited reliance: treating a certificate as a warranty of safety, fitness, or intent &mdash; see &sect;9.</p>
 <h2>2. Publication</h2>
 <p>The CP/CPS, the CA&rsquo;s public verification keys, and the revocation list are published at axiom-code.com and queryable without an account.</p>
 <h2>3. Identification and authentication</h2>
@@ -134,7 +134,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <h2>8. Compliance</h2>
 <p>We log every issuance and revocation; logs are available to auditors under NDA. Annual self-assessment against this CP/CPS is published in summary form.</p>
 <h2>9. Legal matters</h2>
-<p>Certificates are factual statements about a verification event, not warranties. Liability is limited as stated in the <a href="/paperwork/terms/">Terms of Service</a>. Subscribers warrant they have the right to submit the artifact. Relying parties must validate certificates through the published checker and revocation list; reliance on an expired or revoked certificate is at the relying party&rsquo;s own risk.</p>
+<p>Certificates credential the code submitted and nothing more; they are factual statements about a verification event, not warranties. <strong>We hold no responsibility beyond the assessment stated in the certificate.</strong> Liability is limited as stated in the <a href="/paperwork/terms/">Terms of Service</a> (per-certificate cap at the verification fee; aggregate cap at 12 months&rsquo; fees; no consequential damages; no duty to relying parties beyond this Policy). Subscribers warrant they have the right to submit the artifact. Relying parties must validate certificates through the published checker and revocation list before relying; any reliance is at the relying party&rsquo;s own risk.</p>
 </div></div></section><footer class="sitefoot"><div class="wrap">
 <div class="cols">
 <div><h4>Product</h4><ul>
