@@ -51,11 +51,41 @@ def pantograph_available() -> bool:
 # ─── Lake build ──────────────────────────────────────────────────────────────
 
 
-def lake_build(project_dir: str | Path, lake_bin: str = "lake", timeout: int = 300) -> tuple[bool, str]:
-    """Run `lake build` in the Lean project. Returns (success, combined log)."""
+def _module_target_for(lean_file: Path, project_dir: str | Path) -> str | None:
+    """Derive a Lake module target (e.g. ``Algorithms.Foo``) from a written .lean path.
+
+    Strips the project dir and a leading ``src/`` (the common ``srcDir``), turning
+    path separators into dots. Returns None when the file is not under the project.
+    """
+    try:
+        rel = Path(lean_file).resolve().relative_to(Path(project_dir).resolve())
+    except ValueError:
+        return None
+    parts = list(rel.with_suffix("").parts)
+    if parts and parts[0] == "src":
+        parts = parts[1:]
+    if not parts:
+        return None
+    return ".".join(parts)
+
+
+def lake_build(
+    project_dir: str | Path,
+    lake_bin: str = "lake",
+    timeout: int = 300,
+    target: str | None = None,
+) -> tuple[bool, str]:
+    """Run `lake build [target]` in the Lean project. Returns (success, combined log).
+
+    `target` names an explicit Lake target (e.g. a module like ``Algorithms.Foo``).
+    A bare `lake build` builds nothing on current Lake releases ("Nothing to build")
+    yet exits 0 — treating that as success would be a vacuous verification, so it is
+    reported as failure.
+    """
+    cmd = [lake_bin, "build"] + ([target] if target else [])
     try:
         result = subprocess.run(
-            [lake_bin, "build"],
+            cmd,
             cwd=str(project_dir),
             capture_output=True,
             text=True,
@@ -64,7 +94,10 @@ def lake_build(project_dir: str | Path, lake_bin: str = "lake", timeout: int = 3
     except FileNotFoundError:
         return False, f"TOOLCHAIN_MISSING: {lake_bin} not found"
     log = (result.stdout or "") + ("\n" + result.stderr if result.stderr else "")
-    return result.returncode == 0, log.strip()
+    log = log.strip()
+    if result.returncode == 0 and "nothing to build" in log.lower():
+        return False, log + "\nBUILD_VACUOUS: lake built no targets; pass an explicit target"
+    return result.returncode == 0, log
 
 
 # ─── Pantograph checking ─────────────────────────────────────────────────────
@@ -151,9 +184,12 @@ def iterative_proof_search(
     max_attempts: int = 3,
     lake_bin: str = "lake",
     use_pantograph: bool = True,
+    build_timeout: int = 900,
 ) -> tuple[bool, str, int, str]:
     """Build → on failure, LLM-repair → rebuild, up to ``max_attempts``.
 
+    The written spec is built as an explicit Lake module target derived from the
+    file path (never a bare `lake build`, which verifies nothing on current Lake).
     Returns (verified, final_code, attempts_used, log).
     """
     code = initial_code
@@ -161,8 +197,9 @@ def iterative_proof_search(
     attempts = 0
     for attempt in range(1, max_attempts + 1):
         attempts = attempt
-        write_spec_fn(code)
-        ok, build_log = lake_build(project_dir, lake_bin)
+        lean_file = write_spec_fn(code)
+        target = _module_target_for(lean_file, project_dir)
+        ok, build_log = lake_build(project_dir, lake_bin, timeout=build_timeout, target=target)
         log = build_log
         if ok:
             # A build that still contains sorry/admit is NOT a verified proof:

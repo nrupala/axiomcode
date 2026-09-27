@@ -2,10 +2,10 @@
 # AxiomCode — Specification Definitions
 
 Core types and predicates for specifying algorithm correctness.
--/
 
-import Mathlib.Data.List.Sort
-import Mathlib.Order.WellFounded
+These definitions use only Lean 4 core (no Mathlib dependency), keeping the
+specification layer light and fast to elaborate.
+-/
 
 namespace AxiomCode
 
@@ -24,7 +24,7 @@ def SortSpec (f : List Nat → List Nat) : Prop :=
 /-- Specification for binary search: returns index if element exists, none otherwise. -/
 def BinarySearchSpec (f : List Nat → Nat → Option Nat) : Prop :=
   ∀ l x, Sorted l →
-    (f l x = some i ↔ l[i]! = x ∧ i < l.length)
+    ∀ i, (f l x = some i ↔ l[i]! = x ∧ i < l.length)
 
 /-- Specification for merge operation: merges two sorted lists into one sorted list. -/
 def MergeSpec (f : List Nat → List Nat → List Nat) : Prop :=
