@@ -287,7 +287,7 @@ class TestSpecValidation:
 
 
 class TestGeneratedLeanFiles:
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def lean_dir(self):
         return Path(__file__).parent.parent / "batch_generated" / "lean"
 
@@ -362,7 +362,7 @@ class TestGeneratedLeanFiles:
 
 
 class TestBatchReport:
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def report_path(self):
         return Path(__file__).parent.parent / "batch_test_report.json"
 
@@ -436,7 +436,7 @@ class TestBatchReport:
 
 
 class TestGeneratedSpecs:
-    @pytest.fixture(scope="class")
+    @pytest.fixture()
     def specs_path(self):
         return Path(__file__).parent.parent / "batch_generated" / "specs.json"
 
