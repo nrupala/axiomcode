@@ -9,6 +9,7 @@ plus industry-standard profit margin on top.
 1 credit = $0.01. Tune via AXIOMCODE_PRICING_JSON or the defaults below.
 Currently: 2.25x multiple over fully-loaded cost (~55.6% gross margin).
 """
+
 import json
 import os
 import time
@@ -18,12 +19,12 @@ CREDIT_USD = 0.01
 
 DEFAULT_PRICING = {
     # Fully-loaded cost per compute-second, in credits:
-    "compute": 0.05,       # raw CPU for Lean builds
-    "infra": 0.08,         # servers, bandwidth, storage, cert infra
-    "operations": 0.10,    # support, billing, abuse handling, every effort
+    "compute": 0.05,  # raw CPU for Lean builds
+    "infra": 0.08,  # servers, bandwidth, storage, cert infra
+    "operations": 0.10,  # support, billing, abuse handling, every effort
     "founder_time": 0.05,  # his time — product, sales, support, amortized
-    "agent_cost": 0.05,    # the AI runtime behind the service
-    "insurance": 0.07,     # liability coverage for certified verdicts
+    "agent_cost": 0.05,  # the AI runtime behind the service
+    "insurance": 0.07,  # liability coverage for certified verdicts
     # Industry multiple on fully-loaded cost — the business gets paid,
     # not just the servers. 2.25x ~= 55.6% gross margin (Google-class).
     "multiple": 2.25,
@@ -71,8 +72,9 @@ def load_keys(keys_file: str) -> dict:
     return keys
 
 
-def meter(meter_log: str, key_id: str, code_sha: str, verified: bool,
-          compute_s: float, pricing: dict | None = None) -> dict:
+def meter(
+    meter_log: str, key_id: str, code_sha: str, verified: bool, compute_s: float, pricing: dict | None = None
+) -> dict:
     """Append one metered call to the billing/audit log. Returns the entry."""
     bill = charge_for(compute_s, pricing)
     entry = {
@@ -100,5 +102,4 @@ def usage_for(meter_log: str, key_id: str) -> dict:
                 total_c += e.get("credits", 0)
                 total_usd += e.get("usd", 0)
                 calls += 1
-    return {"key_id": key_id, "calls": calls,
-            "credits_used": round(total_c, 4), "usd_used": round(total_usd, 4)}
+    return {"key_id": key_id, "calls": calls, "credits_used": round(total_c, 4), "usd_used": round(total_usd, 4)}

@@ -8,9 +8,8 @@ The certificate is an HMAC-signed attestation binding:
 Anyone holding the cert can confirm *what* was checked and *what* the
 machine said — without trusting the server's word for it.
 """
+
 import hashlib
-import hmac
-import json
 import os
 import sys
 import tempfile
@@ -20,12 +19,12 @@ from pathlib import Path
 sys.path.insert(0, "/home/hatch/workspace/axiomcode/repo")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import certs
+from billing import meter
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 from core.prover import iterative_proof_search, lean_version
-from billing import meter, price_per_compute_s, load_pricing
-import certs
 
 SECRET = os.environ.get("AXIOMCODE_CERT_SECRET", "dev-secret-change-me").encode()
 TOOLCHAIN = "leanprover/lean4:v4.35.0-rc3"
@@ -34,7 +33,7 @@ METER_LOG = os.environ.get("AXIOMCODE_METER_LOG", "/home/hatch/workspace/axiomco
 app = FastAPI(
     title="AxiomCode Verify",
     description="Verification-as-evidence: every verdict ships a signed certificate "
-                "anyone can re-check without trusting us. Don't trust our AI — verify our proof.",
+    "anyone can re-check without trusting us. Don't trust our AI — verify our proof.",
 )
 
 
@@ -66,21 +65,28 @@ def verify(req: VerifyRequest):
 
     t0 = time.time()
     verified, final_code, attempts, log = iterative_proof_search(
-        writer, proj, req.code, None, "none",
-        max_attempts=req.max_attempts, use_pantograph=False,
+        writer,
+        proj,
+        req.code,
+        None,
+        "none",
+        max_attempts=req.max_attempts,
+        use_pantograph=False,
     )
     compute_s = time.time() - t0
     code_sha = hashlib.sha256(req.code.encode()).hexdigest()
     # REST callers are metered under a per-request key; key auth lives on MCP.
     usage = meter(METER_LOG, "rest-anonymous", code_sha, verified, compute_s)
-    cert = certs.issue({
-        "code_sha256": code_sha,
-        "verified": verified,
-        "attempts": attempts,
-        "toolchain": TOOLCHAIN,
-        "lean_version": lean_version(),
-        "key_id": "rest-anonymous",
-    })
+    cert = certs.issue(
+        {
+            "code_sha256": code_sha,
+            "verified": verified,
+            "attempts": attempts,
+            "toolchain": TOOLCHAIN,
+            "lean_version": lean_version(),
+            "key_id": "rest-anonymous",
+        }
+    )
     return {
         "verified": verified,
         "attempts": attempts,
