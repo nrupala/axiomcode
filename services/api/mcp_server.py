@@ -8,9 +8,8 @@ the billing record. Priced in compute-seconds; see CREDITS_PER_COMPUTE_S.
 Run: uvicorn mcp_server:mcp_app --port 8092
 (Uses Streamable HTTP transport so remote agents can connect.)
 """
+
 import hashlib
-import hmac
-import json
 import os
 import sys
 import tempfile
@@ -20,13 +19,13 @@ from pathlib import Path
 sys.path.insert(0, "/home/hatch/workspace/axiomcode/repo")
 sys.path.insert(0, os.path.dirname(__file__))
 
+from billing import load_keys, meter, price_per_compute_s, usage_for
+from certs import issue as issue_cert
 from mcp.server.fastmcp import FastMCP
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
 from core.prover import iterative_proof_search
-from billing import load_keys, meter, usage_for, price_per_compute_s
-from certs import issue as issue_cert, encode as encode_cert
 
 # ─── config ──────────────────────────────────────────────────────────────
 API_KEYS_FILE = os.environ.get("AXIOMCODE_API_KEYS", "/home/hatch/workspace/axiomcode/api-prototype/keys.txt")
@@ -75,20 +74,27 @@ def verify(code: str, max_attempts: int = 1) -> dict:
 
     t0 = time.time()
     verified, _, attempts, _ = iterative_proof_search(
-        writer, proj, code, None, "none",
-        max_attempts=max_attempts, use_pantograph=False,
+        writer,
+        proj,
+        code,
+        None,
+        "none",
+        max_attempts=max_attempts,
+        use_pantograph=False,
     )
     compute_s = time.time() - t0
 
     code_sha = hashlib.sha256(code.encode()).hexdigest()
     usage = meter(METER_LOG, key_id, code_sha, verified, compute_s)
-    cert = issue_cert({
-        "code_sha256": code_sha,
-        "verified": verified,
-        "attempts": attempts,
-        "toolchain": TOOLCHAIN,
-        "key_id": key_id,
-    })
+    cert = issue_cert(
+        {
+            "code_sha256": code_sha,
+            "verified": verified,
+            "attempts": attempts,
+            "toolchain": TOOLCHAIN,
+            "key_id": key_id,
+        }
+    )
     return {
         "verified": verified,
         "attempts": attempts,
@@ -108,6 +114,7 @@ def check_certificate(certificate: dict) -> dict:
     """Re-verify a verification certificate: signature, validity window,
     revocation status. Anyone can check — never take our word for it."""
     from certs import check as check_cert
+
     return check_cert(certificate)
 
 
@@ -115,6 +122,7 @@ def check_certificate(certificate: dict) -> dict:
 def pricing() -> dict:
     """Current price list: rate per compute-second and what it covers."""
     from billing import load_pricing
+
     p = load_pricing()
     return {
         "rate_credits_per_s": round(price_per_compute_s(p), 4),
