@@ -2,7 +2,7 @@
 
 > **Natural Language to Formally Verified Code**  
 > **Domain:** axiom-code.com  
-> **Version:** 0.1.0  
+> **Version:** 0.1.1  
 > **License:** Proprietary — see [LICENSE](LICENSE)  
 > **Dependencies:** Zero (pure Python stdlib + cffi)
 
