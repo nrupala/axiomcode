@@ -3,8 +3,8 @@
 AxiomCode — Natural Language to Formally Verified Code
 =======================================================
 
-Zero-trust. Zero-knowledge. Encrypted. Exclusively secure.
-Zero external dependencies. Pure Python stdlib + cffi.
+Zero-trust design. Encrypted key storage. Signed artifacts.
+Pure Python stdlib + cffi + the audited `cryptography` package (for Ed25519).
 
 Domain: axiom-code.com
 """
@@ -193,8 +193,10 @@ FAQ:
      include hashes of all artifacts for integrity verification.
 
   Q: Can I use generated code in production?
-  A: Yes -- it comes with mathematical proofs of correctness and
-     cryptographic certificates of authenticity.
+  A: Only artifacts whose certificate records verification_status="verified".
+     AxiomCode records honesty per artifact: "verified" means a proof
+     assistant machine-checked the proof; "unverified"/"failed" mean it did
+     not. Check the certificate (or run `verify`) before trusting any artifact.
 
 TROUBLESHOOTING:
   LLM backend connection refused:
@@ -639,14 +641,46 @@ def extract_python(proof: ProofResult) -> Path:
 
 
 def generate_certificate(
-    spec: LeanSpec, proof: ProofResult, c_path: Path | None, py_path: Path | None, signing_key: bytes, key_id: str
+    spec: LeanSpec,
+    proof: ProofResult,
+    c_path: Path | None,
+    py_path: Path | None,
+    signing_key: bytes,
+    key_id: str,
+    *,
+    tier: str = "",
+    validity_days: float = 0.0,
+    product_name: str = "",
+    artifact_version: str = "",
+    owner: str = "",
+    repo_or_website: str = "",
+    owner_contact: str = "",
+    issuer_website: str = "",
+    issuer_contact: str = "",
+    verify_url_template: str = "",
 ) -> ProofCertificate:
     """Generate a cryptographic certificate for a generated algorithm.
 
     The certificate binds the artifact hashes and signs them; the
     `verification_status` field honestly records whether the proof was
     machine-checked ("verified") or not ("unverified"/"failed").
+
+    Schema v2: every minted certificate gets a unique serial number and a
+    validity window. `validity_days` <= 0 means no expiry. `tier` records the
+    verification depth sold ("verified"/"certified"); it must reflect what
+    the pipeline actually ran — never mint a tier you did not run.
     """
+    from core.tiers import validate_tier
+
+    now = time.time()
+    issued_at = now
+    expires_at = now + validity_days * 86400 if validity_days > 0 else 0.0
+    serial = ProofCertificate.generate_serial(key_id)
+    if tier:
+        tier = validate_tier(tier)
+        if tier == "scan":
+            raise ValueError("The scan tier never mints a certificate — refusing to sign one")
+    qr_payload = verify_url_template.format(serial=serial) if verify_url_template else ""
     cert = ProofCertificate(
         algorithm_name=proof.theorem_name,
         spec_hash=spec.spec_hash,
@@ -658,11 +692,23 @@ def generate_certificate(
         steps=proof.steps,
         lemmas=proof.lemmas,
         model_used=spec.model_used,
-        generated_at=time.time(),
+        generated_at=now,
         key_id=key_id,
         verification_status=proof.verification_status,
         lean_version=proof.lean_version,
         build_log_hash=hash_data(proof.build_log.encode()) if proof.build_log else "",
+        serial=serial,
+        issued_at=issued_at,
+        expires_at=expires_at,
+        tier=tier,
+        product_name=product_name or proof.theorem_name,
+        artifact_version=artifact_version,
+        owner=owner,
+        repo_or_website=repo_or_website,
+        owner_contact=owner_contact,
+        issuer_website=issuer_website,
+        issuer_contact=issuer_contact,
+        qr_payload=qr_payload,
     )
     cert.sign(signing_key)
     return cert
@@ -1060,13 +1106,52 @@ def verify_certificate_artifact(name: str, passphrase: str = "", key_name: str =
         return False, [f"[-] Certificate file unreadable: {e}"]
     lines.append(f"  Certificate: {cert_path}")
     lines.append(f"  Key ID: {cert.key_id}")
+    lines.append(f"  Serial: {cert.serial or '(none — pre-v2 certificate)'}")
     lines.append(f"  Recorded status: {cert.verification_status.upper()}")
+    if cert.issued_at or cert.expires_at:
+        exp = time.strftime("%Y-%m-%d", time.localtime(cert.expires_at)) if cert.expires_at else "never"
+        lines.append(f"  Validity: {cert.validity_status()} (expires: {exp})")
 
     # --- Check 1: signature ---
     if not cert.verify():
         lines.append("  [-] SIGNATURE INVALID — certificate tampered or forged")
         return False, lines
     lines.append("  [+] Ed25519 signature valid (payload untampered)")
+
+    # --- Check 1b: validity window and revocation flag ---
+    vstatus = cert.validity_status()
+    if vstatus == "expired":
+        lines.append("  [-] CERTIFICATE EXPIRED — validity window has passed; re-verification required")
+        return False, lines
+    if vstatus == "not-yet-valid":
+        lines.append("  [-] CERTIFICATE NOT YET VALID — issued_at is in the future")
+        return False, lines
+    if vstatus == "revoked":
+        reason = f" ({cert.revocation_reason})" if cert.revocation_reason else ""
+        lines.append(f"  [-] CERTIFICATE REVOKED{reason} — do not trust")
+        return False, lines
+    if vstatus == "active":
+        lines.append("  [+] Certificate within validity window")
+
+    # --- Check 1c: public registry revocation (best effort; honest when unavailable) ---
+    # The registry's revocation list is authoritative: a certificate revoked
+    # there fails even if its own file predates the revocation.
+    try:
+        from core.registry import CertificateRegistry
+
+        default_registry = repo_root / "registry"
+        if cert.serial and default_registry.exists():
+            reg = CertificateRegistry(default_registry)
+            if reg.is_revoked(cert.serial):
+                rec = reg.revocation_record(cert.serial) or {}
+                reason = rec.get("reason", "")
+                lines.append(f"  [-] REVOKED in public registry{': ' + reason if reason else ''}")
+                return False, lines
+            lines.append("  [+] Not revoked in public registry")
+        else:
+            lines.append("  [i] Registry revocation not checked (no local registry)")
+    except Exception as e:  # never fail closed on registry *lookup* problems
+        lines.append(f"  [i] Registry revocation not checked ({e})")
 
     # --- Check 2: issuer binding (best effort; honest when unavailable) ---
     # The keystore is indexed by key NAME; the certificate names its signer by
@@ -1180,6 +1265,96 @@ def cmd_cert(name: str):
         print(f"[-] No certificate found: {name}")
 
 
+def cmd_scan(target: str):
+    """Run the Free-scan tier: static checks only, never mints a certificate."""
+    from core.tiers import run_free_scan
+
+    print(BANNER)
+    print(f"Free scan: {target}")
+    print("Static checks only — no proof is machine-checked, no certificate is minted.")
+    try:
+        report = run_free_scan(target)
+    except FileNotFoundError as e:
+        print(f"[-] {e}")
+        sys.exit(1)
+    print(f"  Files scanned: {report['files_scanned']}")
+    print(f"  Files with sorry/admit: {report['files_with_sorry']}")
+    print(f"  Files with declared axioms: {report['files_with_declared_axioms']}")
+    for f in report["findings"]:
+        flag = ""
+        if f.get("has_sorry_or_admit"):
+            flag += " [sorry/admit]"
+        if f.get("declared_axioms"):
+            flag += f" [axioms: {len(f['declared_axioms'])}]"
+        print(f"    {f['file']}{flag}")
+    print(f"\n  {report['label']}")
+    print("  Certificate minted: NO (scan tier never mints)")
+
+
+def _default_registry():
+    from core.registry import CertificateRegistry
+
+    return CertificateRegistry(Path(__file__).parent / "registry")
+
+
+def cmd_registry(
+    action: str, name: str = "", serial: str = "", reason: str = "", output: str = "", show_all: bool = False
+):
+    """Public certificate registry: publish / revoke / list / export / check."""
+    print(BANNER)
+    reg = _default_registry()
+
+    if action == "publish":
+        cert_path = Path(__file__).parent / "build" / "certs" / f"{name}.cert.json"
+        if not cert_path.exists():
+            print(f"[-] No certificate found: {cert_path}")
+            sys.exit(1)
+        cert = ProofCertificate.load(cert_path)
+        try:
+            published = reg.publish(cert)
+        except ValueError as e:
+            print(f"[-] Publish REFUSED: {e}")
+            sys.exit(1)
+        print(f"[+] Published certificate {published} to the public registry")
+        print(f"    Status: {reg.status(published)}")
+    elif action == "revoke":
+        try:
+            record = reg.revoke(serial, reason)
+        except (KeyError, ValueError) as e:
+            print(f"[-] Revoke failed: {e}")
+            sys.exit(1)
+        print(f"[+] Revoked {serial} (public — the certificate remains visible as revoked)")
+        print(f"    Reason: {record['reason']}")
+    elif action == "list":
+        entries = reg.list_certificates(status_filter="all" if show_all else "active")
+        if not entries:
+            print("Registry is empty.")
+            return
+        for entry in entries:
+            ver = entry["artifact_version"] or "?"
+            s = entry["status"].upper()
+            print(f"  {entry['serial']} | {s:7} | {entry['product_name']} v{ver} | tier={entry['tier']}")
+    elif action == "export":
+        doc = reg.export_json()
+        if output:
+            Path(output).write_text(doc)
+            print(f"[+] Registry exported to {output} ({len(json.loads(doc)['certificates'])} certificates)")
+        else:
+            print(doc)
+    elif action == "check":
+        ok, issues = reg.verify_registry()
+        if ok:
+            print("[+] Registry integrity OK: all published certificate signatures verify")
+        else:
+            print("[-] Registry integrity FAILED:")
+            for i in issues:
+                print(f"    {i}")
+            sys.exit(1)
+    else:
+        print(f"[-] Unknown registry action: {action}")
+        sys.exit(1)
+
+
 def cmd_key_create(name: str, passphrase: str = ""):
     """Create an Ed25519 signing key."""
     print(BANNER)
@@ -1244,6 +1419,8 @@ def main():
         "publish",
         "verify",
         "cert",
+        "scan",
+        "registry",
         "key",
         "audit",
         "version",
@@ -1297,6 +1474,22 @@ def main():
     )
 
     sub.add_parser("cert", help="Show proof certificate").add_argument("name")
+
+    p_scan = sub.add_parser("scan", help="Free static scan (never mints a certificate)")
+    p_scan.add_argument("target", help="Lean file or directory to scan")
+
+    p_reg = sub.add_parser("registry", help="Public certificate registry")
+    p_reg.add_argument(
+        "action",
+        nargs="?",
+        default="list",
+        choices=["publish", "revoke", "list", "export", "check"],
+    )
+    p_reg.add_argument("--name", default="", help="Certificate name (for publish)")
+    p_reg.add_argument("--serial", default="", help="Certificate serial (for revoke)")
+    p_reg.add_argument("--reason", default="", help="Revocation reason (for revoke)")
+    p_reg.add_argument("--output", default="", help="Output file (for export)")
+    p_reg.add_argument("--all", action="store_true", help="Include expired/revoked (for list)")
 
     p_kc = sub.add_parser("key", help="Key management")
     p_kc.add_argument("action", choices=["create", "list"])
@@ -1364,6 +1557,17 @@ def main():
         cmd_verify(args.name, args.passphrase, args.key_name)
     elif args.command == "cert":
         cmd_cert(args.name)
+    elif args.command == "scan":
+        cmd_scan(args.target)
+    elif args.command == "registry":
+        cmd_registry(
+            args.action,
+            name=getattr(args, "name", ""),
+            serial=getattr(args, "serial", ""),
+            reason=getattr(args, "reason", ""),
+            output=getattr(args, "output", ""),
+            show_all=getattr(args, "all", False),
+        )
     elif args.command == "key":
         if args.action == "create":
             cmd_key_create(args.name, args.passphrase)
