@@ -1,0 +1,38 @@
+# AxiomCode
+
+> The certification authority for software correctness. Don't trust our AI — verify our proof.
+
+AxiomCode verifies Lean 4 software specifications with a real toolchain and issues
+signed, revocable, independently verifiable certificates binding the artifact hash,
+verdict, toolchain, issuer, serial, and validity window.
+
+## For agents
+
+- API docs: https://axiom-code.com/docs/api/
+- Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json
+- REST base: https://api.axiom-code.com
+- MCP server: https://api.axiom-code.com/mcp with tools: verify, check_certificate, pricing, usage_report
+- Check any certificate (no auth): GET https://api.axiom-code.com/v1/check?serial=...
+- Revocation list: https://api.axiom-code.com/v1/revoked
+
+## Trial
+
+10 free verifications per email via POST /v1/trial/verify. Trial verdicts include the
+verdict and transcript but NEVER a certificate. Certificates are issued to paying
+customers only (credit packs from $10; 1 credit = $0.01; metered at 0.9 credits/sec
+of engine compute time).
+
+## Scope (honest)
+
+Today: Lean 4 only. A PASSED verdict means the submitted artifact compiled under the
+stated toolchain and its proofs checked. It does not certify intent, deployment, or
+the rest of the system. Certificates are valid 90 days and revocable. Mis-issuance
+is handled by public revocation — see the Certificate Policy.
+
+## Paperwork
+
+- Terms: https://axiom-code.com/paperwork/terms/
+- Privacy: https://axiom-code.com/paperwork/privacy/
+- Certificate Policy & CPS: https://axiom-code.com/paperwork/certificate-policy/
+- Refunds: https://axiom-code.com/paperwork/refunds/
+- Security & disclosure: https://axiom-code.com/paperwork/security/
