@@ -11,6 +11,7 @@ from core.persistence import AlgorithmRegistry, DataStore, SessionManager
 from core.security import (
     AuditLog,
     BinarySignature,
+    Ed25519KeyPair,
     KeyPair,
     KeyStore,
     ProofCertificate,
@@ -18,6 +19,9 @@ from core.security import (
     SecureChannel,
     SecureSandbox,
     compute_hmac,
+    ed25519_public_from_private,
+    ed25519_sign,
+    ed25519_verify,
     hash_data,
     hash_file,
     sign_binary,
@@ -28,6 +32,10 @@ from core.versioning import CURRENT_VERSION, VersionManager
 __all__ = [
     "KeyStore",
     "KeyPair",
+    "Ed25519KeyPair",
+    "ed25519_sign",
+    "ed25519_verify",
+    "ed25519_public_from_private",
     "ProofCertificate",
     "BinarySignature",
     "sign_binary",

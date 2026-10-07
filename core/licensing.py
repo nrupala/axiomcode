@@ -11,14 +11,15 @@ Architecture:
   - Offline verification — no phone-home needed
   - Revocation support — compromised licenses can be invalidated
 
-All stdlib. Zero external dependencies.
+Signatures are Ed25519 (via the `cryptography` package): the license
+verification key is genuinely public — it cannot sign — so offline
+third-party verification is actually possible.
 """
 
 from __future__ import annotations
 
 import base64
 import hashlib
-import hmac
 import json
 import platform
 import secrets
@@ -27,6 +28,8 @@ import uuid
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
+
+from core.security import ed25519_public_from_private, ed25519_sign, ed25519_verify
 
 # ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -101,29 +104,24 @@ class LicenseKeyPair:
     """
     Asymmetric key pair for license signing and verification.
 
-    Uses HMAC-SHA512 for MVP. For production with true asymmetric crypto
-    (where verification key cannot sign), use Ed25519 or RSA-4096.
+    Ed25519: the private key signs, the public key verifies and is safe to
+    ship with the software — it cannot be used to forge signatures.
     """
 
-    private_key: bytes  # SECRET — used to sign licenses
-    public_key: bytes  # PUBLIC — shipped with software to verify
+    private_key: bytes  # SECRET — 32-byte Ed25519 seed, signs licenses
+    public_key: bytes  # PUBLIC — 32-byte Ed25519 key, verifies licenses
     key_id: str
     created_at: float
-    algorithm: str = "hmac-sha512"
+    algorithm: str = "ed25519"
 
     @classmethod
     def generate(cls) -> LicenseKeyPair:
-        """Generate a new key pair.
-
-        NOTE: HMAC is symmetric — signing and verification use the same key.
-        The 'public_key' here is identical to 'private_key'. For production
-        with true asymmetric crypto (where verification key cannot sign),
-        replace with Ed25519 or RSA-4096 using the `cryptography` package.
-        """
-        key = secrets.token_bytes(LICENSE_KEY_SIZE)
+        """Generate a new Ed25519 key pair for license signing."""
+        private_key = secrets.token_bytes(32)
+        public_key = ed25519_public_from_private(private_key)
         return cls(
-            private_key=key,
-            public_key=key,  # Same key — HMAC is symmetric
+            private_key=private_key,
+            public_key=public_key,
             key_id=secrets.token_hex(8),
             created_at=time.time(),
         )
@@ -246,14 +244,15 @@ class LicenseCertificate:
         return json.dumps(data, sort_keys=True).encode("utf-8")
 
     def sign(self, private_key: bytes) -> LicenseCertificate:
-        """Sign the license with the root private key."""
-        self.signature = hmac.new(private_key, self._payload(), "sha512").hexdigest()
+        """Sign the license with the root Ed25519 private key."""
+        self.signature = ed25519_sign(private_key, self._payload())
         return self
 
     def verify(self, public_key: bytes) -> bool:
-        """Verify the license signature."""
-        expected = hmac.new(public_key, self._payload(), "sha512").hexdigest()
-        return hmac.compare_digest(expected, self.signature)
+        """Verify the license's Ed25519 signature with the public key."""
+        if not self.signature:
+            return False
+        return ed25519_verify(public_key, self._payload(), self.signature)
 
     def is_valid(self, public_key: bytes) -> tuple[bool, str]:
         """

@@ -3,14 +3,14 @@ AxiomCode Security Layer
 =========================
 Zero-trust, zero-knowledge, encrypted, exclusively secure.
 
-All cryptographic operations use Python stdlib only:
-- hashlib (SHA-256, SHA-512, HMAC)
-- secrets (cryptographic random)
-- hmac (message authentication)
-- ssl (TLS connections)
-- base64 (encoding)
-
-No external crypto libraries. No attack surface from dependencies.
+Cryptographic operations:
+- hashlib (SHA-256, SHA-512, HMAC) — stdlib
+- secrets (cryptographic random) — stdlib
+- Ed25519 signatures via the `cryptography` package — REQUIRED for
+  certificate signing. Signatures must be verifiable by third parties and
+  agents without a shared secret, which symmetric HMAC cannot provide.
+  (The old stdlib-only constraint yielded here deliberately: hand-rolling
+  Ed25519 would be far worse than taking the audited dependency.)
 """
 
 from __future__ import annotations
@@ -25,6 +25,12 @@ import secrets
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from cryptography.exceptions import InvalidSignature
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
 
 # ─── Cryptographic Constants ────────────────────────────────────────────────
 
@@ -186,6 +192,140 @@ class KeyStore:
             key_file.unlink()
         self._cache.pop(name, None)
 
+    def create_signing_key(self, name: str, passphrase: str) -> Ed25519KeyPair:
+        """Create and store a new Ed25519 signing key pair.
+
+        Signing keys live in `<name>.signing.key`, separate from the legacy
+        symmetric keys — the two are never interchangeable.
+        """
+        keypair = Ed25519KeyPair.generate()
+        salt = secrets.token_bytes(SALT_SIZE)
+        master_key = self._derive_master_key(passphrase, salt)
+        encrypted = self._encrypt_key(
+            json.dumps(keypair.to_dict()).encode(),
+            master_key,
+        )
+        key_file = self.store_dir / f"{name}.signing.key"
+        key_file.write_text(
+            json.dumps(
+                {
+                    "version": PROOF_CERT_VERSION,
+                    "salt": base64.b64encode(salt).decode(),
+                    "encrypted": encrypted,
+                },
+                indent=2,
+            )
+        )
+        return keypair
+
+    def load_signing_key(self, name: str, passphrase: str) -> Ed25519KeyPair:
+        """Load an Ed25519 signing key pair from storage."""
+        key_file = self.store_dir / f"{name}.signing.key"
+        if not key_file.exists():
+            raise FileNotFoundError(f"Signing key not found: {name}")
+        try:
+            data = json.loads(key_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, UnicodeDecodeError) as e:
+            raise ValueError(f"Invalid signing key file: {e}") from e
+        if not isinstance(data, dict) or "salt" not in data or "encrypted" not in data:
+            raise ValueError("Invalid signing key file format")
+        try:
+            salt = base64.b64decode(data["salt"])
+            master_key = self._derive_master_key(passphrase, salt)
+            decrypted = self._decrypt_key(data["encrypted"], master_key)
+            decrypted_dict = json.loads(decrypted)
+            if not isinstance(decrypted_dict, dict) or decrypted_dict.get("algorithm") != "ed25519":
+                raise ValueError("Invalid decrypted signing key structure - wrong passphrase?")
+            return Ed25519KeyPair.from_dict(decrypted_dict)
+        except (binascii.Error, json.JSONDecodeError, ValueError) as e:
+            raise ValueError(f"Failed to decrypt signing key: {e}") from e
+
+
+# ─── Ed25519 signing keys ────────────────────────────────────────────────────
+#
+# Certificate signatures MUST be asymmetric: anyone (third parties, agents)
+# must be able to verify a certificate using only the public key, which is
+# published inside the certificate itself. HMAC is symmetric — verification
+# requires the secret — so it can never serve as a public trust primitive.
+
+
+@dataclass
+class Ed25519KeyPair:
+    """Asymmetric key pair for certificate signing.
+
+    The private key signs; the public key verifies and is safe to publish
+    (it is embedded in every certificate this key signs).
+    """
+
+    private_key: bytes  # 32-byte Ed25519 seed — SECRET
+    public_key: bytes  # 32-byte Ed25519 public key — safe to publish
+    key_id: str
+    created_at: float
+
+    @classmethod
+    def generate(cls) -> Ed25519KeyPair:
+        """Generate a fresh Ed25519 key pair."""
+        private = Ed25519PrivateKey.generate()
+        private_bytes = private.private_bytes_raw()
+        public_bytes = private.public_key().public_bytes_raw()
+        return cls(
+            private_key=private_bytes,
+            public_key=public_bytes,
+            key_id=secrets.token_hex(8),
+            created_at=time.time(),
+        )
+
+    def to_dict(self) -> dict:
+        return {
+            "algorithm": "ed25519",
+            "private_key": base64.b64encode(self.private_key).decode(),
+            "public_key": base64.b64encode(self.public_key).decode(),
+            "key_id": self.key_id,
+            "created_at": self.created_at,
+        }
+
+    @classmethod
+    def from_dict(cls, data: dict) -> Ed25519KeyPair:
+        if data.get("algorithm", "ed25519") != "ed25519":
+            raise ValueError(f"Not an Ed25519 keypair: {data.get('algorithm')}")
+        private_key = base64.b64decode(data["private_key"])
+        public_key = base64.b64decode(data["public_key"])
+        if len(private_key) != 32 or len(public_key) != 32:
+            raise ValueError("Invalid Ed25519 key lengths")
+        return cls(
+            private_key=private_key,
+            public_key=public_key,
+            key_id=data["key_id"],
+            created_at=data["created_at"],
+        )
+
+
+def ed25519_sign(private_key: bytes, data: bytes) -> str:
+    """Sign data with an Ed25519 private key. Returns base64 signature."""
+    if len(private_key) != 32:
+        raise ValueError("Ed25519 private key must be 32 bytes")
+    private = Ed25519PrivateKey.from_private_bytes(private_key)
+    return base64.b64encode(private.sign(data)).decode()
+
+
+def ed25519_verify(public_key: bytes, data: bytes, signature: str) -> bool:
+    """Verify an Ed25519 signature. Never raises on bad input — returns False."""
+    try:
+        if len(public_key) != 32:
+            return False
+        public = Ed25519PublicKey.from_public_bytes(public_key)
+        public.verify(base64.b64decode(signature), data)
+        return True
+    except (InvalidSignature, ValueError, binascii.Error):
+        return False
+
+
+def ed25519_public_from_private(private_key: bytes) -> bytes:
+    """Derive the Ed25519 public key from a private key."""
+    if len(private_key) != 32:
+        raise ValueError("Ed25519 private key must be 32 bytes")
+    return Ed25519PrivateKey.from_private_bytes(private_key).public_key().public_bytes_raw()
+
 
 # ─── Cryptographic Hashing ──────────────────────────────────────────────────
 
@@ -231,6 +371,11 @@ class ProofCertificate:
     Whether the proof was actually machine-checked is recorded honestly in
     `verification_status` ("verified" / "unverified" / "failed"); a signature
     alone never implies proofhood.
+
+    Signatures are Ed25519 (asymmetric): the public verification key is
+    embedded in the certificate itself (`verify_key`) and covered by the
+    signature, so any third party or agent can verify authenticity without a
+    shared secret.
     """
 
     version: int = PROOF_CERT_VERSION
@@ -245,8 +390,9 @@ class ProofCertificate:
     lemmas: int = 0
     model_used: str = ""
     generated_at: float = 0.0
-    signature: str = ""  # HMAC signature of the certificate
+    signature: str = ""  # base64 Ed25519 signature over the payload
     key_id: str = ""  # Key used for signing
+    verify_key: str = ""  # base64 Ed25519 public key — safe to publish
     # Honest verification accounting. "verified" ONLY when a proof assistant
     # machine-checked the proof; "unverified"/"failed" otherwise. The signature
     # attests to provenance and integrity — never to proofhood by itself.
@@ -270,20 +416,58 @@ class ProofCertificate:
             "model_used": self.model_used,
             "generated_at": self.generated_at,
             "key_id": self.key_id,
+            "verify_key": self.verify_key,
             "verification_status": self.verification_status,
             "lean_version": self.lean_version,
             "build_log_hash": self.build_log_hash,
         }
         return json.dumps(data, sort_keys=True).encode("utf-8")
 
-    def sign(self, signing_key: bytes) -> ProofCertificate:
-        """Sign the certificate with a key."""
-        self.signature = compute_hmac(signing_key, self._payload())
+    def sign(self, private_key: bytes) -> ProofCertificate:
+        """Sign the certificate with an Ed25519 private key (32 bytes).
+
+        The corresponding public key is embedded in the certificate and
+        covered by the signature, so verifiers need no shared secret.
+        """
+        self.verify_key = base64.b64encode(ed25519_public_from_private(private_key)).decode()
+        self.signature = ed25519_sign(private_key, self._payload())
         return self
 
-    def verify(self, signing_key: bytes) -> bool:
-        """Verify the certificate signature."""
-        return verify_hmac(signing_key, self._payload(), self.signature)
+    def verify(self, public_key: bytes | None = None) -> bool:
+        """Verify the certificate's Ed25519 signature.
+
+        Uses the explicitly provided public key, or the key embedded in the
+        certificate itself. (Embedded-key verification detects tampering with
+        an issued certificate; binding the certificate to a *trusted* issuer
+        additionally requires checking `key_id`/`verify_key` against the
+        issuer's published keys — see `verify_against_keystore`.)
+        """
+        key = public_key
+        if key is None:
+            if not self.verify_key:
+                return False
+            try:
+                key = base64.b64decode(self.verify_key)
+            except (binascii.Error, ValueError):
+                return False
+        if not self.signature:
+            return False
+        return ed25519_verify(key, self._payload(), self.signature)
+
+    def verify_against_issuer_key(self, issuer_public_key: bytes, issuer_key_id: str) -> tuple[bool, str]:
+        """Verify the signature AND bind the certificate to a trusted issuer key.
+
+        The caller loads the trusted keypair (by keystore *name*) and passes
+        its public key and key_id. Returns (ok, reason). Fails when the
+        certificate does not name the trusted key, or when the signature does
+        not verify under it — i.e. the certificate was not signed by the
+        issuer the verifier trusts.
+        """
+        if self.key_id != issuer_key_id:
+            return False, (f"certificate names key '{self.key_id}', not the trusted issuer key '{issuer_key_id}'")
+        if not self.verify(issuer_public_key):
+            return False, "signature invalid against trusted issuer key"
+        return True, "signature valid; issuer key trusted"
 
     def to_json(self) -> str:
         """Export certificate as JSON."""
@@ -303,6 +487,7 @@ class ProofCertificate:
                 "generated_at": self.generated_at,
                 "signature": self.signature,
                 "key_id": self.key_id,
+                "verify_key": self.verify_key,
                 "verification_status": self.verification_status,
                 "lean_version": self.lean_version,
                 "build_log_hash": self.build_log_hash,
@@ -336,6 +521,7 @@ class ProofCertificate:
             generated_at=d.get("generated_at", 0.0),
             signature=d.get("signature", ""),
             key_id=d.get("key_id", ""),
+            verify_key=d.get("verify_key", ""),
             verification_status=d.get("verification_status", "unverified"),
             lean_version=d.get("lean_version", ""),
             build_log_hash=d.get("build_log_hash", ""),

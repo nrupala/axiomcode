@@ -503,7 +503,7 @@ class TestCertificateGeneration:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
-            kp = ks.create_key("batch_test", "test_pass")
+            kp = ks.create_signing_key("batch_test", "test_pass")
 
             for a in ALGORITHMS:
                 spec = generate_mock_spec(a)
@@ -516,8 +516,8 @@ class TestCertificateGeneration:
                     lemmas=2,
                     model_used="mock",
                 )
-                cert.sign(kp.signing_key)
-                assert cert.verify(kp.signing_key) is True
+                cert.sign(kp.private_key)
+                assert cert.verify(kp.public_key) is True
                 assert cert.algorithm_name == a["name"]
 
     def test_certificate_tamper_detection(self):
@@ -526,7 +526,7 @@ class TestCertificateGeneration:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
-            kp = ks.create_key("test", "pass")
+            kp = ks.create_signing_key("test", "pass")
             spec = generate_mock_spec(ALGORITHMS[0])
 
             cert = ProofCertificate(
@@ -535,9 +535,9 @@ class TestCertificateGeneration:
                 proof_hash="mock",
                 steps=5,
             )
-            cert.sign(kp.signing_key)
+            cert.sign(kp.private_key)
             cert.steps = 999
-            assert cert.verify(kp.signing_key) is False
+            assert cert.verify(kp.public_key) is False
 
     def test_certificate_save_load_roundtrip(self):
         from batch_generate import ALGORITHMS, generate_mock_spec
@@ -545,7 +545,7 @@ class TestCertificateGeneration:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
-            kp = ks.create_key("test", "pass")
+            kp = ks.create_signing_key("test", "pass")
             spec = generate_mock_spec(ALGORITHMS[0])
 
             cert = ProofCertificate(
@@ -555,14 +555,14 @@ class TestCertificateGeneration:
                 steps=5,
                 lemmas=2,
             )
-            cert.sign(kp.signing_key)
+            cert.sign(kp.private_key)
 
             cert_path = Path(tmpdir) / "test.cert.json"
             cert.save(cert_path)
             loaded = ProofCertificate.load(cert_path)
             assert loaded.algorithm_name == cert.algorithm_name
             assert loaded.spec_hash == cert.spec_hash
-            assert loaded.verify(kp.signing_key) is True
+            assert loaded.verify(kp.public_key) is True
 
 
 # ─── UTF-8 Encoding Tests ───────────────────────────────────────────────────
@@ -629,7 +629,7 @@ class TestEndToEndPipeline:
         # Step 3: Generate certificate
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
-            kp = ks.create_key("e2e_test", "pass")
+            kp = ks.create_signing_key("e2e_test", "pass")
 
             cert = ProofCertificate(
                 algorithm_name=algo["name"],
@@ -640,8 +640,8 @@ class TestEndToEndPipeline:
                 lemmas=2,
                 model_used="mock",
             )
-            cert.sign(kp.signing_key)
-            assert cert.verify(kp.signing_key) is True
+            cert.sign(kp.private_key)
+            assert cert.verify(kp.public_key) is True
 
     def test_full_pipeline_random_algorithms(self):
         import random
@@ -654,7 +654,7 @@ class TestEndToEndPipeline:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
-            kp = ks.create_key("random_test", "pass")
+            kp = ks.create_signing_key("random_test", "pass")
 
             for algo in sample:
                 spec = generate_mock_spec(algo)
@@ -669,8 +669,8 @@ class TestEndToEndPipeline:
                     steps=3,
                     lemmas=1,
                 )
-                cert.sign(kp.signing_key)
-                assert cert.verify(kp.signing_key)
+                cert.sign(kp.private_key)
+                assert cert.verify(kp.public_key)
 
     def test_full_pipeline_hard_algorithms(self):
         from batch_generate import ALGORITHMS, generate_mock_spec, validate_spec
@@ -681,7 +681,7 @@ class TestEndToEndPipeline:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
-            kp = ks.create_key("hard_test", "pass")
+            kp = ks.create_signing_key("hard_test", "pass")
 
             for algo in hard_algos:
                 spec = generate_mock_spec(algo)
@@ -696,8 +696,8 @@ class TestEndToEndPipeline:
                     steps=10,
                     lemmas=5,
                 )
-                cert.sign(kp.signing_key)
-                assert cert.verify(kp.signing_key)
+                cert.sign(kp.private_key)
+                assert cert.verify(kp.public_key)
 
     def test_full_pipeline_all_categories(self):
         from batch_generate import ALGORITHMS, generate_mock_spec, validate_spec
@@ -707,7 +707,7 @@ class TestEndToEndPipeline:
 
         with tempfile.TemporaryDirectory() as tmpdir:
             ks = KeyStore(tmpdir)
-            kp = ks.create_key("category_test", "pass")
+            kp = ks.create_signing_key("category_test", "pass")
 
             for cat in categories:
                 algo = next(a for a in ALGORITHMS if a["category"] == cat)
@@ -723,8 +723,8 @@ class TestEndToEndPipeline:
                     steps=5,
                     lemmas=2,
                 )
-                cert.sign(kp.signing_key)
-                assert cert.verify(kp.signing_key)
+                cert.sign(kp.private_key)
+                assert cert.verify(kp.public_key)
 
 
 # ─── Batch Generate Function Tests ──────────────────────────────────────────

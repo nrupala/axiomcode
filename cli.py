@@ -38,6 +38,8 @@ from core.llm import (
     resolve_backend,
 )
 from core.prover import (
+    audit_axioms,
+    elaborate_lean_file,
     iterative_proof_search,
     lean_available,
     lean_version,
@@ -417,8 +419,10 @@ def run_proof(
 ) -> ProofResult:
     """Verify a specification with Lean 4, using the iterative proof-search loop.
 
-    - Toolchain present: write spec, `lake build`, and on failure feed the
-      compiler errors back to the LLM for repair (up to `max_attempts`).
+    - Toolchain present: write spec, elaborate with `lake env lean`, and on
+      failure feed the compiler errors back to the LLM for repair (up to
+      `max_attempts`). A clean elaboration then passes the sorry scan and the
+      axiom audit before it may count as verified.
       Optional Pantograph M2M check when installed.
     - Toolchain missing: the spec is saved but the result is honestly marked
       "unverified" — it is never presented as a verified proof.
@@ -569,14 +573,27 @@ def extract_python(proof: ProofResult) -> Path:
     pkg_dir = Path(__file__).parent / "build" / "python" / f"axiomcode_{proof.theorem_name}"
     pkg_dir.mkdir(parents=True, exist_ok=True)
 
+    # P0 honesty gate: the verified stamp and "formally verified" language are
+    # emitted ONLY when the proof was genuinely machine-checked. Anything else
+    # ships an honest UNVERIFIED label — never a false claim.
+    verified = proof.verification_status == "verified"
+    if verified:
+        doc_first_line = f"{proof.theorem_name} -- formally verified via AxiomCode."
+        stamp_line = "    __proof_verified__ = True"
+    else:
+        doc_first_line = (
+            f"{proof.theorem_name} -- NOT machine-verified (status: {proof.verification_status}). "
+            "Provenance only; do not rely on proof claims."
+        )
+        stamp_line = "    __proof_verified__ = False"
     init_py = pkg_dir / "__init__.py"
     init_text = textwrap.dedent(f'''
         """
-        {proof.theorem_name} -- formally verified via AxiomCode.
+        {doc_first_line}
         Proof: {proof.steps} steps, {proof.lemmas} lemmas.
         Certificate: axiomcode_{proof.theorem_name}.cert.json
         """
-        __proof_verified__ = True
+{stamp_line}
     ''').lstrip()
     init_py.write_text(init_text, encoding="utf-8")
 
@@ -599,12 +616,17 @@ def extract_python(proof: ProofResult) -> Path:
     bindings_py.write_text(bindings_text, encoding="utf-8")
 
     setup_py = pkg_dir / "setup.py"
+    pkg_desc = (
+        f"Formally verified {proof.theorem_name} by AxiomCode"
+        if proof.verification_status == "verified"
+        else f"{proof.theorem_name} by AxiomCode (NOT machine-verified: {proof.verification_status})"
+    )
     setup_text = textwrap.dedent(f"""
         from setuptools import setup, find_packages
         setup(
             name="axiomcode-{proof.theorem_name}",
             version="0.1.0",
-            description="Formally verified {proof.theorem_name} by AxiomCode",
+            description="{pkg_desc}",
             packages=find_packages(),
         )
     """).lstrip()
@@ -819,11 +841,11 @@ def cmd_generate(
     key_name = "default"
     resolved = _resolve_passphrase(passphrase)
     try:
-        loaded = ks.load_key(key_name, resolved)
-        signing_key, key_id = loaded.signing_key, loaded.key_id
+        loaded = ks.load_signing_key(key_name, resolved)
+        signing_key, key_id = loaded.private_key, loaded.key_id
     except FileNotFoundError:
-        kp = ks.create_key(key_name, resolved)
-        signing_key, key_id = kp.signing_key, kp.key_id
+        kp = ks.create_signing_key(key_name, resolved)
+        signing_key, key_id = kp.private_key, kp.key_id
 
     # Step 1: Generate specification
     print("[1/4] Generating formal specification...")
@@ -1008,18 +1030,110 @@ def cmd_visualize(name: str, mode: str = "2d", port: int = 8765):
     serve_visualization(proof, mode=mode, port=port)
 
 
+def verify_certificate_artifact(name: str, passphrase: str = "", key_name: str = "default") -> tuple[bool, list[str]]:
+    """Independently verify a certificate and its proof artifact.
+
+    Three real checks — no theater:
+    1. Ed25519 signature over the certificate payload (detects tampering).
+    2. Issuer binding: the embedded public key matches the trusted KeyStore
+       key for `key_id` (when a trusted key can be loaded).
+    3. Fresh machine re-check: `lake build <target>` on the stored proof file
+       plus the axiom audit — the proof must check out *today*, not just at
+       generation time.
+
+    Returns (ok, report_lines). Fails closed on every uncertainty. A
+    certificate whose signature is valid but whose `verification_status` is
+    not "verified" is reported honestly: authentic provenance, proof NOT
+    verified — overall verdict FAIL.
+    """
+    lines: list[str] = []
+    repo_root = Path(__file__).parent
+    lean_project = repo_root / "lean"
+
+    # --- Load ---
+    cert_path = repo_root / "build" / "certs" / f"{name}.cert.json"
+    if not cert_path.exists():
+        return False, [f"[-] No certificate found: {cert_path}"]
+    try:
+        cert = ProofCertificate.load(cert_path)
+    except (ValueError, FileNotFoundError) as e:
+        return False, [f"[-] Certificate file unreadable: {e}"]
+    lines.append(f"  Certificate: {cert_path}")
+    lines.append(f"  Key ID: {cert.key_id}")
+    lines.append(f"  Recorded status: {cert.verification_status.upper()}")
+
+    # --- Check 1: signature ---
+    if not cert.verify():
+        lines.append("  [-] SIGNATURE INVALID — certificate tampered or forged")
+        return False, lines
+    lines.append("  [+] Ed25519 signature valid (payload untampered)")
+
+    # --- Check 2: issuer binding (best effort; honest when unavailable) ---
+    # The keystore is indexed by key NAME; the certificate names its signer by
+    # key_id. Binding succeeds only when the named trusted key's key_id matches
+    # the certificate's AND the signature verifies under its public key.
+    resolved = passphrase or os.environ.get("AXIOMCODE_PASSPHRASE", "")
+    if resolved:
+        try:
+            trusted = KeyStore().load_signing_key(key_name, resolved)
+        except (FileNotFoundError, ValueError) as e:
+            lines.append(f"  [i] Issuer binding not checked (trusted key '{key_name}' unavailable: {e})")
+        else:
+            ok_bind, reason = cert.verify_against_issuer_key(trusted.public_key, trusted.key_id)
+            lines.append(f"  {'[+]' if ok_bind else '[-]'} Issuer binding: {reason}")
+            if not ok_bind:
+                return False, lines
+    else:
+        lines.append("  [i] Issuer binding not checked (no passphrase; set AXIOMCODE_PASSPHRASE to enable)")
+
+    # --- Status honesty gate ---
+    # A certificate that honestly records "failed"/"unverified" is authentic
+    # provenance — but there is no verified proof to independently re-check,
+    # so the machine re-check below only runs for "verified" claims.
+    if cert.verification_status != "verified":
+        lines.append(
+            "  [-] Certificate is authentic BUT records status "
+            f"'{cert.verification_status}' — the proof was NOT machine-verified"
+        )
+        return False, lines
+
+    # --- Check 3: fresh machine re-check of the stored proof ---
+    try:
+        proof = load_proof(name)
+    except FileNotFoundError:
+        lines.append("  [-] No proof artifact under lean/src/Algorithms/ — nothing to re-check")
+        return False, lines
+    # Fresh machine re-check: elaborate the stored proof file directly.
+    # (`lake build <module>` cannot address generated modules outside the
+    # lakefile's static roots; `lake env lean` on the file IS the check.)
+    build_ok, build_log = elaborate_lean_file(proof.lean_file, lean_project, timeout=600)
+    if not build_ok:
+        lines.append("  [-] Fresh Lean elaboration FAILED — proof does not check out")
+        if build_log.strip():
+            lines.append("      " + build_log.strip().splitlines()[-1][:200])
+        return False, lines
+    lines.append("  [+] Fresh Lean elaboration passed")
+
+    audit_ok, audit_report = audit_axioms(proof.lean_file, lean_project, timeout=600)
+    lines.append(f"  {'[+]' if audit_ok else '[-]'} Axiom audit: {audit_report.splitlines()[0]}")
+    if not audit_ok:
+        return False, lines
+
+    lines.append("  [+] VERIFIED: authentic certificate for a machine-checked proof")
+    return True, lines
+
+
 def cmd_publish(name: str, pypi: bool = False, github: bool = False):
     print(BANNER)
     print(f"Publishing: {name}")
 
-    # Verify certificate first
-    cert_dir = Path(__file__).parent / "build" / "certs"
-    cert_path = cert_dir / f"{name}.cert.json"
-    if cert_path.exists():
-        cert = ProofCertificate.load(cert_path)
-        print(f"  [+] Certificate verified: {cert.signature[:32]}...")
-    else:
-        print("  [!] No certificate found. Generate the algorithm first.")
+    # Verify for real first — never publish on an unverified claim.
+    ok, report = verify_certificate_artifact(name)
+    for line in report:
+        print(line)
+    if not ok:
+        print("[-] Publish REFUSED: independent verification failed. Nothing was published.")
+        sys.exit(1)
 
     if pypi:
         wheel_dir = Path(__file__).parent / "build" / "python"
@@ -1037,51 +1151,21 @@ def cmd_publish(name: str, pypi: bool = False, github: bool = False):
             print(f"[+] Released {name} on GitHub")
         else:
             print(f"[-] No binary found for {name}. Generate it first.")
+    if not pypi and not github:
+        print("[+] Certificate verified — nothing else requested (use --pypi / --github to publish)")
 
 
-def cmd_verify(name: str):
+def cmd_verify(name: str, passphrase: str = "", key_name: str = "default"):
     print(BANNER)
     print(f"Verifying: {name}")
 
-    # Verify certificate
-    cert_dir = Path(__file__).parent / "build" / "certs"
-    cert_path = cert_dir / f"{name}.cert.json"
-    if cert_path.exists():
-        cert = ProofCertificate.load(cert_path)
-        print(f"  Certificate: {cert_path}")
-        print(f"  Verification status: {cert.verification_status.upper()}")
-        if cert.verification_status != "verified":
-            print("  [!] This certificate attests to PROVENANCE ONLY — the proof was not machine-checked.")
-        print(f"  Spec hash: {cert.spec_hash[:16]}...")
-        print(f"  Proof hash: {cert.proof_hash[:16]}...")
-        print(f"  Signature: {cert.signature[:32]}...")
-        print(f"  Key ID: {cert.key_id}")
-        if cert.lean_version:
-            print(f"  Lean toolchain: {cert.lean_version}")
-
-        # Verify binary integrity
-        c_path = Path(__file__).parent / "build" / "c" / f"{name}.so"
-        if c_path.exists() and cert.c_binary_hash:
-            actual = hash_file(c_path)
-            if actual == cert.c_binary_hash:
-                print("  [+] C binary integrity verified")
-            else:
-                print("  [-] C binary integrity FAILED")
-
-    # Verify Lean proof
-    try:
-        proof = load_proof(name)
-        result = subprocess.run(
-            ["lean", "--c", "/dev/null", str(proof.lean_file)], capture_output=True, text=True, timeout=300
-        )
-        if result.returncode == 0:
-            print("  [+] Lean proof verified")
-        else:
-            print("  [-] Lean proof verification failed")
-    except FileNotFoundError:
-        print("  [-] No Lean proof found")
-    except Exception as e:
-        print(f"  [-] Verification failed: {e}")
+    ok, report = verify_certificate_artifact(name, passphrase, key_name)
+    for line in report:
+        print(line)
+    if not ok:
+        print("[-] VERIFICATION FAILED")
+        sys.exit(1)
+    print("[+] VERIFICATION PASSED")
 
 
 def cmd_cert(name: str):
@@ -1097,11 +1181,11 @@ def cmd_cert(name: str):
 
 
 def cmd_key_create(name: str, passphrase: str = ""):
-    """Create a signing key."""
+    """Create an Ed25519 signing key."""
     print(BANNER)
     ks = KeyStore()
-    kp = ks.create_key(name, _resolve_passphrase(passphrase))
-    print(f"[+] Key created: {name}")
+    kp = ks.create_signing_key(name, _resolve_passphrase(passphrase))
+    print(f"[+] Ed25519 signing key created: {name}")
     print(f"    Key ID: {kp.key_id}")
     print(f"    Created: {time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(kp.created_at))}")
 
@@ -1111,10 +1195,16 @@ def cmd_key_list():
     print(BANNER)
     ks = KeyStore()
     key_dir = ks.store_dir
+    found = False
     if key_dir.exists():
-        for kf in key_dir.glob("*.key"):
-            print(f"  [+] {kf.stem}")
-    else:
+        for kf in sorted(key_dir.glob("*.signing.key")):
+            print(f"  [+] {kf.stem.removesuffix('.signing')} (ed25519 signing key)")
+            found = True
+        for kf in sorted(key_dir.glob("*.key")):
+            if not kf.name.endswith(".signing.key"):
+                print(f"  [i] {kf.stem} (legacy symmetric key)")
+                found = True
+    if not found:
         print("  No keys found. Create one with 'python cli.py key create <name>'")
 
 
@@ -1195,6 +1285,16 @@ def main():
 
     p_ver = sub.add_parser("verify", help="Independently verify a proof")
     p_ver.add_argument("name")
+    p_ver.add_argument(
+        "--passphrase",
+        default="",
+        help="Keystore passphrase (or AXIOMCODE_PASSPHRASE) to enable the issuer-key binding check",
+    )
+    p_ver.add_argument(
+        "--key-name",
+        default="default",
+        help="Name of the trusted signing key in the keystore for the issuer-binding check",
+    )
 
     sub.add_parser("cert", help="Show proof certificate").add_argument("name")
 
@@ -1261,7 +1361,7 @@ def main():
     elif args.command == "publish":
         cmd_publish(args.name, args.pypi, args.github)
     elif args.command == "verify":
-        cmd_verify(args.name)
+        cmd_verify(args.name, args.passphrase, args.key_name)
     elif args.command == "cert":
         cmd_cert(args.name)
     elif args.command == "key":
