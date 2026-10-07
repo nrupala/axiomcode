@@ -2,7 +2,7 @@
 
 > **Natural Language to Formally Verified Code**  
 > **Domain:** axiom-code.com  
-> **Version:** 0.1.1  
+> **Version:** 0.1.0  
 > **License:** Proprietary — see [LICENSE](LICENSE)  
 > **Dependencies:** Zero (pure Python stdlib + cffi)
 
@@ -25,7 +25,7 @@ Natural Language → Lean 4 Spec → Formal Proof → C Binary → Python Packag
 
 | Feature | AxiomCode | Copilot/Cursor | Traditional Verification |
 |---------|-----------|----------------|------------------------|
-| Correctness guarantee | **Mathematical proof** | Probabilistic guess | Manual (expert-only) |
+| Correctness guarantee | **Machine-checked proof** (when verified; status recorded honestly per artifact) | Probabilistic guess | Manual (expert-only) |
 | Learning curve | **Plain English** | Plain English | Years of expertise |
 | Dependencies | **Zero** | Hundreds | Many |
 | Security | **Zero-trust, signed** | Trust the model | Varies |

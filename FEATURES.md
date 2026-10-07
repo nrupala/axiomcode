@@ -23,18 +23,24 @@ Built for commercialization. Designed to surpass Python and agent-based LLM code
 - **Automatic Lean 4 specification generation** via local or cloud LLMs
 - **Formal proof search** with Pantograph + Goedel-Prover integration
 - **Code extraction** to C binaries and Python packages
-- **Every line of code is mathematically proven correct**
+- **Machine-checked proofs where verification succeeds** — every artifact
+  carries an honest `verification_status` ("verified" only when a proof
+  assistant actually checked the proof; "unverified"/"failed" otherwise).
+  AxiomCode never claims a proof it did not check.
 
-### 2. Zero External Dependencies
+### 2. Minimal External Dependencies
 - **Pure Python stdlib** — no pip packages to install (except cffi for bindings)
 - **No attack surface** from third-party libraries
 - **No supply chain vulnerabilities** — no requests, no Flask, no SDKs
 - **HTTP via stdlib** `http.client` — direct API calls to llama.cpp, OpenAI, Anthropic
-- **Crypto via stdlib** `hashlib`, `hmac`, `secrets` — no cryptography package needed
+- **Crypto via stdlib** `hashlib`, `hmac`, `secrets`, plus the audited
+  `cryptography` package for Ed25519 signatures (publicly verifiable
+  certificates require asymmetric crypto — hand-rolling it would be worse)
 
 ### 3. Zero-Trust Security Model
 - **Every output independently verifiable** — no blind trust in any component
-- **Cryptographic proof certificates** — HMAC-signed attestations of correctness
+- **Cryptographic proof certificates** — Ed25519-signed attestations of
+  provenance and integrity, with honest per-artifact verification status
 - **Binary signing** — every C binary and Python package is signed and verifiable
 - **Tamper-evident audit log** — hash-chained entries detect any modification
 - **Encrypted key store** — PBKDF2-derived keys, encrypted at rest
@@ -190,7 +196,7 @@ Every generated algorithm comes with a signed certificate containing:
 ### vs. Python LLM Code Generators (Copilot, Cursor, etc.)
 | Feature | AxiomCode | Copilot/Cursor |
 |---------|-----------|----------------|
-| Correctness guarantee | Mathematical proof | Probabilistic guess |
+| Correctness guarantee | Machine-checked proof (when verified; status recorded honestly per artifact) | Probabilistic guess |
 | Verification | Independent, automated | Manual review required |
 | Security | Zero-trust, signed, encrypted | Trust the model |
 | Dependencies | Zero | Hundreds |

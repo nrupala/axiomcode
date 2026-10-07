@@ -100,21 +100,46 @@ VERSION_REGISTRY: dict[str, VersionInfo] = {
 # ─── Migration Functions ────────────────────────────────────────────────────
 
 
-def migrate_v1_to_v2(data_dir: Path) -> dict:
-    """Migration: v0.1.0 -> v0.2.0 (example)."""
+def migrate_v1_to_v2(data_dir: Path, signing_key: bytes | None = None, key_id: str = "") -> dict:
+    """Migration: v0.1.0 -> v0.2.0 — certificate schema v1 -> v2.
+
+    Signed v1 certificates are migrated with RE-SIGNING via
+    ProofCertificate.migrate_v1_to_v2 (new serial, v2 fields, fresh Ed25519
+    signature). Without the issuer signing key, migration REFUSES to touch
+    signed certificates — silently rewriting them would break their
+    signatures (the HIGH-6 failure). Unsigned legacy files are upgraded
+    in place and reported as needing issuance.
+    """
+    from core.security import ProofCertificate
+
     changes = []
-    # Example: migrate certificate format
+    skipped = []
     cert_dir = data_dir.parent / "build" / "certs"
     if cert_dir.exists():
-        for cert_file in cert_dir.glob("*.cert.json"):
-            cert_data = json.loads(cert_file.read_text())
-            if cert_data.get("version") == 1:
-                cert_data["version"] = 2
-                cert_data["migrated_from"] = "0.1.0"
-                cert_data["migrated_at"] = time.time()
-                cert_file.write_text(json.dumps(cert_data, indent=2))
-                changes.append(f"Upgraded certificate: {cert_file.name}")
-    return {"status": "success", "changes": changes}
+        for cert_file in sorted(cert_dir.glob("*.cert.json")):
+            try:
+                cert = ProofCertificate.load(cert_file)
+            except ValueError as e:
+                skipped.append(f"{cert_file.name}: unreadable ({e})")
+                continue
+            if cert.version != 1:
+                continue
+            if cert.signature and signing_key:
+                cert.migrate_v1_to_v2(signing_key, key_id or cert.key_id)
+                cert.save(cert_file)
+                changes.append(f"Re-signed and upgraded to v2: {cert_file.name} (serial {cert.serial})")
+            elif cert.signature:
+                skipped.append(
+                    f"{cert_file.name}: signed v1 certificate left untouched — "
+                    "re-issuance required (cannot re-sign without the issuer key)"
+                )
+            else:
+                # Unsigned legacy file: safe to upgrade fields in place, but it
+                # still needs issuance (signing) before it means anything.
+                cert.version = 2
+                cert.save(cert_file)
+                changes.append(f"Upgraded unsigned file to v2 (needs issuance): {cert_file.name}")
+    return {"status": "success", "changes": changes, "skipped": skipped}
 
 
 def migrate_v2_to_v1(data_dir: Path) -> dict:
@@ -412,44 +437,51 @@ class VersionManager:
         return list(VERSION_REGISTRY.values())
 
     def validate_data_integrity(self) -> dict:
-        """Validate that all data is consistent with the current version."""
+        """Validate that all data is consistent with the current version.
+
+        Key files and certificate files have INDEPENDENT version stamps
+        (keystore format vs certificate schema) — they are checked against
+        their own versions, not a single shared number.
+        """
+        from core.security import CERT_SCHEMA_VERSION, KEYSTORE_FILE_VERSION
+
         issues = []
         current = self.get_current_version()
-        schema = self.get_schema_version()
 
         # Check version file
         if not self.version_file.exists():
             issues.append("Version file missing")
 
-        # Check key store
+        # Check key store (keystore file format version)
         keys_dir = self.data_dir / "keys"
         if keys_dir.exists():
             for key_file in keys_dir.glob("*.key"):
                 try:
                     data = json.loads(key_file.read_text())
-                    if data.get("version") != schema:
+                    if data.get("version") != KEYSTORE_FILE_VERSION:
                         issues.append(
-                            f"Key file {key_file.name} has schema version {data.get('version')}, expected {schema}"
+                            f"Key file {key_file.name} has keystore version {data.get('version')}, "
+                            f"expected {KEYSTORE_FILE_VERSION}"
                         )
                 except Exception:
                     issues.append(f"Key file {key_file.name} is corrupted")
 
-        # Check certificates
+        # Check certificates (certificate schema version)
         certs_dir = self.base_dir / "build" / "certs"
         if certs_dir.exists():
             for cert_file in certs_dir.glob("*.cert.json"):
                 try:
                     data = json.loads(cert_file.read_text())
-                    if data.get("version") != schema:
+                    if data.get("version") != CERT_SCHEMA_VERSION:
                         issues.append(
-                            f"Certificate {cert_file.name} has schema version {data.get('version')}, expected {schema}"
+                            f"Certificate {cert_file.name} has schema v{data.get('version')}, "
+                            f"expected v{CERT_SCHEMA_VERSION} — migrate with re-signing, do not hand-edit"
                         )
                 except Exception:
                     issues.append(f"Certificate {cert_file.name} is corrupted")
 
         return {
             "version": current,
-            "schema_version": schema,
             "valid": len(issues) == 0,
             "issues": issues,
         }
