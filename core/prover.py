@@ -100,6 +100,45 @@ def lake_build(
     return result.returncode == 0, log
 
 
+# ─── Lean file elaboration ─────────────────────────────────────────────────────
+
+
+def elaborate_lean_file(
+    lean_file: str | Path,
+    project_dir: str | Path,
+    lake_bin: str = "lake",
+    lean_bin: str = "lean",
+    timeout: int = 300,
+) -> tuple[bool, str]:
+    """Elaborate a Lean file with `lake env lean`. Returns (success, combined log).
+
+    This is the actual machine check: Lean elaborates the named file and the
+    exit code reflects the result. It is used instead of `lake build <module>`
+    because Lake can only build modules listed in the lakefile's static roots —
+    generated proofs (dynamic names under `src/Algorithms/`) are unaddressable
+    that way, and a bare `lake build` verifies nothing. Elaborating the file
+    directly cannot be vacuous: a missing file is an error, and the named file
+    is always the thing being checked.
+    """
+    lean_file = Path(lean_file)
+    if not lean_file.is_file():
+        return False, f"ELABORATION_MISSING: {lean_file} does not exist"
+    if shutil.which(lake_bin) is None or shutil.which(lean_bin) is None:
+        return False, f"TOOLCHAIN_MISSING: {lake_bin}/{lean_bin} not found"
+    try:
+        result = subprocess.run(
+            [lake_bin, "env", lean_bin, str(lean_file)],
+            cwd=str(project_dir),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.SubprocessError as e:
+        return False, f"ELABORATION_ERROR: {e}"
+    log = (result.stdout or "") + ("\n" + result.stderr if result.stderr else "")
+    return result.returncode == 0, log.strip()
+
+
 # ─── Pantograph checking ─────────────────────────────────────────────────────
 
 
@@ -136,6 +175,123 @@ def has_sorry(lean_code: str) -> bool:
     `lake build` success is NOT sufficient for verified status."""
     code = _re.sub(r"--.*$", "", lean_code, flags=_re.MULTILINE)  # strip line comments
     return bool(_re.search(r"\b(sorry|admit)\b", code))
+
+
+# ─── Axiom audit (P0 ship-blocker) ────────────────────────────────────────────
+#
+# `lake build` success + no `sorry` is NOT enough: a proof can smuggle
+#     axiom sneaky : False
+#     theorem one_eq_two : (1 : Nat) = 2 := False.elim sneaky
+# which builds cleanly, contains no sorry, and would previously verify as TRUE.
+# The only thing that catches it is inspecting which axioms each proven
+# theorem actually depends on via `#print axioms`, and failing closed on
+# anything outside Lean's own standard axiom set.
+
+#: Axioms Lean 4 itself relies on. Anything else in a proof's dependency set
+#: is user-smuggled (or an exotic dependency the pipeline cannot vouch for)
+#: and fails verification. `sorryAx` is deliberately absent: a dependency on
+#: it means an undischarged proof obligation survived somewhere.
+ALLOWED_AXIOMS = frozenset({"propext", "Quot.sound", "funext", "Classical.choice"})
+
+
+def _qualified_theorem_names(lean_code: str) -> list[str]:
+    """Extract fully-qualified `theorem`/`lemma` names declared in Lean code.
+
+    Tracks `namespace` blocks so `#print axioms` can address each declaration
+    unambiguously. Note: Lean does NOT prefix declarations with the module
+    name — a top-level `theorem foo` in module `E2E` is simply `foo`.
+    """
+    names: list[str] = []
+    ns_stack: list[str] = []
+    for line in lean_code.splitlines():
+        m = _re.match(r"\s*namespace\s+([A-Za-z_][A-Za-z0-9_.']*)", line)
+        if m:
+            ns_stack.append(m.group(1))
+            continue
+        if _re.match(r"\s*end\b", line):
+            if ns_stack:
+                ns_stack.pop()
+            continue
+        m = _re.match(r"\s*(?:theorem|lemma)\s+([A-Za-z_][A-Za-z0-9_']*)", line)
+        if m:
+            names.append(".".join([*ns_stack, m.group(1)]))
+    return names
+
+
+def audit_axioms(
+    lean_file: str | Path,
+    project_dir: str | Path,
+    lake_bin: str = "lake",
+    lean_bin: str = "lean",
+    timeout: int = 300,
+) -> tuple[bool, str]:
+    """Audit axiom dependencies of every proven theorem via `#print axioms`.
+
+    The proof file is copied to a temporary sibling with `#print axioms`
+    commands appended, then elaborated with `lake env lean` — no module
+    imports needed, so this works for generated files outside the lakefile's
+    static roots.
+
+    FAILS CLOSED: any non-standard axiom, any unresolvable theorem name, a
+    missing toolchain, or unparseable output → (False, reason). Never returns
+    True on uncertainty — an unverifiable proof is not a verified proof.
+    """
+    if shutil.which(lake_bin) is None or shutil.which(lean_bin) is None:
+        return False, "axiom audit: lean/lake toolchain not available"
+
+    lean_file = Path(lean_file)
+    try:
+        code = lean_file.read_text(encoding="utf-8")
+    except OSError as e:
+        return False, f"axiom audit: cannot read {lean_file}: {e}"
+
+    theorems = _qualified_theorem_names(code)
+    if not theorems:
+        return False, "axiom audit: no theorem/lemma declarations found to audit"
+
+    audit_src = code + "\n" + "\n".join(f"#print axioms {t}" for t in theorems) + "\n"
+    checker = lean_file.with_name(f"{lean_file.stem}.axiomaudit.lean")
+    try:
+        checker.write_text(audit_src, encoding="utf-8")
+        result = subprocess.run(
+            [lake_bin, "env", lean_bin, str(checker)],
+            cwd=str(project_dir),
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
+    except subprocess.SubprocessError as e:
+        return False, f"axiom audit: checker run failed: {e}"
+    finally:
+        try:
+            checker.unlink()
+        except OSError:
+            pass
+
+    output = (result.stdout or "") + ("\n" + (result.stderr or ""))
+    if result.returncode != 0:
+        return False, "axiom audit: lean rejected the audit module:\n" + output.strip()[-2000:]
+
+    deps: dict[str, set[str]] = {}
+    for m in _re.finditer(r"'([^']+)' depends on axioms: \[(.*?)\]", output):
+        deps[m.group(1)] = {a.strip() for a in m.group(2).split(",") if a.strip()}
+    # Lean reports axiom-free theorems with a different sentence.
+    for m in _re.finditer(r"'([^']+)' does not depend on any axioms", output):
+        deps.setdefault(m.group(1), set())
+
+    problems: list[str] = []
+    for t in theorems:
+        if t not in deps:
+            problems.append(f"{t}: axiom dependencies could not be determined (unresolved name?)")
+            continue
+        extra = deps[t] - ALLOWED_AXIOMS
+        if extra:
+            problems.append(f"{t}: depends on non-standard axioms: {sorted(extra)}")
+    if problems:
+        return False, "axiom audit FAILED:\n" + "\n".join(f"  - {p}" for p in problems)
+
+    summary = "; ".join(f"{t}: [{', '.join(sorted(a)) if a else 'no axioms'}]" for t, a in deps.items())
+    return True, f"axiom audit passed: {summary}"
 
 
 REPAIR_PROMPT = textwrap.dedent("""\
@@ -183,13 +339,19 @@ def iterative_proof_search(
     model: str,
     max_attempts: int = 3,
     lake_bin: str = "lake",
+    lean_bin: str = "lean",
     use_pantograph: bool = True,
     build_timeout: int = 900,
 ) -> tuple[bool, str, int, str]:
-    """Build → on failure, LLM-repair → rebuild, up to ``max_attempts``.
+    """Elaborate → on failure, LLM-repair → re-elaborate, up to ``max_attempts``.
 
-    The written spec is built as an explicit Lake module target derived from the
-    file path (never a bare `lake build`, which verifies nothing on current Lake).
+    Each attempt elaborates the written spec with `lake env lean` (the actual
+    machine check — unlike `lake build <module>`, which cannot address
+    generated modules outside the lakefile's static roots). A successful
+    elaboration then passes two further gates before it may count as
+    verified: the `sorry`/`admit` scan and the axiom audit. The axiom audit is
+    deliberately NOT repairable by the LLM — smuggled axioms are adversarial,
+    not typos, so a failure here ends the loop honestly.
     Returns (verified, final_code, attempts_used, log).
     """
     code = initial_code
@@ -198,8 +360,9 @@ def iterative_proof_search(
     for attempt in range(1, max_attempts + 1):
         attempts = attempt
         lean_file = write_spec_fn(code)
-        target = _module_target_for(lean_file, project_dir)
-        ok, build_log = lake_build(project_dir, lake_bin, timeout=build_timeout, target=target)
+        ok, build_log = elaborate_lean_file(
+            lean_file, project_dir, lake_bin=lake_bin, lean_bin=lean_bin, timeout=build_timeout
+        )
         log = build_log
         if ok:
             # A build that still contains sorry/admit is NOT a verified proof:
@@ -207,13 +370,28 @@ def iterative_proof_search(
             if has_sorry(code):
                 log += "\nbuild succeeded but undischarged sorry/admit remain"
                 ok = False
-            elif use_pantograph and pantograph_available():
-                pok, pmsg = check_with_pantograph(code, project_dir)
-                log += f"\n{pmsg}"
-                if pok:
-                    return True, code, attempts, log
             else:
-                return True, code, attempts, log
+                # P0 gate: a clean build with no sorry can still smuggle
+                # `axiom sneaky : False` and "prove" 1 = 2. Audit axiom
+                # dependencies; fail closed on anything non-standard.
+                audit_ok, audit_report = audit_axioms(
+                    lean_file,
+                    project_dir,
+                    lake_bin=lake_bin,
+                    lean_bin=lean_bin,
+                    timeout=build_timeout,
+                )
+                log += f"\n{audit_report}"
+                if not audit_ok:
+                    ok = False
+                    break
+                if use_pantograph and pantograph_available():
+                    pok, pmsg = check_with_pantograph(code, project_dir)
+                    log += f"\n{pmsg}"
+                    if pok:
+                        return True, code, attempts, log
+                else:
+                    return True, code, attempts, log
         if llm_fn is None or attempt == max_attempts:
             break
         try:

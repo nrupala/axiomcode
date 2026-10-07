@@ -44,7 +44,7 @@ def load_pricing() -> dict:
 def price_per_compute_s(pricing: dict | None = None) -> float:
     p = pricing or load_pricing()
     loaded = sum(v for k, v in p.items() if k != "multiple")
-    return loaded * p["multiple"]
+    return float(loaded * p["multiple"])
 
 
 def charge_for(compute_s: float, pricing: dict | None = None) -> dict:

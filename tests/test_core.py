@@ -59,11 +59,9 @@ class TestSecurity:
             assert loaded.key_id == kp.key_id
 
     def test_proof_certificate(self):
-        import secrets
+        from core.security import Ed25519KeyPair, ProofCertificate
 
-        from core.security import ProofCertificate
-
-        key = secrets.token_bytes(64)
+        kp = Ed25519KeyPair.generate()
         cert = ProofCertificate(
             algorithm_name="binary_search",
             spec_hash="abc123",
@@ -72,24 +70,51 @@ class TestSecurity:
             steps=5,
             lemmas=2,
         )
-        cert.sign(key)
-        assert cert.verify(key) is True
+        cert.sign(kp.private_key)
+        # Explicit public key path (third-party verification)
+        assert cert.verify(kp.public_key) is True
+        # Embedded public key path (self-contained verification)
+        assert cert.verify() is True
 
     def test_proof_certificate_tamper(self):
-        import secrets
+        from core.security import Ed25519KeyPair, ProofCertificate
 
-        from core.security import ProofCertificate
-
-        key = secrets.token_bytes(64)
+        kp = Ed25519KeyPair.generate()
         cert = ProofCertificate(
             algorithm_name="binary_search",
             spec_hash="abc123",
             proof_hash="def456",
             steps=5,
         )
-        cert.sign(key)
+        cert.sign(kp.private_key)
         cert.steps = 999  # Tamper
-        assert cert.verify(key) is False
+        assert cert.verify(kp.public_key) is False
+        assert cert.verify() is False
+
+    def test_proof_certificate_wrong_key(self):
+        from core.security import Ed25519KeyPair, ProofCertificate
+
+        kp = Ed25519KeyPair.generate()
+        other = Ed25519KeyPair.generate()
+        cert = ProofCertificate(algorithm_name="x", spec_hash="a", proof_hash="b")
+        cert.sign(kp.private_key)
+        # Attacker key must not verify
+        assert cert.verify(other.public_key) is False
+
+    def test_ed25519_keystore_signing_key_roundtrip(self):
+        import tempfile
+
+        from core.security import KeyStore
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            ks = KeyStore(tmpdir)
+            kp = ks.create_signing_key("test", "pass123")
+            assert len(kp.private_key) == 32
+            assert len(kp.public_key) == 32
+            loaded = ks.load_signing_key("test", "pass123")
+            assert loaded.private_key == kp.private_key
+            assert loaded.public_key == kp.public_key
+            assert loaded.key_id == kp.key_id
 
     def test_hmac(self):
         import secrets
@@ -250,9 +275,11 @@ class TestLicensing:
         from core.licensing import LicenseKeyPair
 
         keys = LicenseKeyPair.generate()
-        assert len(keys.private_key) == 64
-        assert len(keys.public_key) == 64
+        assert len(keys.private_key) == 32  # Ed25519 seed
+        assert len(keys.public_key) == 32  # Ed25519 public key
+        assert keys.private_key != keys.public_key  # asymmetric: verify key cannot sign
         assert len(keys.key_id) == 16
+        assert keys.algorithm == "ed25519"
 
     def test_keypair_save_load(self):
         from core.licensing import LicenseKeyPair

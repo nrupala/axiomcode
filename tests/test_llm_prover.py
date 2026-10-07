@@ -222,7 +222,7 @@ class TestBrokenCodeHonesty:
 
             pytest.skip("lake not on PATH")
         proj = self._scratch_project(tmp_path)
-        src = proj / "E2E.lean"
+        src: Path = proj / "E2E.lean"
 
         def writer(code: str) -> Path:
             src.write_text(code)
@@ -249,7 +249,7 @@ class TestBrokenCodeHonesty:
 
             pytest.skip("lake not on PATH")
         proj = self._scratch_project(tmp_path)
-        src = proj / "E2E.lean"
+        src: Path = proj / "E2E.lean"
 
         def writer(code: str) -> Path:
             src.write_text(code)
@@ -267,3 +267,37 @@ class TestBrokenCodeHonesty:
         )
         assert ok is True
         assert attempts == 1
+
+    def test_axiom_smuggling_not_verified(self, tmp_path):
+        """P0 regression: `axiom sneaky : False` proving `1 = 2` must NOT verify.
+
+        The false theorem builds cleanly and contains no sorry — only the
+        axiom audit catches it. This is the exact mis-issuance exploit from
+        the strengthen assessment.
+        """
+        import shutil
+
+        if shutil.which("lake") is None:
+            import pytest
+
+            pytest.skip("lake not on PATH")
+        proj = self._scratch_project(tmp_path)
+        src: Path = proj / "E2E.lean"
+
+        def writer(code: str) -> Path:
+            src.write_text(code)
+            return src
+
+        exploit = "axiom sneaky : False\ntheorem one_eq_two : (1 : Nat) = 2 := False.elim sneaky\n"
+        ok, _, attempts, log = iterative_proof_search(
+            writer,
+            proj,
+            exploit,
+            None,
+            "none",
+            max_attempts=1,
+            use_pantograph=False,
+        )
+        assert ok is False, f"axiom-smuggled false theorem verified as TRUE:\n{log}"
+        assert "axiom" in log.lower()
+        assert attempts == 1  # axiom failures are not LLM-repairable; loop ends honestly
