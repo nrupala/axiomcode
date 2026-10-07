@@ -222,7 +222,7 @@ class TestBrokenCodeHonesty:
 
             pytest.skip("lake not on PATH")
         proj = self._scratch_project(tmp_path)
-        src = proj / "E2E.lean"
+        src: Path = proj / "E2E.lean"
 
         def writer(code: str) -> Path:
             src.write_text(code)
@@ -249,7 +249,7 @@ class TestBrokenCodeHonesty:
 
             pytest.skip("lake not on PATH")
         proj = self._scratch_project(tmp_path)
-        src = proj / "E2E.lean"
+        src: Path = proj / "E2E.lean"
 
         def writer(code: str) -> Path:
             src.write_text(code)
