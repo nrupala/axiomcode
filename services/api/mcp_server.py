@@ -21,7 +21,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 from billing import load_keys, meter, price_per_compute_s, usage_for
 from certs import issue as issue_cert
-from mcp.server.fastmcp import FastMCP
+
+# mcp v1 API; typeshed's mcp.server.fastmcp stub does not declare FastMCP
+from mcp.server.fastmcp import FastMCP  # type: ignore[attr-defined]
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 

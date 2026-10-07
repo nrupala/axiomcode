@@ -1,0 +1,40 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "AxiomCode API",
+    "version": "1.0.0",
+    "description": "Verification and certification API. Full reference at https://axiom-code.com/docs/api/"
+  },
+  "servers": [
+    {
+      "url": "https://api.axiom-code.com"
+    }
+  ],
+  "paths": {
+    "/v1/trial/verify": {
+      "post": {
+        "summary": "Trial verification (email, 10 lifetime, no certificate)"
+      }
+    },
+    "/v1/verify": {
+      "post": {
+        "summary": "Paid verification with certificate (API key)"
+      }
+    },
+    "/v1/check": {
+      "get": {
+        "summary": "Certificate status by serial (no auth)"
+      }
+    },
+    "/v1/revoked": {
+      "get": {
+        "summary": "Public revocation list (no auth)"
+      }
+    },
+    "/v1/account": {
+      "get": {
+        "summary": "Balance and usage (API key)"
+      }
+    }
+  }
+}

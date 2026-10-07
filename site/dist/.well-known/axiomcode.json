@@ -1,0 +1,18 @@
+{
+  "service": "AxiomCode",
+  "description": "Certification authority for software correctness. Machine-checked proofs, signed certificates.",
+  "homepage": "https://axiom-code.com",
+  "api_base": "https://api.axiom-code.com",
+  "mcp": "https://api.axiom-code.com/mcp",
+  "llms_txt": "https://axiom-code.com/llms.txt",
+  "docs": "https://axiom-code.com/docs/api/",
+  "certificate_checker": "https://axiom-code.com/check/",
+  "revocation_list": "https://api.axiom-code.com/v1/revoked",
+  "ca_public_keys": "https://axiom-code.com/.well-known/axiomcode-keys.json",
+  "pricing": "https://axiom-code.com/pricing/",
+  "trial": {
+    "verifications": 10,
+    "certificates": false
+  },
+  "contact": "hello@axiom-code.com"
+}
