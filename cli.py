@@ -1355,6 +1355,80 @@ def cmd_registry(
         sys.exit(1)
 
 
+def cmd_badge(serial: str, fmt: str = "markdown", base_url: str = "", output: str = ""):
+    """Certificate badge: print the embed snippet or render the SVG."""
+    print(BANNER)
+    from core.badge import badge_data, badge_snippet, render_badge_svg
+
+    base = base_url or "https://registry.axiomcode.dev"
+    reg = _default_registry()
+    if fmt == "svg":
+        svg = render_badge_svg(badge_data(serial, reg, base))
+        if output:
+            Path(output).write_text(svg, encoding="utf-8")
+            print(f"[+] Badge SVG written to {output}")
+        else:
+            print(svg)
+    else:
+        snip = badge_snippet(serial, base)
+        text = snip["html"] if fmt == "html" else snip["markdown"]
+        if output:
+            Path(output).write_text(text + "\n", encoding="utf-8")
+            print(f"[+] Badge snippet written to {output}")
+        else:
+            print(text)
+
+
+def cmd_qr(serial: str, fmt: str = "png", base_url: str = "", output: str = ""):
+    """Render the certificate's QR code (PNG/SVG) to a file or stdout."""
+    print(BANNER)
+    from core.qr import render_qr_svg, verification_url
+
+    reg = _default_registry()
+    cert = reg.get(serial)
+    if cert is None:
+        print(f"[-] Unknown serial in registry: {serial}")
+        sys.exit(1)
+    base = base_url or "https://registry.axiomcode.dev"
+    payload = (cert.qr_payload or "").strip() or verification_url(serial, base)
+    if fmt == "svg":
+        svg = render_qr_svg(payload)
+        if output:
+            Path(output).write_text(svg, encoding="utf-8")
+        else:
+            print(svg)
+    else:
+        from core.qr import render_qr_png
+
+        png = render_qr_png(payload)
+        if output:
+            Path(output).write_bytes(png)
+        else:
+            sys.stdout.buffer.write(png)
+    if output:
+        print(f"[+] QR code ({fmt.upper()}) written to {output}")
+        print(f"    Encodes: {payload}")
+
+
+def cmd_serve_registry(host: str, port: int, base_url: str = ""):
+    """Serve the public certificate registry over HTTP (read-only)."""
+    print(BANNER)
+    import sys as _sys
+
+    _sys.path.insert(0, str(Path(__file__).parent / "services"))
+    from wsgiref.simple_server import make_server
+
+    from registry_app import create_app
+
+    base = base_url or f"http://{host}:{port}"
+    reg_dir = Path(__file__).parent / "registry"
+    app = create_app(str(reg_dir), base)
+    with make_server(host, port, app) as httpd:
+        print(f"[+] AxiomCode registry serving {reg_dir} at http://{host}:{port} (read-only)")
+        print("    Ctrl-C to stop.")
+        httpd.serve_forever()
+
+
 def cmd_key_create(name: str, passphrase: str = ""):
     """Create an Ed25519 signing key."""
     print(BANNER)
@@ -1421,6 +1495,9 @@ def main():
         "cert",
         "scan",
         "registry",
+        "badge",
+        "qr",
+        "serve-registry",
         "key",
         "audit",
         "version",
@@ -1490,6 +1567,23 @@ def main():
     p_reg.add_argument("--reason", default="", help="Revocation reason (for revoke)")
     p_reg.add_argument("--output", default="", help="Output file (for export)")
     p_reg.add_argument("--all", action="store_true", help="Include expired/revoked (for list)")
+
+    p_badge = sub.add_parser("badge", help="Certificate badge: embed snippet or SVG")
+    p_badge.add_argument("serial", help="Certificate serial number")
+    p_badge.add_argument("--format", default="markdown", choices=["markdown", "html", "svg"], help="Output format")
+    p_badge.add_argument("--base-url", default="", help="Public base URL of the registry host")
+    p_badge.add_argument("--output", default="", help="Write to file instead of stdout")
+
+    p_qr = sub.add_parser("qr", help="Render certificate QR code (PNG/SVG)")
+    p_qr.add_argument("serial", help="Certificate serial number")
+    p_qr.add_argument("--format", default="png", choices=["png", "svg"], help="Output format")
+    p_qr.add_argument("--base-url", default="", help="Public base URL (used when cert has no QR payload)")
+    p_qr.add_argument("--output", default="", help="Write to file instead of stdout")
+
+    p_srv = sub.add_parser("serve-registry", help="Serve the public registry over HTTP (read-only)")
+    p_srv.add_argument("--host", default="127.0.0.1")
+    p_srv.add_argument("--port", type=int, default=8000)
+    p_srv.add_argument("--base-url", default="", help="Public base URL (defaults to http://host:port)")
 
     p_kc = sub.add_parser("key", help="Key management")
     p_kc.add_argument("action", choices=["create", "list"])
@@ -1568,6 +1662,12 @@ def main():
             output=getattr(args, "output", ""),
             show_all=getattr(args, "all", False),
         )
+    elif args.command == "badge":
+        cmd_badge(args.serial, args.format, args.base_url, args.output)
+    elif args.command == "qr":
+        cmd_qr(args.serial, args.format, args.base_url, args.output)
+    elif args.command == "serve-registry":
+        cmd_serve_registry(args.host, args.port, args.base_url)
     elif args.command == "key":
         if args.action == "create":
             cmd_key_create(args.name, args.passphrase)

@@ -21,7 +21,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install pytest cffi cryptography
+          pip install pytest cffi cryptography segno
       - name: Run tests
         run: python -m pytest tests/ -v --tb=short
       - name: Proof-honesty gate (no sorry/admit in verified library)

@@ -28,6 +28,6 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install mypy
-        run: pip install mypy cffi cryptography
+        run: pip install mypy cffi cryptography segno
       - name: Run mypy
         run: mypy cli.py core/ --ignore-missing-imports
