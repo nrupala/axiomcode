@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """AxiomCode launch site generator. Builds static HTML into ./dist."""
-import os, shutil, json, html
+
+import html
+import json
+import os
+import shutil
 
 SITE = "https://axiom-code.com"
 NAME = "AxiomCode"
 TAGLINE = "The certification authority for software correctness."
 HERO_LINE = "Don\u2019t trust our AI \u2014 verify our proof."
-API_BASE = "https://api.axiom-code.com"   # backend goes live in the next step
-PADDLE_VENDOR = 0          # set when Nrupal creates the products
+API_BASE = "https://api.axiom-code.com"  # backend goes live in the next step
+PADDLE_VENDOR = 0  # set when Nrupal creates the products
 PADDLE_ENV = "production"
-PRICE_IDS = {              # set when Nrupal creates the products
+PRICE_IDS = {  # set when Nrupal creates the products
     "starter": "",
     "growth": "",
     "scale": "",
@@ -111,6 +115,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 SEAL_SVG = """<svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>"""
 
+
 def head(title, desc, path, extra_jsonld=None):
     canon = SITE + path
     jl = ""
@@ -138,6 +143,7 @@ def head(title, desc, path, extra_jsonld=None):
 <body>
 """
 
+
 def header(active=""):
     links = []
     for label, href in NAV:
@@ -148,6 +154,7 @@ def header(active=""):
 <a class="cta" href="/verify/">Try free</a>
 </div></div>
 """
+
 
 FOOTER = """<footer class="sitefoot"><div class="wrap">
 <div class="cols">
@@ -181,10 +188,12 @@ FOOTER = """<footer class="sitefoot"><div class="wrap">
 </body>
 </html>"""
 
-PAGES = []  # (path, title, desc, body_html, jsonld)
+PAGES: list = []  # (path, title, desc, body_html, jsonld)
+
 
 def page(path, title, desc, body, jsonld=None):
     PAGES.append((path, title, desc, body, jsonld))
+
 
 def render_all(outdir):
     if os.path.exists(outdir):
@@ -198,8 +207,7 @@ def render_all(outdir):
     with open(os.path.join(outdir, "robots.txt"), "w") as f:
         f.write("User-agent: *\nAllow: /\n\nSitemap: " + SITE + "/sitemap.xml\n")
     urls = [p for p, _, _, _, _ in PAGES]
-    sm = ['<?xml version="1.0" encoding="UTF-8"?>',
-          '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    sm = ['<?xml version="1.0" encoding="UTF-8"?>', '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
     for u in urls:
         sm.append(f"  <url><loc>{SITE}{u}</loc><changefreq>weekly</changefreq></url>")
     sm.append("</urlset>")

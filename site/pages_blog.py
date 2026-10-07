@@ -1,9 +1,11 @@
-from build import *
+from build import API_BASE, SITE, page
 
 # ---------- blog ----------
-page("/blog/", "Blog",
-     "The AxiomCode blog: verification-as-evidence, certification practice, and honest notes on building a CA for software correctness.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/blog/",
+    "Blog",
+    "The AxiomCode blog: verification-as-evidence, certification practice, and honest notes on building a CA for software correctness.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Blog</h1>
 <p class="sub">Notes on verification-as-evidence and building a certification authority for software.</p>
 <div class="card" style="margin-top:24px">
@@ -12,11 +14,14 @@ page("/blog/", "Blog",
 <p>Why we built a certification authority for software correctness, why the trial gives you everything except the certificate, and why mis-issuance &mdash; saying &ldquo;verified&rdquo; when it isn&rsquo;t &mdash; is the one risk we organize the whole company around.</p>
 </div>
 </div></div></section>
-""")
+""",
+)
 
-page("/blog/dont-trust-our-ai/", "Don\u2019t trust our AI \u2014 verify our proof",
-     "Launch essay: why AxiomCode is a certification authority for software correctness, why verification-as-evidence beats verification-as-opinion, and why the certificate is never free.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/blog/dont-trust-our-ai/",
+    "Don\u2019t trust our AI \u2014 verify our proof",
+    "Launch essay: why AxiomCode is a certification authority for software correctness, why verification-as-evidence beats verification-as-opinion, and why the certificate is never free.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <div class="kicker">26 September 2026 &middot; Launch</div>
 <h1 class="pt">Don&rsquo;t trust our AI &mdash; verify our proof</h1>
 <p class="sub">Why we built a certification authority for software correctness.</p>
@@ -38,13 +43,14 @@ page("/blog/dont-trust-our-ai/", "Don\u2019t trust our AI \u2014 verify our proo
 <p>Whoever has to <em>prove</em> correctness to a third party: regulated teams facing auditors, fintech and smart-contract builders moving money, agent builders whose agents ship code, procurement teams who want &ldquo;certified correct&rdquo; as a deliverable. If you&rsquo;re that person, <a href="/verify/">run your first verification free</a>. Don&rsquo;t trust our AI &mdash; verify our proof.</p>
 </div></div></section>
 """,
-{
-    "@context": "https://schema.org",
-    "@type": "BlogPosting",
-    "headline": "Don\u2019t trust our AI \u2014 verify our proof",
-    "datePublished": "2026-09-26",
-    "author": {"@type": "Organization", "name": "AxiomCode"},
-})
+    {
+        "@context": "https://schema.org",
+        "@type": "BlogPosting",
+        "headline": "Don\u2019t trust our AI \u2014 verify our proof",
+        "datePublished": "2026-09-26",
+        "author": {"@type": "Organization", "name": "AxiomCode"},
+    },
+)
 
 # ---------- machine-readable extras (written by runner) ----------
 WELLKNOWN = {

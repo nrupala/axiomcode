@@ -1,9 +1,18 @@
 #!/usr/bin/env python3
 """Runner: import all page modules, render, write extras."""
-import os, sys, json
+
+import json
+import os
+import shutil
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from build import render_all, SITE, API_BASE
-import pages_main, pages_docs, pages_paperwork, pages_blog  # noqa: F401 (registration side effects)
+# import order is page registration order (drives sitemap.xml) - not alphabetical
+import pages_main  # noqa: F401, I001 (registration side effects)
+import pages_docs  # noqa: F401, I001 (registration side effects)
+import pages_paperwork  # noqa: F401, I001 (registration side effects)
+import pages_blog
+from build import API_BASE, render_all
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
 render_all(OUT)
@@ -19,8 +28,11 @@ with open(os.path.join(OUT, "llms.txt"), "w") as f:
 # stub OpenAPI for agents (full spec ships with the API)
 openapi = {
     "openapi": "3.0.3",
-    "info": {"title": "AxiomCode API", "version": "1.0.0",
-             "description": "Verification and certification API. Full reference at https://axiom-code.com/docs/api/"},
+    "info": {
+        "title": "AxiomCode API",
+        "version": "1.0.0",
+        "description": ("Verification and certification API. Full reference at https://axiom-code.com/docs/api/"),
+    },
     "servers": [{"url": API_BASE}],
     "paths": {
         "/v1/trial/verify": {"post": {"summary": "Trial verification (email, 10 lifetime, no certificate)"}},
@@ -35,9 +47,8 @@ with open(os.path.join(api_dir, "openapi.json"), "w") as f:
     json.dump(openapi, f, indent=2)
 
 # copy paperwork docx into dist
-import shutil as _sh
 _src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "paperwork-docx")
 for _f in os.listdir(_src):
     if _f.endswith(".docx"):
-        _sh.copy(os.path.join(_src, _f), os.path.join(OUT, "paperwork", _f))
+        shutil.copy(os.path.join(_src, _f), os.path.join(OUT, "paperwork", _f))
 print("extras written")

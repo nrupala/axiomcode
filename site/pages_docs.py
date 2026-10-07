@@ -1,9 +1,13 @@
-from build import *
+import json
+
+from build import API_BASE, page
 
 # ---------- docs (humans) ----------
-page("/docs/", "Documentation",
-     "AxiomCode documentation for humans: writing verifiable Lean 4 specifications, reading verdicts and certificates, and understanding verification scope.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/docs/",
+    "Documentation",
+    "AxiomCode documentation for humans: writing verifiable Lean 4 specifications, reading verdicts and certificates, and understanding verification scope.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Documentation</h1>
 <p class="sub">For humans. Agents: see the <a href="/docs/api/">API reference</a> and <a href="/llms.txt">llms.txt</a>.</p>
 
@@ -51,12 +55,15 @@ theorem add_comm_nat (a b : Nat) : a + b = b + a := by
 <li><strong>Revocation:</strong> if we discover a toolchain or engine defect that undermines a verdict, the certificate is revoked publicly. There is no silent un-verification.</li>
 </ul>
 </div></div></section>
-""")
+""",
+)
 
 # ---------- docs/api (agents) ----------
-page("/docs/api/", "REST & MCP API",
-     "AxiomCode API for applications and AI agents: REST endpoints, MCP tools, authentication, metering, and machine-readable discovery.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/docs/api/",
+    "REST & MCP API",
+    "AxiomCode API for applications and AI agents: REST endpoints, MCP tools, authentication, metering, and machine-readable discovery.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">REST &amp; MCP API</h1>
 <p class="sub">Built for agents first. Humans welcome.</p>
 <div class="docnav"><strong>Machine-readable:</strong> &nbsp;<a href="/llms.txt">llms.txt</a> &middot; <a href="/.well-known/axiomcode.json">/.well-known/axiomcode.json</a> &middot; <a href="/docs/api/openapi.json">OpenAPI (JSON)</a></div>
@@ -108,12 +115,15 @@ page("/docs/api/", "REST & MCP API",
 <li>We may suspend keys used to probe the engine adversarially or to resell trial access. See the <a href="/paperwork/terms/">Terms</a>.</li>
 </ul>
 </div></div></section>
-""")
+""",
+)
 
 # ---------- verify (trial UI) ----------
-page("/verify/", "Verify \u2014 free trial",
-     "Try AxiomCode free: submit a Lean 4 specification, get a real machine-checked verdict and proof transcript. 10 free verifications; trial verdicts carry no certificate.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/verify/",
+    "Verify \u2014 free trial",
+    "Try AxiomCode free: submit a Lean 4 specification, get a real machine-checked verdict and proof transcript. 10 free verifications; trial verdicts carry no certificate.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Verify &mdash; free trial</h1>
 <p class="sub">10 free verifications. Real verdicts, real transcripts. <strong>No certificates on trial</strong> &mdash; the certificate is the product, and it ships with paid verification.</p>
 <div class="note">The verification backend is being connected to this page as part of the launch rollout. If the button reports the API as unreachable, the engine isn&rsquo;t wired yet &mdash; check back shortly or email <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div>
@@ -127,7 +137,9 @@ page("/verify/", "Verify \u2014 free trial",
 <p style="color:var(--mut);font-size:15px">A <span class="badge b-pass">PASSED</span> trial verdict proves the engine works. To get the <strong>signed certificate</strong> &mdash; the thing you can hand to an auditor, a customer, or a counterparty &mdash; <a href="/pricing/">buy credits</a>.</p>
 </div></div></section>
 <script>
-var API = %s;
+var API = """
+    + json.dumps(API_BASE)
+    + """;
 document.getElementById('go').addEventListener('click', function(){
   var btn = this, res = document.getElementById('result');
   var email = document.getElementById('email').value.trim();
@@ -155,12 +167,15 @@ document.getElementById('go').addEventListener('click', function(){
   });
 });
 </script>
-""" % json.dumps(API_BASE))
+""",
+)
 
 # ---------- check (cert validation UI) ----------
-page("/check/", "Check a certificate",
-     "Validate an AxiomCode certificate: paste the certificate JSON and get VALID, REVOKED, or EXPIRED with the reason. No account needed.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/check/",
+    "Check a certificate",
+    "Validate an AxiomCode certificate: paste the certificate JSON and get VALID, REVOKED, or EXPIRED with the reason. No account needed.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Check a certificate</h1>
 <p class="sub">No account needed. Paste the certificate JSON &mdash; we&rsquo;ll tell you if it&rsquo;s <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, or <span class="badge b-warn">EXPIRED</span>, and why.</p>
 <label class="fl" for="cert">Certificate JSON</label>
@@ -170,7 +185,9 @@ page("/check/", "Check a certificate",
 <div class="note blue" style="margin-top:24px"><strong>Don&rsquo;t trust our AI &mdash; verify our proof.</strong> A certificate is only as good as its checkability. This page, the <a href="/docs/api/">API</a>, and the published revocation list are how you hold us accountable.</div>
 </div></div></section>
 <script>
-var API2 = %s;
+var API2 = """
+    + json.dumps(API_BASE)
+    + """;
 document.getElementById('go2').addEventListener('click', function(){
   var btn = this, res = document.getElementById('result2');
   var raw = document.getElementById('cert').value.trim();
@@ -196,4 +213,5 @@ document.getElementById('go2').addEventListener('click', function(){
   });
 });
 </script>
-""" % json.dumps(API_BASE))
+""",
+)

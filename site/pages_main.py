@@ -1,4 +1,6 @@
-from build import *
+import json
+
+from build import HERO_LINE, PADDLE_VENDOR, PRICE_IDS, SITE, TAGLINE, page
 
 # ---------- landing ----------
 ORG_JSONLD = {
@@ -10,9 +12,11 @@ ORG_JSONLD = {
     "email": "hello@axiom-code.com",
 }
 
-page("/", "Software correctness, certified",
-     "AxiomCode is the certification authority for software correctness. Submit a specification, get a machine-checked proof and a signed certificate anyone can verify.",
-f"""<div class="hero"><div class="wrap">
+page(
+    "/",
+    "Software correctness, certified",
+    "AxiomCode is the certification authority for software correctness. Submit a specification, get a machine-checked proof and a signed certificate anyone can verify.",
+    f"""<div class="hero"><div class="wrap">
 <h1>{HERO_LINE}</h1>
 <p class="lede">{TAGLINE} Submit your specification. Our engine compiles it, checks the proof mechanically, and issues a signed certificate &mdash; binding your code hash, the verification result, and our identity &mdash; that anyone can re-check without trusting us.</p>
 <div class="row">
@@ -65,12 +69,16 @@ f"""<div class="hero"><div class="wrap">
 <p>Today the engine verifies <strong>Lean 4 specifications</strong>. The certificate credentials the code: it is our assessment that the submitted artifact was built to its specification, as mechanically checked &mdash; recorded as the artifact hash, the toolchain version, and the verdict. <strong>We hold no responsibility beyond this assessment.</strong> We do not claim your whole system is correct, your spec matches your intent, or your deployment matches the artifact. Read the <a href="/paperwork/certificate-policy/">Certificate Policy</a> for the precise meaning of every field.</p>
 <div class="note">Verification is evidence, not opinion. The evidence is bounded, and we publish the bounds.</div>
 </div></div></section>
-""", ORG_JSONLD)
+""",
+    ORG_JSONLD,
+)
 
 # ---------- how it works ----------
-page("/how-it-works/", "How it works",
-     "How AxiomCode verification works: submit a Lean 4 specification, the engine compiles and checks the proof, and you receive a signed, revocable, independently verifiable certificate.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/how-it-works/",
+    "How it works",
+    "How AxiomCode verification works: submit a Lean 4 specification, the engine compiles and checks the proof, and you receive a signed, revocable, independently verifiable certificate.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">How it works</h1>
 <p class="sub">Three steps. Every one of them checkable.</p>
 
@@ -110,7 +118,8 @@ page("/how-it-works/", "How it works",
 <li><strong>Agents:</strong> the <a href="/docs/api/">MCP server</a> &mdash; <code class="inline">verify</code>, <code class="inline">check_certificate</code>, <code class="inline">pricing</code>, <code class="inline">usage_report</code>. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
 </ul>
 </div></div></section>
-""")
+""",
+)
 
 # ---------- pricing ----------
 PRODUCT_JSONLD = {
@@ -120,20 +129,42 @@ PRODUCT_JSONLD = {
     "description": "Credits for machine-checked software verification with signed certificates. 1 credit = US$0.01.",
     "brand": {"@type": "Brand", "name": "AxiomCode"},
     "offers": [
-        {"@type": "Offer", "name": "Trial", "price": "0", "priceCurrency": "USD",
-         "description": "10 free verifications. Verdicts only, no certificates."},
-        {"@type": "Offer", "name": "Starter", "price": "10", "priceCurrency": "USD",
-         "description": "1,000 credits. Certificates included."},
-        {"@type": "Offer", "name": "Growth", "price": "50", "priceCurrency": "USD",
-         "description": "5,000 credits. Certificates included."},
-        {"@type": "Offer", "name": "Scale", "price": "200", "priceCurrency": "USD",
-         "description": "20,000 credits. Certificates included."},
+        {
+            "@type": "Offer",
+            "name": "Trial",
+            "price": "0",
+            "priceCurrency": "USD",
+            "description": "10 free verifications. Verdicts only, no certificates.",
+        },
+        {
+            "@type": "Offer",
+            "name": "Starter",
+            "price": "10",
+            "priceCurrency": "USD",
+            "description": "1,000 credits. Certificates included.",
+        },
+        {
+            "@type": "Offer",
+            "name": "Growth",
+            "price": "50",
+            "priceCurrency": "USD",
+            "description": "5,000 credits. Certificates included.",
+        },
+        {
+            "@type": "Offer",
+            "name": "Scale",
+            "price": "200",
+            "priceCurrency": "USD",
+            "description": "20,000 credits. Certificates included.",
+        },
     ],
 }
 
-page("/pricing/", "Pricing",
-     "AxiomCode pricing: 10 free trial verifications (no certificates), then credit packs. 1 credit = $0.01. Certificates are issued to paying customers only.",
-"""<section class="block"><div class="wrap"><div class="prose">
+page(
+    "/pricing/",
+    "Pricing",
+    "AxiomCode pricing: 10 free trial verifications (no certificates), then credit packs. 1 credit = $0.01. Certificates are issued to paying customers only.",
+    """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Pricing</h1>
 <p class="sub">The trial proves the engine. The certificate is the product.</p>
 <div class="note">Our pricing covers the full cost of running the service &mdash; infrastructure, compute, operations, support, and insurance &mdash; plus a standard margin. One credit is always <strong>US$0.01</strong>. Verification consumes credits by compute time; the certificate itself is included with every paid verification.</div>
@@ -194,8 +225,14 @@ page("/pricing/", "Pricing",
 </section>
 <script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
 <script>
-var PRICE_IDS = %s;
-if (window.Paddle && %d) { Paddle.Setup({vendor: %d}); }
+var PRICE_IDS = """
+    + json.dumps(PRICE_IDS)
+    + """;
+if (window.Paddle && """
+    + str(PADDLE_VENDOR)
+    + """) { Paddle.Setup({vendor: """
+    + str(PADDLE_VENDOR)
+    + """}); }
 document.querySelectorAll('.paddle-buy').forEach(function(b){
   b.addEventListener('click', function(){
     var pid = PRICE_IDS[b.getAttribute('data-pack')];
@@ -204,4 +241,6 @@ document.querySelectorAll('.paddle-buy').forEach(function(b){
   });
 });
 </script>
-""" % (json.dumps(PRICE_IDS), PADDLE_VENDOR, PADDLE_VENDOR), PRODUCT_JSONLD)
+""",
+    PRODUCT_JSONLD,
+)

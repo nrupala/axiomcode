@@ -1,18 +1,31 @@
-from build import *
+from build import page
 
 # ---------- paperwork ----------
 PW_INTRO = """<section class="block"><div class="wrap"><div class="prose">
 <div class="note">These documents govern the AxiomCode service. They are written in plain language and describe process and outcomes, not marketing claims. Material liability and warranty terms should be reviewed by qualified legal counsel before they are relied upon in any dispute.</div>
 """
 
+
 def pw_page(path, title, desc, body):
     slug = path.strip("/").replace("/", "-") if path != "/paperwork/" else ""
-    dl = (f'<p><a href="/paperwork/{slug}.docx" download>Download as Word (.docx)</a></p>' if slug else "")
-    page(path, title, desc, PW_INTRO + f'<h1 class="pt">{title}</h1><p class="sub">Last updated: 26 September 2026</p>' + dl + body + "</div></div></section>")
+    dl = f'<p><a href="/paperwork/{slug}.docx" download>Download as Word (.docx)</a></p>' if slug else ""
+    page(
+        path,
+        title,
+        desc,
+        PW_INTRO
+        + f'<h1 class="pt">{title}</h1><p class="sub">Last updated: 26 September 2026</p>'
+        + dl
+        + body
+        + "</div></div></section>",
+    )
 
-pw_page("/paperwork/", "Trust & paperwork",
-        "AxiomCode trust centre: Terms of Service, Privacy Policy, Certificate Policy and CPS, Refund Policy, Service Levels, and Security.",
-"""<p class="sub">Everything that governs the service, in one place.</p>
+
+pw_page(
+    "/paperwork/",
+    "Trust & paperwork",
+    "AxiomCode trust centre: Terms of Service, Privacy Policy, Certificate Policy and CPS, Refund Policy, Service Levels, and Security.",
+    """<p class="sub">Everything that governs the service, in one place.</p>
 <ul>
 <li><a href="/paperwork/terms/">Terms of Service</a> &mdash; the contract for using AxiomCode.</li>
 <li><a href="/paperwork/privacy/">Privacy Policy</a> &mdash; what we collect, why, and how long we keep it.</li>
@@ -22,11 +35,14 @@ pw_page("/paperwork/", "Trust & paperwork",
 <li><a href="/paperwork/security/">Security &amp; responsible disclosure</a> &mdash; how we protect the CA, and how to report issues.</li>
 </ul>
 <p>Downloadable Word copies of each document are linked at the top of each page.</p>
-""")
+""",
+)
 
-pw_page("/paperwork/terms/", "Terms of Service",
-        "AxiomCode Terms of Service: the service, trial terms, credits and payment, acceptable use, certificate reliance, liability limits.",
-"""<h2>1. The service</h2>
+pw_page(
+    "/paperwork/terms/",
+    "Terms of Service",
+    "AxiomCode Terms of Service: the service, trial terms, credits and payment, acceptable use, certificate reliance, liability limits.",
+    """<h2>1. The service</h2>
 <p>AxiomCode (&ldquo;we&rdquo;) provides machine-checked verification of software specifications and issues signed certificates recording the verification outcome (&ldquo;certificates&rdquo;). The service is offered through a web interface, a REST API, and an MCP server.</p>
 <h2>2. Trial</h2>
 <p>New users may run up to 10 trial verifications without payment. Trial verdicts include the verdict and the engine transcript; <strong>trial verdicts never include certificates</strong>. Trial access is rate-limited and may not be resold, shared across accounts to evade the limit, or used to probe the engine adversarially.</p>
@@ -44,11 +60,14 @@ pw_page("/paperwork/terms/", "Terms of Service",
 <p>We may update these terms with 14 days&rsquo; notice on this page; continued use is acceptance. We may suspend accounts for abuse, non-payment, or unlawful use. You may stop using the service at any time; unused credits remain refundable per the <a href="/paperwork/refunds/">Refund Policy</a>.</p>
 <h2>9. Contact</h2>
 <p>Questions about these terms: <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</p>
-""")
+""",
+)
 
-pw_page("/paperwork/privacy/", "Privacy Policy",
-        "AxiomCode Privacy Policy: what data we collect (submitted code, account, metering), why we keep it, retention and deletion, and our no-sale commitment.",
-"""<h2>1. What we collect</h2>
+pw_page(
+    "/paperwork/privacy/",
+    "Privacy Policy",
+    "AxiomCode Privacy Policy: what data we collect (submitted code, account, metering), why we keep it, retention and deletion, and our no-sale commitment.",
+    """<h2>1. What we collect</h2>
 <ul>
 <li><strong>Submitted artifacts:</strong> the code you ask us to verify, its SHA-256 hash, the verdict, and the engine transcript. We cannot verify without it.</li>
 <li><strong>Account data:</strong> email address, API keys, credit balance, and purchase records from our merchant of record.</li>
@@ -68,11 +87,14 @@ pw_page("/paperwork/privacy/", "Privacy Policy",
 <p>To request deletion or a copy of your data: <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>. Some records (revoked certificate entries, tax records) cannot be deleted while the law requires them.</p>
 <h2>5. Security</h2>
 <p>CA signing keys are held separately from the web service with restricted access; see <a href="/paperwork/security/">Security</a>. No method is perfect; we disclose breaches affecting your data promptly.</p>
-""")
+""",
+)
 
-pw_page("/paperwork/certificate-policy/", "Certificate Policy & Certification Practice Statement",
-        "AxiomCode Certificate Policy and CPS: what certificates assert, validation method, issuance, 90-day validity, renewal, revocation, and incident handling.",
-"""<p>This document follows the structure of RFC 3647. It states what AxiomCode certificates mean, how they are issued, and what happens when something goes wrong. <em>It should be reviewed by qualified legal counsel and a PKI auditor before certificates are relied upon in regulated contexts.</em></p>
+pw_page(
+    "/paperwork/certificate-policy/",
+    "Certificate Policy & Certification Practice Statement",
+    "AxiomCode Certificate Policy and CPS: what certificates assert, validation method, issuance, 90-day validity, renewal, revocation, and incident handling.",
+    """<p>This document follows the structure of RFC 3647. It states what AxiomCode certificates mean, how they are issued, and what happens when something goes wrong. <em>It should be reviewed by qualified legal counsel and a PKI auditor before certificates are relied upon in regulated contexts.</em></p>
 <h2>1. Introduction</h2>
 <p><strong>1.1 Overview.</strong> AxiomCode operates a certification authority (&ldquo;AxiomCode CA&rdquo;) that issues certificates binding a software artifact&rsquo;s hash to a machine-checked verification verdict. Verification-as-evidence, not verification-as-opinion: every certificate carries the evidence needed to re-check it.</p>
 <p><strong>1.2 Document name.</strong> AxiomCode Certificate Policy and Certification Practice Statement, version 1.0 (2026-09-26).</p>
@@ -98,11 +120,14 @@ pw_page("/paperwork/certificate-policy/", "Certificate Policy & Certification Pr
 <p>We log every issuance and revocation; logs are available to auditors under NDA. Annual self-assessment against this CP/CPS is published in summary form.</p>
 <h2>9. Legal matters</h2>
 <p>Certificates credential the code submitted and nothing more; they are factual statements about a verification event, not warranties. <strong>We hold no responsibility beyond the assessment stated in the certificate.</strong> Liability is limited as stated in the <a href="/paperwork/terms/">Terms of Service</a> (per-certificate cap at the verification fee; aggregate cap at 12 months&rsquo; fees; no consequential damages; no duty to relying parties beyond this Policy). Subscribers warrant they have the right to submit the artifact. Relying parties must validate certificates through the published checker and revocation list before relying; any reliance is at the relying party&rsquo;s own risk.</p>
-""")
+""",
+)
 
-pw_page("/paperwork/refunds/", "Billing, trial & refund policy",
-        "AxiomCode billing policy: the 10-verification trial, credit packs, how metering works, cancellations, and the 14-day refund rule for unused credits.",
-"""<h2>1. Trial</h2>
+pw_page(
+    "/paperwork/refunds/",
+    "Billing, trial & refund policy",
+    "AxiomCode billing policy: the 10-verification trial, credit packs, how metering works, cancellations, and the 14-day refund rule for unused credits.",
+    """<h2>1. Trial</h2>
 <p>Every new email address gets 10 free verifications. Trial verdicts include the verdict and transcript but <strong>never a certificate</strong>. The trial demonstrates the engine; certification is the paid product. One trial per person; creating multiple accounts to harvest trials is abuse and will be suspended.</p>
 <h2>2. Credits</h2>
 <ul>
@@ -117,11 +142,14 @@ pw_page("/paperwork/refunds/", "Billing, trial & refund policy",
 <p>There are no subscriptions to cancel &mdash; credits are prepaid. Stop buying packs whenever you like; your balance, certificates, and history remain available.</p>
 <h2>5. Disputes</h2>
 <p>Dispute a charge within 30 days with the serial numbers or timestamps involved; we investigate against the tamper-evident meter log, which is the record of truth both sides can inspect.</p>
-""")
+""",
+)
 
-pw_page("/paperwork/sla/", "Service levels & support",
-        "AxiomCode service levels: uptime target, verification queue expectations, support channels and response targets, and what happens when we miss.",
-"""<h2>1. Uptime</h2>
+pw_page(
+    "/paperwork/sla/",
+    "Service levels & support",
+    "AxiomCode service levels: uptime target, verification queue expectations, support channels and response targets, and what happens when we miss.",
+    """<h2>1. Uptime</h2>
 <p><strong>Target: 99% monthly availability</strong> for the API and certificate checker, excluding scheduled maintenance (announced 48h ahead) and upstream outages. The static site and published revocation list are served from the edge and targeted higher, but the commitment we make is 99% on the API.</p>
 <h2>2. Verification queue</h2>
 <p>Verifications normally start within 60 seconds. At high load, paid verifications queue ahead of trial verifications, and Scale customers queue ahead of others. Engine time per call is capped; very large artifacts may be asked to split submissions.</p>
@@ -133,11 +161,14 @@ pw_page("/paperwork/sla/", "Service levels & support",
 </ul>
 <h2>4. Remedies</h2>
 <p>If monthly API availability falls below 99%, affected paying customers receive a 10% credit rebate for the month, applied automatically. This is our sole remedy for downtime and is without prejudice to the liability limits in the <a href="/paperwork/terms/">Terms</a>.</p>
-""")
+""",
+)
 
-pw_page("/paperwork/security/", "Security & responsible disclosure",
-        "AxiomCode security: how the CA and signing keys are protected, what we ask of researchers, and how to report vulnerabilities.",
-"""<h2>1. How we protect the CA</h2>
+pw_page(
+    "/paperwork/security/",
+    "Security & responsible disclosure",
+    "AxiomCode security: how the CA and signing keys are protected, what we ask of researchers, and how to report vulnerabilities.",
+    """<h2>1. How we protect the CA</h2>
 <ul>
 <li><strong>Key segregation:</strong> CA signing keys live in an isolated service, separate from the web and API tiers. The public internet never touches the signer.</li>
 <li><strong>Least privilege:</strong> few humans can touch the CA; every touch is logged.</li>
@@ -151,4 +182,5 @@ pw_page("/paperwork/security/", "Security & responsible disclosure",
 <p>In scope: the API, the MCP server, the certificate checker, the CA issuance path, and this site. Out of scope: third-party services (Paddle, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
 <h2>4. What we won&rsquo;t do</h2>
 <p>We won&rsquo;t threaten researchers who follow this policy, and we won&rsquo;t ask law enforcement to chill good-faith research. If you&rsquo;re unsure whether something is in scope, ask first.</p>
-""")
+""",
+)
