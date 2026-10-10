@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Questions and discussion
+    url: https://github.com/nrupala/axiomcode/discussions
+    about: Ask questions and discuss ideas in Discussions
+  - name: Support this work
+    url: https://github.com/sponsors/nrupala
+    about: Sponsor the development of this project on GitHub Sponsors
