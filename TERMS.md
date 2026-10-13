@@ -1,8 +1,6 @@
 # Product Terms — axiomcode
 
-These Product Terms govern the official packaged or distributed version of **axiomcode** supplied by **2351485 ALBERTA INC.** (the “Company”). They supplement the licence or licences identified in `LICENSING.md`. If a separate written agreement with the Company applies to a particular supply, that agreement controls to the extent of any conflict.
-
-> **Licence note:** These Product Terms supplement the official product supply only to the extent consistent with the repository licence identified in `LICENSING.md`. They do not reduce rights granted by that licence.
+These Product Terms govern the official packaged or distributed version of **axiomcode** supplied by **2351485 ALBERTA INC.** (the “Company”). They are additive: they do not change, replace, or limit the licence that applies to this repository’s source code or content. If a separate written agreement with the Company applies to a particular supply, that agreement controls to the extent of any conflict.
 
 ## 1. Responsible use and user environment
 
