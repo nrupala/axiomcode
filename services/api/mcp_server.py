@@ -1,9 +1,15 @@
 """AxiomCode verification MCP server — the agent-native interface.
 
-Tool: verify(code, max_attempts) -> {verified, attempts, certificate, usage}
-Auth: Authorization: Bearer <api_key> (keys in API_KEYS_FILE, one per line: <key_id>:<key>)
-Metering: every call appended to METER_LOG (JSONL) — the audit log doubles as
-the billing record. Priced in compute-seconds; see CREDITS_PER_COMPUTE_S.
+Tools: verify(code, max_attempts), check_certificate(certificate),
+pricing(), usage_report().
+Auth: Authorization: Bearer <api_key> (keys in API_KEYS_FILE, one per
+line: <key_id>:<key>).
+
+Production build: certificates are Ed25519-signed (ca.py, format v2);
+metering, revocation and the hash-chained audit log live in the
+durable store (store.py) — no more meter.jsonl / revoked.txt.
+Temp Lean projects are created under AXIOMCODE_WORK_ROOT and always
+removed after the verification finishes.
 
 Run: uvicorn mcp_server:mcp_app --port 8092
 (Uses Streamable HTTP transport so remote agents can connect.)
@@ -11,6 +17,7 @@ Run: uvicorn mcp_server:mcp_app --port 8092
 
 import hashlib
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -19,21 +26,23 @@ from pathlib import Path
 sys.path.insert(0, "/home/hatch/workspace/axiomcode/repo")
 sys.path.insert(0, os.path.dirname(__file__))
 
+import ca
 from billing import load_keys, meter, price_per_compute_s, usage_for
-from certs import issue as issue_cert
-
-# mcp v1 API; typeshed's mcp.server.fastmcp stub does not declare FastMCP
-from mcp.server.fastmcp import FastMCP  # type: ignore[attr-defined]
+from mcp.server.fastmcp import FastMCP
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
+from store import Store
 
 from core.prover import iterative_proof_search
 
 # ─── config ──────────────────────────────────────────────────────────────
-API_KEYS_FILE = os.environ.get("AXIOMCODE_API_KEYS", "/home/hatch/workspace/axiomcode/api-prototype/keys.txt")
-METER_LOG = os.environ.get("AXIOMCODE_METER_LOG", "/home/hatch/workspace/axiomcode/api-prototype/meter.jsonl")
-CERT_SECRET = os.environ.get("AXIOMCODE_CERT_SECRET", "dev-secret-change-me").encode()
+_HERE = Path(__file__).parent
+API_KEYS_FILE = os.environ.get("AXIOMCODE_API_KEYS", str(_HERE / "keys.txt"))
+WORK_ROOT = os.environ.get("AXIOMCODE_WORK_ROOT", tempfile.gettempdir())
 TOOLCHAIN = "leanprover/lean4:v4.35.0-rc3"
+
+CA = ca.CA.load_or_create()
+STORE = Store()
 
 mcp = FastMCP("axiomcode-verify")
 
@@ -63,32 +72,35 @@ def verify(code: str, max_attempts: int = 1) -> dict:
     Anyone can re-check the certificate without trusting us:
     verification-as-evidence, not verification-as-opinion."""
     key_id = _KEY.id
-    proj = Path(tempfile.mkdtemp(prefix="ax-mcp-"))
-    (proj / "lean-toolchain").write_text(TOOLCHAIN)
-    (proj / "lakefile.lean").write_text(
-        "import Lake\nopen Lake DSL\npackage v where\nlean_lib V where\n  roots := #[`V]\n"
-    )
-    src = proj / "V.lean"
+    proj = Path(tempfile.mkdtemp(prefix="ax-mcp-", dir=WORK_ROOT))
+    try:
+        (proj / "lean-toolchain").write_text(TOOLCHAIN)
+        (proj / "lakefile.lean").write_text(
+            "import Lake\nopen Lake DSL\npackage v where\nlean_lib V where\n  roots := #[`V]\n"
+        )
+        src = proj / "V.lean"
 
-    def writer(c: str) -> Path:
-        src.write_text(c)
-        return src
+        def writer(c: str) -> Path:
+            src.write_text(c)
+            return src
 
-    t0 = time.time()
-    verified, _, attempts, _ = iterative_proof_search(
-        writer,
-        proj,
-        code,
-        None,
-        "none",
-        max_attempts=max_attempts,
-        use_pantograph=False,
-    )
-    compute_s = time.time() - t0
+        t0 = time.time()
+        verified, _, attempts, _ = iterative_proof_search(
+            writer,
+            proj,
+            code,
+            None,
+            "none",
+            max_attempts=max_attempts,
+            use_pantograph=False,
+        )
+        compute_s = time.time() - t0
+    finally:
+        shutil.rmtree(proj, ignore_errors=True)
 
     code_sha = hashlib.sha256(code.encode()).hexdigest()
-    usage = meter(METER_LOG, key_id, code_sha, verified, compute_s)
-    cert = issue_cert(
+    usage = meter(STORE, key_id, code_sha, verified, compute_s)
+    cert = CA.issue(
         {
             "code_sha256": code_sha,
             "verified": verified,
@@ -97,6 +109,7 @@ def verify(code: str, max_attempts: int = 1) -> dict:
             "key_id": key_id,
         }
     )
+    STORE.record_cert(cert)
     return {
         "verified": verified,
         "attempts": attempts,
@@ -108,16 +121,27 @@ def verify(code: str, max_attempts: int = 1) -> dict:
 @mcp.tool()
 def usage_report() -> dict:
     """Total metered spend for the calling API key, in credits and USD."""
-    return usage_for(METER_LOG, _KEY.id)
+    return usage_for(STORE, _KEY.id)
 
 
 @mcp.tool()
 def check_certificate(certificate: dict) -> dict:
     """Re-verify a verification certificate: signature, validity window,
     revocation status. Anyone can check — never take our word for it."""
-    from certs import check as check_cert
-
-    return check_cert(certificate)
+    result = ca.verify_certificate(certificate, ca=CA)
+    serial = certificate.get("serial") if isinstance(certificate, dict) else None
+    if result.get("valid") and serial and STORE.is_revoked(serial):
+        result = {"valid": False, "reason": "revoked", "payload": certificate}
+    STORE.append_audit(
+        "verification",
+        {
+            "serial": serial,
+            "valid": bool(result.get("valid")),
+            "reason": result.get("reason"),
+            "via": "mcp",
+        },
+    )
+    return result
 
 
 @mcp.tool()
