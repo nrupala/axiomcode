@@ -123,6 +123,7 @@ page(
 <p class="sub">What changed, when &mdash; stated plainly.</p>
 <h2>2026-10-15 &mdash; Honest pre-launch presentation</h2>
 <p>The site now presents the service as it is: <strong>pre-launch</strong>. Credit packs are not yet on sale, the API is not yet live, and certificates are not yet being issued. Buy buttons and operating-service claims stay down until the launch wiring exists.</p>
+<p>Release gate: PASS WITH FINDINGS (2026-10-15) &mdash; pre-launch presentation is a release candidate since 2026-10-15, graduates 2026-10-22.</p>
 <h2>2026-09-27 &mdash; Certification loop verified end-to-end</h2>
 <p>On the real engine: submit a Lean 4 specification &rarr; verification &rarr; signed 90-day certificate &rarr; independent certificate check &rarr; revocation. The loop works; production hosting is the remaining launch step.</p>
 <h2>2026-09-26 &mdash; Engine and site</h2>
