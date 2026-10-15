@@ -31,10 +31,11 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 import ca
 from billing import meter
-from core.prover import iterative_proof_search, lean_version
 from fastapi import FastAPI
 from pydantic import BaseModel
 from store import Store
+
+from core.prover import iterative_proof_search, lean_version
 
 TOOLCHAIN = "leanprover/lean4:v4.35.0-rc3"
 WORK_ROOT = os.environ.get("AXIOMCODE_WORK_ROOT", tempfile.gettempdir())

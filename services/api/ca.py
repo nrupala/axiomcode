@@ -69,7 +69,10 @@ def coerce_public_key(key) -> Ed25519PublicKey:
     if isinstance(key, Ed25519PublicKey):
         return key
     if isinstance(key, str) and "BEGIN PUBLIC KEY" in key:
-        return serialization.load_pem_public_key(key.encode())
+        loaded = serialization.load_pem_public_key(key.encode())
+        if not isinstance(loaded, Ed25519PublicKey):
+            raise ValueError("PEM does not hold an Ed25519 public key")
+        return loaded
     raw = base64.b64decode(key) if isinstance(key, str) else bytes(key)
     return Ed25519PublicKey.from_public_bytes(raw)
 

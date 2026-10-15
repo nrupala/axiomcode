@@ -28,11 +28,12 @@ sys.path.insert(0, os.path.dirname(__file__))
 
 import ca
 from billing import load_keys, meter, price_per_compute_s, usage_for
-from core.prover import iterative_proof_search
 from mcp.server.fastmcp import FastMCP
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 from store import Store
+
+from core.prover import iterative_proof_search
 
 # ─── config ──────────────────────────────────────────────────────────────
 _HERE = Path(__file__).parent

@@ -49,7 +49,7 @@ def load_pricing() -> dict:
 def price_per_compute_s(pricing: dict | None = None) -> float:
     p = pricing or load_pricing()
     loaded = sum(v for k, v in p.items() if k != "multiple")
-    return loaded * p["multiple"]
+    return float(loaded * p["multiple"])
 
 
 def charge_for(compute_s: float, pricing: dict | None = None) -> dict:
@@ -93,7 +93,8 @@ def meter(target, key_id: str, code_sha: str, verified: bool, compute_s: float, 
         **bill,
     }
     if _is_store(target):
-        return target.record_meter(entry)
+        entry_out: dict = target.record_meter(entry)
+        return entry_out
     with open(target, "a") as f:
         f.write(json.dumps(entry) + "\n")
     return entry
@@ -103,7 +104,8 @@ def usage_for(target, key_id: str) -> dict:
     """Total metered spend for a key — from the Store (production)
     or a legacy JSONL path."""
     if _is_store(target):
-        return target.usage_for(key_id)
+        usage: dict = target.usage_for(key_id)
+        return usage
     total_c, total_usd, calls = 0.0, 0.0, 0
     p = Path(target)
     if p.exists():
