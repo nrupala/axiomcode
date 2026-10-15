@@ -31,7 +31,10 @@ openapi = {
     "info": {
         "title": "AxiomCode API",
         "version": "1.0.0",
-        "description": ("Verification and certification API. Full reference at https://axiom-code.com/docs/api/"),
+        "description": (
+            "Verification and certification API. Planned API — not yet live; "
+            "the service is in pre-launch. Full reference at https://axiom-code.com/docs/api/"
+        ),
     },
     "servers": [{"url": API_BASE}],
     "paths": {

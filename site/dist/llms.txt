@@ -6,14 +6,20 @@ AxiomCode verifies Lean 4 software specifications with a real toolchain and issu
 signed, revocable, independently verifiable certificates binding the artifact hash,
 verdict, toolchain, issuer, serial, and validity window.
 
+## Status: pre-launch
+
+The service is not yet open. The API and MCP endpoints below are planned, not yet
+live. We are not yet accepting submissions or payments, and certificates are not
+yet being issued. This file will be updated when the service opens.
+
 ## For agents
 
 - API docs: https://axiom-code.com/docs/api/
 - Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json
-- REST base: https://api.axiom-code.com
-- MCP server: https://api.axiom-code.com/mcp with tools: verify, check_certificate, pricing, usage_report
-- Check any certificate (no auth): GET https://api.axiom-code.com/v1/check?serial=...
-- Revocation list: https://api.axiom-code.com/v1/revoked
+- Planned REST base: https://api.axiom-code.com (not yet live)
+- Planned MCP server: https://api.axiom-code.com/mcp with tools: verify, check_certificate, pricing, usage_report
+- Planned certificate check (no auth): GET https://api.axiom-code.com/v1/check?serial=...
+- Planned revocation list: https://api.axiom-code.com/v1/revoked
 
 ## Trial
 
