@@ -1,16 +1,26 @@
-"""AxiomCode verification API prototype.
+"""AxiomCode verification API (production build).
 
-POST /verify {code} -> {verified, attempts, certificate}
-POST /check  {certificate} -> {valid, payload}
+POST /verify {code} -> {verified, attempts, certificate, usage}
+POST /check  {certificate} -> {valid, ...}
+GET  /revoked -> {issuer, revoked: [serial...]}
+GET  /.well-known/axiomcode-keys.json -> published CA public keys
 
-The certificate is an HMAC-signed attestation binding:
-  code hash + verified verdict + toolchain version + timestamp.
-Anyone holding the cert can confirm *what* was checked and *what* the
-machine said — without trusting the server's word for it.
+Certificates are Ed25519-signed attestations (ca.py, format v2)
+binding: code hash + verified verdict + toolchain version + validity
+window. Anyone holding the cert and the published public key can
+confirm *what* was checked and *what* the machine said — without
+trusting the server's word for it. All state (certificates,
+revocations, meter, audit) lives in the durable store (store.py);
+issuance / revocation / verification events land in its hash-chained
+audit log.
+
+Temp Lean projects are created under AXIOMCODE_WORK_ROOT (default:
+system temp dir) and always removed after the verification finishes.
 """
 
 import hashlib
 import os
+import shutil
 import sys
 import tempfile
 import time
@@ -19,16 +29,18 @@ from pathlib import Path
 sys.path.insert(0, "/home/hatch/workspace/axiomcode/repo")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-import certs
+import ca
 from billing import meter
+from core.prover import iterative_proof_search, lean_version
 from fastapi import FastAPI
 from pydantic import BaseModel
+from store import Store
 
-from core.prover import iterative_proof_search, lean_version
-
-SECRET = os.environ.get("AXIOMCODE_CERT_SECRET", "dev-secret-change-me").encode()
 TOOLCHAIN = "leanprover/lean4:v4.35.0-rc3"
-METER_LOG = os.environ.get("AXIOMCODE_METER_LOG", "/home/hatch/workspace/axiomcode/api-prototype/meter.jsonl")
+WORK_ROOT = os.environ.get("AXIOMCODE_WORK_ROOT", tempfile.gettempdir())
+
+CA = ca.CA.load_or_create()
+STORE = Store()
 
 app = FastAPI(
     title="AxiomCode Verify",
@@ -46,38 +58,38 @@ class CheckRequest(BaseModel):
     certificate: dict
 
 
-class UsageRequest(BaseModel):
-    key_id: str
-
-
 @app.post("/verify")
 def verify(req: VerifyRequest):
-    proj = Path(tempfile.mkdtemp(prefix="ax-api-"))
-    (proj / "lean-toolchain").write_text(TOOLCHAIN)
-    (proj / "lakefile.lean").write_text(
-        "import Lake\nopen Lake DSL\npackage v where\nlean_lib V where\n  roots := #[`V]\n"
-    )
-    src = proj / "V.lean"
+    proj = Path(tempfile.mkdtemp(prefix="ax-api-", dir=WORK_ROOT))
+    try:
+        (proj / "lean-toolchain").write_text(TOOLCHAIN)
+        (proj / "lakefile.lean").write_text(
+            "import Lake\nopen Lake DSL\npackage v where\nlean_lib V where\n  roots := #[`V]\n"
+        )
+        src = proj / "V.lean"
 
-    def writer(code: str) -> Path:
-        src.write_text(code)
-        return src
+        def writer(code: str) -> Path:
+            src.write_text(code)
+            return src
 
-    t0 = time.time()
-    verified, final_code, attempts, log = iterative_proof_search(
-        writer,
-        proj,
-        req.code,
-        None,
-        "none",
-        max_attempts=req.max_attempts,
-        use_pantograph=False,
-    )
-    compute_s = time.time() - t0
+        t0 = time.time()
+        verified, _final_code, attempts, _log = iterative_proof_search(
+            writer,
+            proj,
+            req.code,
+            None,
+            "none",
+            max_attempts=req.max_attempts,
+            use_pantograph=False,
+        )
+        compute_s = time.time() - t0
+    finally:
+        shutil.rmtree(proj, ignore_errors=True)
+
     code_sha = hashlib.sha256(req.code.encode()).hexdigest()
     # REST callers are metered under a per-request key; key auth lives on MCP.
-    usage = meter(METER_LOG, "rest-anonymous", code_sha, verified, compute_s)
-    cert = certs.issue(
+    usage = meter(STORE, "rest-anonymous", code_sha, verified, compute_s)
+    cert = CA.issue(
         {
             "code_sha256": code_sha,
             "verified": verified,
@@ -87,6 +99,7 @@ def verify(req: VerifyRequest):
             "key_id": "rest-anonymous",
         }
     )
+    STORE.record_cert(cert)
     return {
         "verified": verified,
         "attempts": attempts,
@@ -97,9 +110,27 @@ def verify(req: VerifyRequest):
 
 @app.post("/check")
 def check(req: CheckRequest):
-    return certs.check(req.certificate)
+    result = ca.verify_certificate(req.certificate, ca=CA)
+    serial = req.certificate.get("serial") if isinstance(req.certificate, dict) else None
+    if result.get("valid") and serial and STORE.is_revoked(serial):
+        result = {"valid": False, "reason": "revoked", "payload": req.certificate}
+    STORE.append_audit(
+        "verification",
+        {
+            "serial": serial,
+            "valid": bool(result.get("valid")),
+            "reason": result.get("reason"),
+            "via": "rest",
+        },
+    )
+    return result
 
 
 @app.get("/revoked")
 def revoked():
-    return {"issuer": certs.ISSUER, "revoked": sorted(certs.revoked_serials())}
+    return {"issuer": ca.ISSUER, "revoked": sorted(STORE.revoked_serials())}
+
+
+@app.get("/.well-known/axiomcode-keys.json")
+def ca_public_keys():
+    return CA.public_keys_payload()

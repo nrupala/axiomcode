@@ -8,6 +8,11 @@ plus industry-standard profit margin on top.
 
 1 credit = $0.01. Tune via AXIOMCODE_PRICING_JSON or the defaults below.
 Currently: 2.25x multiple over fully-loaded cost (~55.6% gross margin).
+
+Production (W2): meter records go through the durable store
+(store.record_meter — sqlite + hash-chained audit trail), not the
+prototype's meter.jsonl. meter()/usage_for() accept a Store; a plain
+file path still works via the legacy JSONL path for old fixtures.
 """
 
 import json
@@ -44,7 +49,7 @@ def load_pricing() -> dict:
 def price_per_compute_s(pricing: dict | None = None) -> float:
     p = pricing or load_pricing()
     loaded = sum(v for k, v in p.items() if k != "multiple")
-    return float(loaded * p["multiple"])
+    return loaded * p["multiple"]
 
 
 def charge_for(compute_s: float, pricing: dict | None = None) -> dict:
@@ -72,10 +77,13 @@ def load_keys(keys_file: str) -> dict:
     return keys
 
 
-def meter(
-    meter_log: str, key_id: str, code_sha: str, verified: bool, compute_s: float, pricing: dict | None = None
-) -> dict:
-    """Append one metered call to the billing/audit log. Returns the entry."""
+def _is_store(target) -> bool:
+    return hasattr(target, "record_meter") and hasattr(target, "usage_for")
+
+
+def meter(target, key_id: str, code_sha: str, verified: bool, compute_s: float, pricing: dict | None = None) -> dict:
+    """Record one metered call. `target` is the durable Store
+    (production) or a legacy JSONL path. Returns the entry."""
     bill = charge_for(compute_s, pricing)
     entry = {
         "ts": int(time.time()),
@@ -84,14 +92,20 @@ def meter(
         "verified": verified,
         **bill,
     }
-    with open(meter_log, "a") as f:
+    if _is_store(target):
+        return target.record_meter(entry)
+    with open(target, "a") as f:
         f.write(json.dumps(entry) + "\n")
     return entry
 
 
-def usage_for(meter_log: str, key_id: str) -> dict:
+def usage_for(target, key_id: str) -> dict:
+    """Total metered spend for a key — from the Store (production)
+    or a legacy JSONL path."""
+    if _is_store(target):
+        return target.usage_for(key_id)
     total_c, total_usd, calls = 0.0, 0.0, 0
-    p = Path(meter_log)
+    p = Path(target)
     if p.exists():
         for line in p.read_text().splitlines():
             try:
