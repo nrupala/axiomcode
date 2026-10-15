@@ -117,9 +117,13 @@ class CA:
 
     def issue(self, subject: dict) -> dict:
         """Issue a v2 certificate. `subject` holds the verdict fields
-        (code_sha256, verified, attempts, toolchain, key_id, ...)."""
+        (code_sha256, verified, attempts, toolchain, key_id, ...).
+        The CA-fixed fields (version, alg, kid, serial, issuer,
+        validity window) are applied AFTER the subject spread, so a
+        subject can never override them (PR #21 review hardening)."""
         now = int(time.time())
         cert = {
+            **subject,
             "version": 2,
             "alg": ALG,
             "kid": self.kid,
@@ -127,7 +131,6 @@ class CA:
             "issuer": ISSUER,
             "valid_from": now,
             "valid_until": now + VALIDITY_DAYS * 86400,
-            **subject,
         }
         cert["signature"] = self.sign_body(cert)
         return cert
@@ -170,6 +173,10 @@ def verify_certificate(cert: dict, public_key=None, ca: CA | None = None) -> dic
         pub.verify(base64.b64decode(sig_b64), canonical(body))
     except Exception:  # InvalidSignature, malformed base64, wrong key type
         return {"valid": False, "reason": "bad_signature"}
+    if cert.get("kid") != kid_for(pub):
+        # The signature verifies under this key but the cert names a
+        # different one — not a cert this key stands behind.
+        return {"valid": False, "reason": "unknown_kid"}
     now = int(time.time())
     if now < cert.get("valid_from", 0):
         return {"valid": False, "reason": "not_yet_valid"}

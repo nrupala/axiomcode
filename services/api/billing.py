@@ -81,9 +81,22 @@ def _is_store(target) -> bool:
     return hasattr(target, "record_meter") and hasattr(target, "usage_for")
 
 
-def meter(target, key_id: str, code_sha: str, verified: bool, compute_s: float, pricing: dict | None = None) -> dict:
+def meter(
+    target,
+    key_id: str,
+    code_sha: str,
+    verified: bool,
+    compute_s: float,
+    pricing: dict | None = None,
+    trial: bool = False,
+) -> dict:
     """Record one metered call. `target` is the durable Store
-    (production) or a legacy JSONL path. Returns the entry."""
+    (production) or a legacy JSONL path. Returns the entry.
+
+    Trial calls (W3) are FREE: the charge is computed as usual (the
+    rate fields stay on the entry for transparency) but credits/usd
+    are recorded as 0 and the entry is flagged trial — the store
+    counts those rows as the key's consumed trial cases."""
     bill = charge_for(compute_s, pricing)
     entry = {
         "ts": int(time.time()),
@@ -92,6 +105,10 @@ def meter(target, key_id: str, code_sha: str, verified: bool, compute_s: float, 
         "verified": verified,
         **bill,
     }
+    if trial:
+        entry["credits"] = 0.0
+        entry["usd"] = 0.0
+        entry["trial"] = True
     if _is_store(target):
         entry_out: dict = target.record_meter(entry)
         return entry_out
