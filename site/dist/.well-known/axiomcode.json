@@ -1,14 +1,12 @@
 {
   "service": "AxiomCode",
+  "status": "pre-launch",
   "description": "Certification authority for software correctness. Machine-checked proofs, signed certificates.",
+  "note": "Pre-launch: the service is not yet open. The API, MCP server, revocation list, and CA public keys will be published here when the service opens; none are live yet, and certificates are not yet being issued.",
   "homepage": "https://axiom-code.com",
-  "api_base": "https://api.axiom-code.com",
-  "mcp": "https://api.axiom-code.com/mcp",
   "llms_txt": "https://axiom-code.com/llms.txt",
   "docs": "https://axiom-code.com/docs/api/",
   "certificate_checker": "https://axiom-code.com/check/",
-  "revocation_list": "https://api.axiom-code.com/v1/revoked",
-  "ca_public_keys": "https://axiom-code.com/.well-known/axiomcode-keys.json",
   "pricing": "https://axiom-code.com/pricing/",
   "trial": {
     "verifications": 10,

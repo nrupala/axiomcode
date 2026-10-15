@@ -39,6 +39,7 @@ a{color:#175cd3;text-decoration:none}a:hover{text-decoration:underline}
 .wrap{max-width:1080px;margin:0 auto;padding:0 24px}
 .prose{max-width:72ch}
 /* header */
+.prelaunch{background:var(--goldsoft);border-bottom:1px solid var(--line);padding:10px 0;font-size:14.5px}
 .sitehead{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
 .sitehead .wrap{display:flex;align-items:center;gap:28px;height:64px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink)}
@@ -148,7 +149,8 @@ def header(active=""):
     links = []
     for label, href in NAV:
         links.append(f'<a href="{href}">{label}</a>')
-    return f"""<div class="sitehead"><div class="wrap">
+    return f"""<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="sitehead"><div class="wrap">
 <a class="brand" href="/">{SEAL_SVG}<span>AxiomCode</span></a>
 <nav class="nav">{"".join(links)}</nav>
 <a class="cta" href="/verify/">Try free</a>
@@ -179,6 +181,7 @@ FOOTER = """<footer class="sitefoot"><div class="wrap">
 </ul></div>
 <div><h4>Company</h4><ul>
 <li><a href="/blog/">Blog</a></li>
+<li><a href="/releases/">Release log</a></li>
 <li><a href="/paperwork/security/">Security &amp; disclosure</a></li>
 <li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
 </ul></div>

@@ -55,15 +55,13 @@ page(
 # ---------- machine-readable extras (written by runner) ----------
 WELLKNOWN = {
     "service": "AxiomCode",
+    "status": "pre-launch",
     "description": "Certification authority for software correctness. Machine-checked proofs, signed certificates.",
+    "note": "Pre-launch: the service is not yet open. The API, MCP server, revocation list, and CA public keys will be published here when the service opens; none are live yet, and certificates are not yet being issued.",
     "homepage": SITE,
-    "api_base": API_BASE,
-    "mcp": API_BASE + "/mcp",
     "llms_txt": SITE + "/llms.txt",
     "docs": SITE + "/docs/api/",
     "certificate_checker": SITE + "/check/",
-    "revocation_list": API_BASE + "/v1/revoked",
-    "ca_public_keys": SITE + "/.well-known/axiomcode-keys.json",
     "pricing": SITE + "/pricing/",
     "trial": {"verifications": 10, "certificates": False},
     "contact": "hello@axiom-code.com",
@@ -77,14 +75,20 @@ AxiomCode verifies Lean 4 software specifications with a real toolchain and issu
 signed, revocable, independently verifiable certificates binding the artifact hash,
 verdict, toolchain, issuer, serial, and validity window.
 
+## Status: pre-launch
+
+The service is not yet open. The API and MCP endpoints below are planned, not yet
+live. We are not yet accepting submissions or payments, and certificates are not
+yet being issued. This file will be updated when the service opens.
+
 ## For agents
 
 - API docs: https://axiom-code.com/docs/api/
 - Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json
-- REST base: https://api.axiom-code.com
-- MCP server: https://api.axiom-code.com/mcp with tools: verify, check_certificate, pricing, usage_report
-- Check any certificate (no auth): GET https://api.axiom-code.com/v1/check?serial=...
-- Revocation list: https://api.axiom-code.com/v1/revoked
+- Planned REST base: https://api.axiom-code.com (not yet live)
+- Planned MCP server: https://api.axiom-code.com/mcp with tools: verify, check_certificate, pricing, usage_report
+- Planned certificate check (no auth): GET https://api.axiom-code.com/v1/check?serial=...
+- Planned revocation list: https://api.axiom-code.com/v1/revoked
 
 ## Trial
 
@@ -108,3 +112,21 @@ is handled by public revocation — see the Certificate Policy.
 - Refunds: https://axiom-code.com/paperwork/refunds/
 - Security & disclosure: https://axiom-code.com/paperwork/security/
 """
+
+# ---------- release log ----------
+page(
+    "/releases/",
+    "Release log",
+    "AxiomCode release log: what changed, when, and the current service status.",
+    """<section class="block"><div class="wrap"><div class="prose">
+<h1 class="pt">Release log</h1>
+<p class="sub">What changed, when &mdash; stated plainly.</p>
+<h2>2026-10-15 &mdash; Honest pre-launch presentation</h2>
+<p>The site now presents the service as it is: <strong>pre-launch</strong>. Credit packs are not yet on sale, the API is not yet live, and certificates are not yet being issued. Buy buttons and operating-service claims stay down until the launch wiring exists.</p>
+<h2>2026-09-27 &mdash; Certification loop verified end-to-end</h2>
+<p>On the real engine: submit a Lean 4 specification &rarr; verification &rarr; signed 90-day certificate &rarr; independent certificate check &rarr; revocation. The loop works; production hosting is the remaining launch step.</p>
+<h2>2026-09-26 &mdash; Engine and site</h2>
+<p>Verification engine test suite green; website and launch paperwork published.</p>
+</div></div></section>
+""",
+)

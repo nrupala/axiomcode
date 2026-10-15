@@ -2,6 +2,7 @@ from build import page
 
 # ---------- paperwork ----------
 PW_INTRO = """<section class="block"><div class="wrap"><div class="prose">
+<div class="note"><strong>Pre-launch status:</strong> AxiomCode has not yet opened. These documents take effect when the service opens for submissions and payments; no certificates have been publicly issued under them yet.</div>
 <div class="note">These documents govern the AxiomCode service. They are written in plain language and describe process and outcomes, not marketing claims. Material liability and warranty terms should be reviewed by qualified legal counsel before they are relied upon in any dispute.</div>
 """
 

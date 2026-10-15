@@ -167,7 +167,7 @@ page(
     """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Pricing</h1>
 <p class="sub">The trial proves the engine. The certificate is the product.</p>
-<div class="note">Our pricing covers the full cost of running the service &mdash; infrastructure, compute, operations, support, and insurance &mdash; plus a standard margin. One credit is always <strong>US$0.01</strong>. Verification consumes credits by compute time; the certificate itself is included with every paid verification.</div>
+<div class="note"><strong>Pre-launch:</strong> packs are not yet on sale &mdash; this page shows the launch pricing. Our pricing covers the full cost of running the service &mdash; infrastructure, compute, operations, support, and insurance &mdash; plus a standard margin. One credit is always <strong>US$0.01</strong>. Verification consumes credits by compute time; the certificate itself is included with every paid verification.</div>
 </div>
 <div class="ptable">
 <div class="plan">
@@ -188,7 +188,7 @@ page(
 <li>REST API + API key</li>
 <li>Certificate checker + revocation list</li>
 </ul>
-<p><button class="cta paddle-buy" data-pack="starter" style="border:0;cursor:pointer">Buy Starter</button></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
 </div>
 <div class="plan hot">
 <h3>Growth</h3><div class="price">$50</div><div class="per">5,000 credits, never expire</div>
@@ -198,7 +198,7 @@ page(
 <li>REST API + MCP server access</li>
 <li>Usage reports &amp; audit log</li>
 </ul>
-<p><button class="cta paddle-buy" data-pack="growth" style="border:0;cursor:pointer">Buy Growth</button></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
 </div>
 <div class="plan">
 <h3>Scale</h3><div class="price">$200</div><div class="per">20,000 credits, never expire</div>
@@ -208,7 +208,7 @@ page(
 <li>Everything in Growth</li>
 <li>Priority verification queue</li>
 </ul>
-<p><button class="cta paddle-buy" data-pack="scale" style="border:0;cursor:pointer">Buy Scale</button></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
 </div>
 </div>
 <div class="wrap"><div class="prose" style="margin-top:36px">
@@ -223,24 +223,6 @@ page(
 </div>
 </div></div>
 </section>
-<script src="https://cdn.paddle.com/paddle/v2/paddle.js"></script>
-<script>
-var PRICE_IDS = """
-    + json.dumps(PRICE_IDS)
-    + """;
-if (window.Paddle && """
-    + str(PADDLE_VENDOR)
-    + """) { Paddle.Setup({vendor: """
-    + str(PADDLE_VENDOR)
-    + """}); }
-document.querySelectorAll('.paddle-buy').forEach(function(b){
-  b.addEventListener('click', function(){
-    var pid = PRICE_IDS[b.getAttribute('data-pack')];
-    if (!pid || !window.Paddle) { alert('Checkout opens when products are live. Email hello@axiom-code.com and we will set you up.'); return; }
-    Paddle.Checkout.open({items:[{priceId: pid, quantity: 1}]});
-  });
-});
-</script>
 """,
     PRODUCT_JSONLD,
 )
