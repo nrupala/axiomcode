@@ -1,6 +1,4 @@
-import json
-
-from build import HERO_LINE, PADDLE_VENDOR, PRICE_IDS, SITE, TAGLINE, page
+from build import HERO_LINE, SITE, TAGLINE, page
 
 # ---------- landing ----------
 ORG_JSONLD = {

@@ -1,4 +1,4 @@
-from build import API_BASE, SITE, page
+from build import SITE, page
 
 # ---------- blog ----------
 page(
