@@ -19,6 +19,7 @@ import base64
 import hashlib
 import json
 import os
+import sys
 import time
 import uuid
 from pathlib import Path
@@ -77,13 +78,59 @@ def coerce_public_key(key) -> Ed25519PublicKey:
     return Ed25519PublicKey.from_public_bytes(raw)
 
 
-class CA:
-    """An Ed25519 certification authority bound to one keypair."""
+def _retired_registry_path(key_file: Path) -> Path:
+    """Retired public keys live beside the signing key:
+    ca_key.pem -> ca_key.retired.json."""
+    return key_file.with_name(key_file.stem + ".retired.json")
 
-    def __init__(self, private_key: Ed25519PrivateKey):
+
+def _load_retired(key_file: Path) -> dict[str, Ed25519PublicKey]:
+    path = _retired_registry_path(key_file)
+    if not path.exists():
+        return {}
+    out: dict[str, Ed25519PublicKey] = {}
+    for entry in json.loads(path.read_text()).get("retired", []):
+        pub = Ed25519PublicKey.from_public_bytes(base64.b64decode(entry["public_key"]))
+        out[entry["kid"]] = pub
+    return out
+
+
+def _save_retired(key_file: Path, retired: dict[str, Ed25519PublicKey]) -> None:
+    entries = [
+        {
+            "kid": kid,
+            "public_key": base64.b64encode(
+                pub.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+            ).decode(),
+        }
+        for kid, pub in sorted(retired.items())
+    ]
+    path = _retired_registry_path(key_file)
+    path.write_text(json.dumps({"retired": entries}, indent=2))
+    os.chmod(path, 0o600)
+
+
+class CA:
+    """An Ed25519 certification authority: one current signing key
+    plus the retired public keys it still stands behind for
+    verification (key rotation, L1 item 3)."""
+
+    def __init__(
+        self,
+        private_key: Ed25519PrivateKey,
+        retired: dict[str, Ed25519PublicKey] | None = None,
+    ):
         self._private = private_key
         self.public_key = private_key.public_key()
         self.kid = kid_for(self.public_key)
+        self._retired = dict(retired or {})
+
+    def public_key_for_kid(self, kid: str) -> Ed25519PublicKey | None:
+        """The published key a certificate names: the current key, a
+        retired key, or None (unknown kid — not ours to vouch for)."""
+        if kid == self.kid:
+            return self.public_key
+        return self._retired.get(kid)
 
     # ─── key management ──────────────────────────────────────────────
     @classmethod
@@ -95,12 +142,14 @@ class CA:
         """Load the CA key from `key_file`, generating and persisting a
         new one (PEM, mode 0600) if it does not exist yet."""
         path = Path(key_file or DEFAULT_KEY_FILE)
+        retired = _load_retired(path)
         if path.exists():
             key = serialization.load_pem_private_key(path.read_bytes(), password=None)
             if not isinstance(key, Ed25519PrivateKey):
                 raise ValueError(f"{path} does not hold an Ed25519 key")
-            return cls(key)
+            return cls(key, retired=retired)
         ca = cls.generate()
+        ca._retired = retired
         path.parent.mkdir(parents=True, exist_ok=True)
         fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
         try:
@@ -109,6 +158,31 @@ class CA:
             os.close(fd)
         os.chmod(path, 0o600)
         return ca
+
+    @classmethod
+    def rotate(cls, key_file: str | Path | None = None) -> "CA":
+        """Rotate the signing key: the current public key moves to
+        the retired registry (existing certificates keep verifying
+        against it), and a fresh key becomes current. The registry is
+        written BEFORE the key file is replaced, so an interruption
+        never leaves the old key unpublished. Returns the new CA —
+        a running service must restart to serve it."""
+        path = Path(key_file or DEFAULT_KEY_FILE)
+        if not path.exists():
+            raise FileNotFoundError(f"no CA key at {path} to rotate")
+        current = cls.load_or_create(path)
+        retired = {**current._retired, current.kid: current.public_key}
+        _save_retired(path, retired)
+        new_key = Ed25519PrivateKey.generate()
+        tmp = path.with_name(path.name + ".tmp")
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            os.write(fd, _pem_private(new_key))
+        finally:
+            os.close(fd)
+        os.replace(tmp, path)
+        os.chmod(path, 0o600)
+        return cls(new_key, retired=retired)
 
     # ─── issuance ────────────────────────────────────────────────────
     def sign_body(self, body: dict) -> str:
@@ -136,22 +210,25 @@ class CA:
         return cert
 
     # ─── publication ─────────────────────────────────────────────────
-    def public_keys_payload(self) -> dict:
-        """The document served at /.well-known/axiomcode-keys.json."""
-        raw = self.public_key.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
+    @staticmethod
+    def _key_entry(pub: Ed25519PublicKey, status: str) -> dict:
+        raw = pub.public_bytes(serialization.Encoding.Raw, serialization.PublicFormat.Raw)
         return {
-            "issuer": ISSUER,
-            "keys": [
-                {
-                    "kid": self.kid,
-                    "alg": ALG,
-                    "use": "cert-signing",
-                    "public_key": base64.b64encode(raw).decode(),
-                    "public_key_pem": _pem_public(self.public_key),
-                }
-            ],
-            "published_at": int(time.time()),
+            "kid": kid_for(pub),
+            "alg": ALG,
+            "use": "cert-signing",
+            "status": status,
+            "public_key": base64.b64encode(raw).decode(),
+            "public_key_pem": _pem_public(pub),
         }
+
+    def public_keys_payload(self) -> dict:
+        """The document served at /.well-known/axiomcode-keys.json:
+        the current signing key plus every retired key whose
+        certificates may still be in their validity window."""
+        keys = [self._key_entry(self.public_key, "current")]
+        keys += [self._key_entry(self._retired[kid], "retired") for kid in sorted(self._retired)]
+        return {"issuer": ISSUER, "keys": keys, "published_at": int(time.time())}
 
 
 def verify_certificate(cert: dict, public_key=None, ca: CA | None = None) -> dict:
@@ -167,7 +244,15 @@ def verify_certificate(cert: dict, public_key=None, ca: CA | None = None) -> dic
     sig_b64 = cert.get("signature")
     if not sig_b64:
         return {"valid": False, "reason": "bad_signature"}
-    pub = coerce_public_key(public_key if public_key is not None else (ca or default_ca()).public_key)
+    if public_key is not None:
+        pub = coerce_public_key(public_key)
+    elif ca is not None:
+        resolved = ca.public_key_for_kid(cert.get("kid", ""))
+        if resolved is None:
+            return {"valid": False, "reason": "unknown_kid"}
+        pub = resolved
+    else:
+        pub = coerce_public_key(default_ca().public_key)
     body = {k: v for k, v in cert.items() if k != "signature"}
     try:
         pub.verify(base64.b64decode(sig_b64), canonical(body))
@@ -206,3 +291,29 @@ def decode(raw: str) -> dict | None:
         return c if isinstance(c, dict) else None
     except Exception:
         return None
+
+
+def _main(argv: list[str] | None = None) -> int:
+    """Operator CLI: python -m ca rotate [--key-file PATH]
+    Rotates the CA signing key (see CA.rotate). Prints the old and
+    new kids; the API must be restarted to serve the new key."""
+    import argparse
+
+    parser = argparse.ArgumentParser(prog="ca", description="AxiomCode CA operator tools")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    rotate = sub.add_parser("rotate", help="rotate the CA signing key")
+    rotate.add_argument("--key-file", default=None, help="key path (default: AXIOMCODE_CA_KEY_FILE)")
+    args = parser.parse_args(argv)
+    if args.cmd == "rotate":
+        key_file = args.key_file or DEFAULT_KEY_FILE
+        before = CA.load_or_create(key_file)
+        after = CA.rotate(key_file)
+        print(f"rotated: {before.kid} -> {after.kid}")
+        print(f"retired keys published: {len(after._retired)}")
+        print("restart the API to serve the new key")
+        return 0
+    return 2
+
+
+if __name__ == "__main__":
+    raise SystemExit(_main())
