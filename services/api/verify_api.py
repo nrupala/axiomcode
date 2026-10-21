@@ -27,7 +27,6 @@ revocations, meter, grants, audit) lives in the durable store
 hash-chained audit log.
 """
 
-import json
 import os
 import sys
 import tempfile
@@ -180,6 +179,23 @@ def ca_public_keys():
     return CA.public_keys_payload()
 
 
+def _plain_event_data(obj):
+    """Recursively convert a Stripe event object to plain data.
+
+    stripe-python >= 12 returns attribute-access objects (stripe.Event
+    is not a dict and not JSON-serializable), so the verified event must
+    be converted before handle_webhook consumes it. (F0 staging,
+    2026-10-20: json.dumps(event) raised TypeError on every real event,
+    so the route answered 400 to all genuine Stripe deliveries.)"""
+    if isinstance(obj, dict):
+        return {k: _plain_event_data(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_plain_event_data(v) for v in obj]
+    if hasattr(obj, "to_dict"):
+        return _plain_event_data(obj.to_dict())
+    return obj
+
+
 @app.post("/billing/webhook")
 async def billing_webhook(request: Request):
     """Stripe webhook: grants pack credits on checkout completion
@@ -201,7 +217,7 @@ async def billing_webhook(request: Request):
 
     def verify_signature(raw: bytes, sig: str) -> dict:
         event = stripe.Webhook.construct_event(raw, sig, secret)
-        parsed: dict = json.loads(json.dumps(event))
+        parsed: dict = _plain_event_data(event)
         return parsed
 
     try:

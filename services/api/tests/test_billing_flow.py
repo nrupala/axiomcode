@@ -169,3 +169,53 @@ def test_webhook_route_501_until_stripe_configured():
     r = c.post("/billing/webhook", content=b"{}", headers={"Stripe-Signature": "t=1,v1=x"})
     assert r.status_code == 501
     assert r.json()["error"] == "stripe_not_configured"
+
+
+def test_webhook_route_with_real_stripe_verifier(monkeypatch):
+    """Regression — F0 staging on the Dell G3 (2026-10-20): the
+    /billing/webhook route converted the verified Stripe event with
+    json.dumps(event). Real stripe-python events are attribute-access
+    objects, not dicts, so that raised TypeError on EVERY genuine
+    delivery and the route answered 400 — no real payment could ever
+    grant credits. The other webhook tests stub the verifier with
+    plain dicts, which is why this shipped. This test runs the route's
+    real stripe.Webhook.construct_event end to end. Skips where the
+    stripe package is not installed."""
+    pytest.importorskip("stripe")
+    import hashlib
+    import hmac
+    import json as jsonlib
+    import time
+
+    secret = "whsec_route_test_secret"
+    monkeypatch.setenv("STRIPE_WEBHOOK_SECRET", secret)
+    store = verify_api.STORE
+    plaintext = store.create_api_key("billing-route-real")
+    key_hash = hash_api_key(plaintext)
+    session = {
+        "id": "cs_route_test_1",
+        "object": "checkout.session",
+        "client_reference_id": key_hash,
+        "metadata": {"pack": "starter", "key_hash": key_hash},
+        "payment_intent": "pi_route_test_1",
+        "status": "complete",
+        "payment_status": "paid",
+    }
+    event = {
+        "id": "evt_route_test_1",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": session},
+    }
+    payload = jsonlib.dumps(event, separators=(",", ":")).encode()
+    ts = int(time.time())
+    sig = hmac.new(secret.encode(), f"{ts}.".encode() + payload, hashlib.sha256).hexdigest()
+    client = TestClient(verify_api.app, raise_server_exceptions=False)
+    r = client.post(
+        "/billing/webhook",
+        content=payload,
+        headers={"Stripe-Signature": f"t={ts},v1={sig}", "Content-Type": "application/json"},
+    )
+    assert r.status_code == 200
+    assert r.json()["handled"] is True
+    assert store.balance_for(key_hash) == 1000
