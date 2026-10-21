@@ -2,9 +2,9 @@
 
 > **Natural Language to Formally Verified Code**  
 > **Domain:** axiom-code.com  
-> **Version:** 0.1.0  
+> **Version:** 0.1.1  
 > **License:** Proprietary — see [LICENSE](LICENSE)  
-> **Dependencies:** Zero (pure Python stdlib + cffi)
+> **Dependencies:** Minimal — stdlib + cffi + the audited `cryptography` package
 
 [![Tests](https://github.com/nrupala/axiomcode/actions/workflows/tests.yml/badge.svg)](https://github.com/nrupala/axiomcode/actions)
 [![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg)](LICENSE)
@@ -27,7 +27,7 @@ Natural Language → Lean 4 Spec → Formal Proof → C Binary → Python Packag
 |---------|-----------|----------------|------------------------|
 | Correctness guarantee | **Machine-checked proof** (when verified; status recorded honestly per artifact) | Probabilistic guess | Manual (expert-only) |
 | Learning curve | **Plain English** | Plain English | Years of expertise |
-| Dependencies | **Zero** | Hundreds | Many |
+| Dependencies | **Minimal (stdlib + cffi + cryptography)** | Hundreds | Many |
 | Security | **Zero-trust, signed** | Trust the model | Varies |
 | Audit trail | **Tamper-evident log** | None | Manual |
 | Certificates | **Cryptographic** | None | Paper-based |
