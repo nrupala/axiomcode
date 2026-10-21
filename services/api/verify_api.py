@@ -27,7 +27,6 @@ revocations, meter, grants, audit) lives in the durable store
 hash-chained audit log.
 """
 
-import json
 import os
 import sys
 import tempfile

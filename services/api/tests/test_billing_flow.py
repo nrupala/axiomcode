@@ -201,16 +201,21 @@ def test_webhook_route_with_real_stripe_verifier(monkeypatch):
         "status": "complete",
         "payment_status": "paid",
     }
-    event = {"id": "evt_route_test_1", "object": "event",
-             "type": "checkout.session.completed", "data": {"object": session}}
+    event = {
+        "id": "evt_route_test_1",
+        "object": "event",
+        "type": "checkout.session.completed",
+        "data": {"object": session},
+    }
     payload = jsonlib.dumps(event, separators=(",", ":")).encode()
     ts = int(time.time())
-    sig = hmac.new(secret.encode(), f"{ts}.".encode() + payload,
-                   hashlib.sha256).hexdigest()
+    sig = hmac.new(secret.encode(), f"{ts}.".encode() + payload, hashlib.sha256).hexdigest()
     client = TestClient(verify_api.app, raise_server_exceptions=False)
-    r = client.post("/billing/webhook", content=payload,
-                    headers={"Stripe-Signature": f"t={ts},v1={sig}",
-                             "Content-Type": "application/json"})
+    r = client.post(
+        "/billing/webhook",
+        content=payload,
+        headers={"Stripe-Signature": f"t={ts},v1={sig}", "Content-Type": "application/json"},
+    )
     assert r.status_code == 200
     assert r.json()["handled"] is True
     assert store.balance_for(key_hash) == 1000
