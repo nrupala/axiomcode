@@ -72,12 +72,12 @@ def run_proof(code, max_attempts, *, work_root, prefix, toolchain, timeout_s, se
     The project dir is always removed, timeout path included."""
     proj = Path(tempfile.mkdtemp(prefix=prefix, dir=work_root))
     try:
-        (proj / "lean-toolchain").write_text(toolchain)
-        (proj / "lakefile.lean").write_text(_LAKEFILE)
+        (proj / "lean-toolchain").write_text(toolchain, encoding="utf-8")
+        (proj / "lakefile.lean").write_text(_LAKEFILE, encoding="utf-8")
         src = proj / "V.lean"
 
         def writer(c: str) -> Path:
-            src.write_text(c)
+            src.write_text(c, encoding="utf-8")
             return Path(src)
 
         executor = ThreadPoolExecutor(max_workers=1)

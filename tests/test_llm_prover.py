@@ -9,6 +9,8 @@ import sys
 from pathlib import Path
 from unittest.mock import patch
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from core.llm import (
@@ -301,3 +303,33 @@ class TestBrokenCodeHonesty:
         assert ok is False, f"axiom-smuggled false theorem verified as TRUE:\n{log}"
         assert "axiom" in log.lower()
         assert attempts == 1  # axiom failures are not LLM-repairable; loop ends honestly
+
+
+class TestProverOutputDecoding:
+    """Regression — F0 staging (2026-10-20): the prover's subprocess
+    calls decoded Lean output with the process locale and strict
+    errors, so non-locale bytes in Lean diagnostics (which are full of
+    Unicode) could raise UnicodeDecodeError out of elaborate_lean_file
+    instead of returning the elaboration result. Output is now decoded
+    as UTF-8 with replacement."""
+
+    @pytest.mark.skipif(os.name == "nt", reason="fake lake is a POSIX shell script")
+    def test_elaborate_survives_non_utf8_tool_output(self, tmp_path, monkeypatch):
+        from core.prover import elaborate_lean_file
+
+        bin_dir = tmp_path / "bin"
+        bin_dir.mkdir()
+        fake_lake = bin_dir / "lake"
+        # Emit bytes that are invalid UTF-8 (a cp1252 ∀ + a raw 0xFF),
+        # then exit 0: elaboration "succeeded"; only decoding can fail.
+        fake_lake.write_bytes(b"#!/bin/sh\nprintf '\\342\\210\\200\\377 done\\n'\nexit 0\n")
+        fake_lake.chmod(0o755)
+        fake_lean = bin_dir / "lean"
+        fake_lean.write_bytes(b"#!/bin/sh\nexit 0\n")
+        fake_lean.chmod(0o755)
+        monkeypatch.setenv("PATH", f"{bin_dir}{os.pathsep}{os.environ['PATH']}")
+        lean_file = tmp_path / "T.lean"
+        lean_file.write_text("theorem t : True := trivial", encoding="utf-8")
+        ok, log = elaborate_lean_file(lean_file, tmp_path)
+        assert ok is True
+        assert "done" in log
