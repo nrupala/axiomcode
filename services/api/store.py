@@ -196,26 +196,30 @@ class Store:
         return [{**dict(r), "payload": json.loads(r["payload_json"])} for r in rows]
 
     # ─── certificates & revocation ───────────────────────────────────
-    def record_cert(self, cert: dict) -> dict:
+    def record_cert(self, cert: dict, renews: str | None = None) -> dict:
         """Persist an issued certificate + its issuance audit event,
         in ONE transaction (W3 hardening: the two used to commit
-        separately, so a crash could leave a cert with no audit row)."""
+        separately, so a crash could leave a cert with no audit row).
+
+        `renews` names the serial this issuance succeeds (same key,
+        same code, re-verified — the TLS-renewal model of tiers.py);
+        the lineage lives in the audit event, not the signed payload,
+        so the certificate contract is unchanged."""
         with self._lock:
             try:
                 self._db.execute(
                     "INSERT OR REPLACE INTO certificates (serial, cert_json, status, issued_at) VALUES (?, ?, ?, ?)",
                     (cert["serial"], _canonical(cert), "issued", int(cert.get("valid_from", time.time()))),
                 )
-                self._insert_audit_locked(
-                    "issuance",
-                    {
-                        "serial": cert["serial"],
-                        "kid": cert.get("kid"),
-                        "code_sha256": cert.get("code_sha256"),
-                        "verified": cert.get("verified"),
-                    },
-                    int(time.time()),
-                )
+                payload = {
+                    "serial": cert["serial"],
+                    "kid": cert.get("kid"),
+                    "code_sha256": cert.get("code_sha256"),
+                    "verified": cert.get("verified"),
+                }
+                if renews is not None:
+                    payload["renews"] = renews
+                self._insert_audit_locked("issuance", payload, int(time.time()))
                 self._db.commit()
             except Exception:
                 self._db.rollback()
@@ -226,6 +230,53 @@ class Store:
         with self._lock:
             row = self._db.execute("SELECT cert_json FROM certificates WHERE serial = ?", (serial,)).fetchone()
         return json.loads(row["cert_json"]) if row else None
+
+    def find_prior_cert(self, key_id: str, code_sha256: str, exclude_serial: str | None = None) -> str | None:
+        """Serial of the most recent prior certificate for the same
+        key + code hash (any status — lineage is history, and a
+        renewal may succeed a revoked certificate), or None. Used at
+        issuance to record renewal lineage in the audit event."""
+        best: tuple[int, str] | None = None
+        with self._lock:
+            rows = self._db.execute("SELECT serial, cert_json FROM certificates").fetchall()
+        for row in rows:
+            if row["serial"] == exclude_serial:
+                continue
+            cert = json.loads(row["cert_json"])
+            if cert.get("key_id") == key_id and cert.get("code_sha256") == code_sha256:
+                candidate = (int(cert.get("valid_from", 0)), row["serial"])
+                if best is None or candidate > best:
+                    best = candidate
+        return best[1] if best else None
+
+    def certs_expiring(self, within_seconds: float, now: float | None = None) -> list[dict]:
+        """Non-revoked certificates whose validity ends within
+        `within_seconds` of `now` (already-expired included), soonest
+        first — the operator's renewal report. A certificate with no
+        valid_until on record is treated as expired (fail-safe: it
+        surfaces in the report rather than hiding)."""
+        now = time.time() if now is None else now
+        cutoff = now + within_seconds
+        out = []
+        with self._lock:
+            rows = self._db.execute("SELECT serial, cert_json, status FROM certificates").fetchall()
+        for row in rows:
+            if row["status"] == "revoked":
+                continue
+            cert = json.loads(row["cert_json"])
+            valid_until = cert.get("valid_until")
+            if valid_until is None or valid_until <= cutoff:
+                out.append(
+                    {
+                        "serial": row["serial"],
+                        "key_id": cert.get("key_id"),
+                        "code_sha256": cert.get("code_sha256"),
+                        "valid_until": valid_until,
+                        "expired": valid_until is None or valid_until <= now,
+                    }
+                )
+        out.sort(key=lambda c: (c["valid_until"] is not None, c["valid_until"] or 0))
+        return out
 
     def revoke(self, serial: str, reason: str = "") -> None:
         """Revoke a certificate + append the revocation audit event,
@@ -475,6 +526,9 @@ def _main(argv: list[str] | None = None) -> int:
     revoke.add_argument("--db", default=None, help="store path (default: AXIOMCODE_DB)")
     list_revoked = sub.add_parser("list-revoked", help="print revoked certificate serials")
     list_revoked.add_argument("--db", default=None, help="store path (default: AXIOMCODE_DB)")
+    expiring = sub.add_parser("expiring", help="list certificates expiring within --days (renewal report)")
+    expiring.add_argument("--days", type=float, default=14.0, help="window in days (default 14)")
+    expiring.add_argument("--db", default=None, help="store path (default: AXIOMCODE_DB)")
     args = parser.parse_args(argv)
     if args.cmd == "create-key":
         store = Store(args.db)
@@ -502,6 +556,28 @@ def _main(argv: list[str] | None = None) -> int:
         try:
             for serial in sorted(store.revoked_serials()):
                 print(serial)
+            return 0
+        finally:
+            store.close()
+    if args.cmd == "expiring":
+        store = Store(args.db)
+        try:
+            now = time.time()
+            for entry in store.certs_expiring(args.days * 86400, now=now):
+                until = entry["valid_until"]
+                if until is None:
+                    print(f"{entry['serial']}  key {(entry['key_id'] or '?')[:12]}  NO EXPIRY ON RECORD")
+                elif entry["expired"]:
+                    print(
+                        f"{entry['serial']}  key {(entry['key_id'] or '?')[:12]}  "
+                        f"EXPIRED {time.strftime('%Y-%m-%d', time.gmtime(until))}"
+                    )
+                else:
+                    days = (until - now) / 86400
+                    print(
+                        f"{entry['serial']}  key {(entry['key_id'] or '?')[:12]}  "
+                        f"expires {time.strftime('%Y-%m-%d', time.gmtime(until))} ({days:.1f}d)"
+                    )
             return 0
         finally:
             store.close()

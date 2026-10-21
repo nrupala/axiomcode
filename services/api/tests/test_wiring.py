@@ -152,3 +152,17 @@ def test_verify_unicode_code_survives_locale_default_encoding(monkeypatch):
     assert r.status_code == 200
     assert r.json()["verified"] is True
     assert seen["content"] == code
+
+
+def test_second_issuance_records_renewal_lineage(client):
+    """Re-verifying the same code with the same key (the renewal shape)
+    links the successor to its predecessor in the audit chain — the
+    first issuance carries no lineage, the second names the first."""
+    plaintext, _key_hash = _paid_key(verify_api.STORE, "wiring-renewal")
+    auth = {"X-Api-Key": plaintext}
+    c1 = client.post("/verify", json={"code": CODE}, headers=auth).json()["certificate"]
+    c2 = client.post("/verify", json={"code": CODE}, headers=auth).json()["certificate"]
+    assert c1["serial"] != c2["serial"]
+    issuance = {e["payload"]["serial"]: e["payload"] for e in verify_api.STORE.audit_events("issuance")}
+    assert "renews" not in issuance[c1["serial"]]
+    assert issuance[c2["serial"]]["renews"] == c1["serial"]

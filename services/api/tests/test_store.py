@@ -165,3 +165,66 @@ def test_cli_list_revoked(tmp_path, cert, capsys):
     rc = store_module._main(["list-revoked", "--db", str(db)])
     assert rc == 0
     assert cert["serial"] in capsys.readouterr().out
+
+
+# ─── renewal machinery: expiring report + audit lineage ───────────
+# Lifecycle plan L1 item 2 (2026-10-20): certificates expire at 90
+# days and tiers.py prices re-verification on expiry, but nothing
+# could list what is expiring or link a renewal to its predecessor.
+
+
+def _bare_cert(serial, key_id="k1", code="aa" * 32, valid_from=1_000, valid_until=2_000):
+    return {
+        "serial": serial,
+        "key_id": key_id,
+        "code_sha256": code,
+        "verified": True,
+        "valid_from": valid_from,
+        "valid_until": valid_until,
+    }
+
+
+def test_certs_expiring_window_and_revoked_exclusion(store):
+    now = 1_700_000_000
+    store.record_cert(_bare_cert("soon", valid_until=now + 3 * 86400))
+    store.record_cert(_bare_cert("later", valid_until=now + 30 * 86400))
+    store.record_cert(_bare_cert("gone", valid_until=now - 86400))
+    store.record_cert(_bare_cert("rev", valid_until=now + 86400))
+    store.revoke("rev")
+    out = store.certs_expiring(14 * 86400, now=now)
+    assert [c["serial"] for c in out] == ["gone", "soon"]
+    assert out[0]["expired"] is True and out[1]["expired"] is False
+
+
+def test_find_prior_cert(store):
+    store.record_cert(_bare_cert("first", valid_from=100))
+    store.record_cert(_bare_cert("second", valid_from=200))
+    store.record_cert(_bare_cert("other-code", code="bb" * 32, valid_from=300))
+    assert store.find_prior_cert("k1", "aa" * 32) == "second"
+    assert store.find_prior_cert("k1", "aa" * 32, exclude_serial="second") == "first"
+    assert store.find_prior_cert("k1", "cc" * 32) is None
+    assert store.find_prior_cert("nobody", "aa" * 32) is None
+
+
+def test_record_cert_renews_in_audit_payload(store):
+    store.record_cert(_bare_cert("s1"))
+    store.record_cert(_bare_cert("s2"), renews="s1")
+    issuance = {e["payload"]["serial"]: e["payload"] for e in store.audit_events("issuance")}
+    assert "renews" not in issuance["s1"]
+    assert issuance["s2"]["renews"] == "s1"
+
+
+def test_cli_expiring(tmp_path, capsys):
+    import time
+
+    import store as store_module
+
+    db = tmp_path / "cli.db"
+    s = Store(db)
+    now = int(time.time())
+    s.record_cert(_bare_cert("expiring1", valid_until=now + 2 * 86400))
+    s.record_cert(_bare_cert("far", valid_until=now + 90 * 86400))
+    s.close()
+    rc = store_module._main(["expiring", "--days", "14", "--db", str(db)])
+    out = capsys.readouterr().out
+    assert rc == 0 and "expiring1" in out and "far" not in out
