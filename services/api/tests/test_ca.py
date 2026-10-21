@@ -76,3 +76,73 @@ def test_public_payload_verifies_issued_cert(authority):
 def test_legacy_hmac_cert_rejected(authority):
     old = legacy_certs.issue(dict(SUBJECT))
     assert ca.verify_certificate(old, ca=authority)["valid"] is False
+
+
+# ─── key rotation (L1 item 3, 2026-10-20) ─────────────────────────
+# Before this, "rotat*" appeared nowhere in the product: one key
+# forever, and /check verified every certificate against that key
+# regardless of the kid it named.
+
+
+def _subject():
+    return {
+        "code_sha256": "ef" * 32,
+        "verified": True,
+        "attempts": 1,
+        "toolchain": "leanprover/lean4:v4.35.0-rc3",
+        "key_id": "caller-1",
+    }
+
+
+def test_rotation_preserves_verification_of_existing_certs(tmp_path):
+    key_file = tmp_path / "ca_key.pem"
+    before = ca.CA.load_or_create(key_file)
+    old_cert = before.issue(_subject())
+    after = ca.CA.rotate(key_file)
+    assert after.kid != before.kid
+    # Certificates under the retired key still verify (kid-resolved).
+    assert ca.verify_certificate(old_cert, ca=after)["valid"] is True
+    # New issues carry the new kid and verify.
+    new_cert = after.issue(_subject())
+    assert new_cert["kid"] == after.kid
+    assert ca.verify_certificate(new_cert, ca=after)["valid"] is True
+    # The published payload carries both keys, honestly labelled.
+    payload = after.public_keys_payload()
+    by_kid = {k["kid"]: k["status"] for k in payload["keys"]}
+    assert by_kid == {before.kid: "retired", after.kid: "current"}
+
+
+def test_unknown_kid_rejected(tmp_path):
+    authority = ca.CA.load_or_create(tmp_path / "ca_key.pem")
+    cert = authority.issue(_subject())
+    cert["kid"] = "0" * 16  # names a key this CA has never held
+    result = ca.verify_certificate(cert, ca=authority)
+    assert result["valid"] is False and result["reason"] == "unknown_kid"
+
+
+def test_rotation_persists_across_reload(tmp_path):
+    key_file = tmp_path / "ca_key.pem"
+    before = ca.CA.load_or_create(key_file)
+    ca.CA.rotate(key_file)
+    reloaded = ca.CA.load_or_create(key_file)
+    kids = {k["kid"] for k in reloaded.public_keys_payload()["keys"]}
+    assert before.kid in kids and reloaded.kid in kids and len(kids) == 2
+
+
+def test_second_rotation_keeps_all_retired(tmp_path):
+    key_file = tmp_path / "ca_key.pem"
+    first = ca.CA.load_or_create(key_file)
+    cert1 = first.issue(_subject())
+    ca.CA.rotate(key_file)
+    third = ca.CA.rotate(key_file)
+    assert ca.verify_certificate(cert1, ca=third)["valid"] is True
+    assert len(third.public_keys_payload()["keys"]) == 3
+
+
+def test_cli_rotate(tmp_path, capsys):
+    key_file = tmp_path / "ca_key.pem"
+    before = ca.CA.load_or_create(key_file)
+    rc = ca._main(["rotate", "--key-file", str(key_file)])
+    out = capsys.readouterr().out
+    assert rc == 0 and before.kid in out and "restart the API" in out
+    assert ca.CA.load_or_create(key_file).kid != before.kid
