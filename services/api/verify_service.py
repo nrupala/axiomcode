@@ -167,7 +167,8 @@ def execute_verification(
             resolved = extra_subject() if callable(extra_subject) else extra_subject
             subject.update(resolved)
         cert = authority.issue(subject)
-        store.record_cert(cert)
+        prior = store.find_prior_cert(key_hash, code_sha, exclude_serial=cert["serial"])
+        store.record_cert(cert, renews=prior)
         return {"verified": verified, "attempts": attempts, "certificate": cert, "usage": usage}
 
     usage = billing.meter(store, key_hash, code_sha, verified, compute_s, trial=True)
