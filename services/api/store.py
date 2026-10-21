@@ -41,6 +41,7 @@ import json
 import os
 import secrets
 import sqlite3
+import sys
 import threading
 import time
 from pathlib import Path
@@ -468,6 +469,12 @@ def _main(argv: list[str] | None = None) -> int:
     create = sub.add_parser("create-key", help="create an API key (plaintext printed once)")
     create.add_argument("--label", default="", help="human label for the key")
     create.add_argument("--db", default=None, help="store path (default: AXIOMCODE_DB)")
+    revoke = sub.add_parser("revoke", help="revoke a certificate by serial (operator action, audit-logged)")
+    revoke.add_argument("serial", help="certificate serial to revoke")
+    revoke.add_argument("--reason", default="", help="recorded in the revocation audit event")
+    revoke.add_argument("--db", default=None, help="store path (default: AXIOMCODE_DB)")
+    list_revoked = sub.add_parser("list-revoked", help="print revoked certificate serials")
+    list_revoked.add_argument("--db", default=None, help="store path (default: AXIOMCODE_DB)")
     args = parser.parse_args(argv)
     if args.cmd == "create-key":
         store = Store(args.db)
@@ -476,6 +483,28 @@ def _main(argv: list[str] | None = None) -> int:
         finally:
             store.close()
         return 0
+    if args.cmd == "revoke":
+        store = Store(args.db)
+        try:
+            if store.get_cert(args.serial) is None:
+                print(f"error: no certificate with serial {args.serial}", file=sys.stderr)
+                return 2
+            if args.serial in store.revoked_serials():
+                print(f"already revoked: {args.serial}")
+                return 0
+            store.revoke(args.serial, reason=args.reason)
+            print(f"revoked: {args.serial}")
+            return 0
+        finally:
+            store.close()
+    if args.cmd == "list-revoked":
+        store = Store(args.db)
+        try:
+            for serial in sorted(store.revoked_serials()):
+                print(serial)
+            return 0
+        finally:
+            store.close()
     return 2
 
 
