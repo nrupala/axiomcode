@@ -2,15 +2,15 @@
 
 > **Natural Language to Formally Verified Code**  
 > **Domain:** axiom-code.com  
-> **Version:** 0.1.0  
+> **Version:** 0.1.1  
 > **License:** Proprietary — see [LICENSE](LICENSE)  
-> **Dependencies:** Zero (pure Python stdlib + cffi)
+> **Dependencies:** Minimal — core is stdlib + cffi + the audited `cryptography` package (see §2)
 
 ---
 
 ## Executive Summary
 
-AxiomCode is the world's first **zero-dependency, zero-trust, cryptographically secured** system that converts natural language descriptions of algorithms into **mathematically proven-correct** Python and C code. Every generated artifact comes with a verifiable proof certificate, HMAC signature, and tamper-evident audit trail.
+AxiomCode is the world's first **minimal-dependency, zero-trust, cryptographically secured** system that converts natural language descriptions of algorithms into **mathematically proven-correct** Python and C code. Every generated artifact comes with a verifiable proof certificate, Ed25519 signature, and tamper-evident audit trail.
 
 Built for commercialization. Designed to surpass Python and agent-based LLM code generators by providing **mathematical certainty** instead of probabilistic guesses.
 
@@ -51,6 +51,8 @@ Built for commercialization. Designed to surpass Python and agent-based LLM code
 | Backend | Type | Default Model | Speed | Quality |
 |---------|------|---------------|-------|---------|
 | llama.cpp | Local | qwen2.5-coder:14b | Fast | Good |
+| vLLM | Local serving | default | Fast | Good |
+| Ollama | Local | qwen2.5-coder:7b | Fast | Good |
 | Mistral | Local | mistral:7b | Fast | Good |
 | OpenAI | Cloud | gpt-4o | Medium | Excellent |
 | Anthropic | Cloud | claude-sonnet-4 | Medium | Excellent |
@@ -66,7 +68,7 @@ Every generated algorithm comes with a signed certificate containing:
 - Hash of the proof term
 - Hash of the compiled C binary
 - Hash of the Python package
-- HMAC signature for authenticity
+- Ed25519 signature for authenticity (the legacy v1 local format used HMAC; the CA and all current certificates are Ed25519)
 - Key ID for verification
 - Timestamp for non-repudiation
 
@@ -143,7 +145,7 @@ Every generated algorithm comes with a signed certificate containing:
 | **Encrypted at rest** | Keys encrypted with PBKDF2-derived master key |
 | **Encrypted in transit** | TLS for all cloud API calls |
 | **Tamper-evident** | Hash-chained audit log detects any modification |
-| **Signed artifacts** | HMAC signatures on all binaries and certificates |
+| **Signed artifacts** | Ed25519 signatures on all binaries and certificates |
 | **Sandboxed execution** | Isolated subprocess with restricted environment |
 | **Rate limited** | Token bucket prevents API abuse |
 | **No telemetry** | Zero data collection, zero tracking |
@@ -174,9 +176,9 @@ Every generated algorithm comes with a signed certificate containing:
 | Attribute | Implementation |
 |-----------|---------------|
 | **Single file core** | Entire system in cli.py + security.py |
-| **Zero dependencies** | No dependency conflicts, no version pinning |
+| **Minimal dependencies** | Core: stdlib + cffi + `cryptography`; QR rendering uses `segno`; the hosted service adds FastAPI / uvicorn / MCP / Stripe |
 | **Clear module boundaries** | core/, visualize/, publish/ re-export from cli.py |
-| **Comprehensive tests** | 37 tests covering all features |
+| **Comprehensive tests** | 280+ tests across the engine and service suites, green in CI |
 | **Documented** | Help, FAQ, walkthrough, architecture docs |
 | **Version managed** | Built-in migration system for all future versions |
 
@@ -275,7 +277,7 @@ Every generated algorithm comes with a signed certificate containing:
 | Language | Python 3.10+ |
 | Total dependencies | 1 (cffi) |
 | Lines of code | ~2,000 |
-| Test coverage | 37 tests passing |
+| Test coverage | 280+ tests passing in CI |
 | CLI commands | 15 |
 | LLM backends | 4 |
 | Visualization modes | 3 |

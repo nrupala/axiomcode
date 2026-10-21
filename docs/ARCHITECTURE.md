@@ -6,8 +6,8 @@
 ┌─────────────────────────────────────────────────────────────────────────┐
 │                            USER INTERFACE                                │
 │  ┌───────────┐  ┌────────────┐  ┌──────────┐  ┌────────────────────┐   │
-│  │ CLI       │  │ Web UI     │  │ Guide    │  │ Visualizer         │   │
-│  │ (typer)   │  │ (Flask)    │  │ Mode     │  │ (D3.js/Three.js)   │   │
+│  │ CLI       │  │ API Service│  │ Guide    │  │ Visualizer         │   │
+│  │ (argparse)│  │ (FastAPI)  │  │ Mode     │  │ (D3.js)            │   │
 │  └─────┬─────┘  └─────┬─────┘  └────┬─────┘  └─────────┬──────────┘   │
 │        └──────────────┴─────────────┴───────────────────┘              │
 │                              │                                          │
@@ -211,35 +211,27 @@ axiomcode/
 ├── README.md                 # Project overview
 │
 ├── core/                     # Core engine
-│   ├── spec_generator.py     # NL → Lean 4 (Ollama/Mistral/OpenAI/Anthropic)
-│   ├── proof_engine.py       # Pantograph + Lean 4 proof search
-│   ├── code_extractor.py     # lean --c → C, cffi → Python
-│   └── verifier.py           # Independent proof verification
-│
-├── visualize/                # Proof visualization
-│   ├── port_graph.py         # 2D port graph (Incredible Proof Machine style)
-│   ├── force_graph.py        # Force-directed dependency graph
-│   ├── layout_3d.py          # 3D spatial layout
-│   └── web/
-│       └── app.py            # Flask web app with D3.js
+│   ├── llm.py                # Six LLM backends, one OpenAI-compatible HTTP layer
+│   ├── prover.py             # Iterative proof search + repair (Pantograph optional)
+│   ├── security.py           # Certificates (Ed25519), key store, audit log, sandbox
+│   ├── licensing.py          # Commercial licensing (root keypair, hardware binding)
+│   ├── registry.py           # Certificate registry / transparency log
+│   ├── persistence.py        # Data store + session history
+│   ├── versioning.py         # Upgrade / rollback / migration
+│   ├── tiers.py              # Scan / verified / certified tier contract
+│   ├── badge.py              # Registry badges
+│   └── qr.py                 # Certificate QR codes (segno)
 │
 ├── lean/                     # Lean 4 project
-│   ├── lakefile.lean         # Lake build config
-│   └── src/
-│       ├── Spec.lean         # Core specification definitions
-│       ├── Tactics.lean      # Custom proof tactics
-│       └── Algorithms/
-│           └── insertion_sort.lean  # Example verified algorithm
+│   ├── lakefile.lean         # Lake build config (Mathlib dependency)
+│   ├── src/                  # The verified library (Spec.lean, Tactics.lean)
+│   └── drafts/               # Unverified algorithm drafts (quarantined; CI-gated)
 │
-├── libraries/                # Domain-specific verified libraries
-│   ├── sorting/
-│   ├── searching/
-│   ├── data_structures/
-│   └── numerical/
+├── services/                 # Hosted surfaces
+│   ├── api/                  # The CA service: REST + MCP, Ed25519 CA, Stripe billing
+│   └── registry_app.py       # Read-only registry web app (WSGI)
 │
-├── publish/                  # Publishing utilities
-│   ├── pypi_upload.py        # PyPI upload
-│   └── github_release.py     # GitHub release
+├── publish/                  # Publishing utilities (package marker; CI drives releases)
 │
 ├── docs/                     # Documentation
 │   ├── QUICKSTART.md         # 5-minute quickstart

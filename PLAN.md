@@ -2,7 +2,7 @@
 
 > **Domain:** axiom-code.com  
 > **Mission:** Democratize formally verified software through natural language input.  
-> **Current Version:** 0.1.0  
+> **Current Version:** 0.1.1  
 > **Status:** Phase 1 Complete
 
 ---
@@ -100,7 +100,7 @@ A system where users describe algorithms in natural language, and the system gen
 - [x] Proof engine with Pantograph integration
 - [x] C binary extraction via `lean --c`
 - [x] Python package generation with cffi bindings
-- [x] Cryptographic proof certificates (HMAC-signed)
+- [x] Cryptographic proof certificates (Ed25519-signed; HMAC only in the legacy v1 local format)
 - [x] Zero-trust security model (encrypted keys, audit log, sandbox)
 - [x] Interactive proof visualization (2D/force-directed/3D)
 - [x] LLM caching for reduced latency and cost
@@ -110,7 +110,7 @@ A system where users describe algorithms in natural language, and the system gen
 - [x] Version management with upgrade/downgrade/rollback
 - [x] Automatic backup before migrations
 - [x] Tamper-evident audit log
-- [x] 134 tests passing
+- [x] 280+ tests passing in CI (engine + service suites)
 - [x] Comprehensive documentation (FEATURES.md, TEST_PLAN.md, QUICKSTART.md, ARCHITECTURE.md)
 
 ### Phase 2: Domain-Specific Libraries (Months 3-6)
@@ -147,7 +147,7 @@ A system where users describe algorithms in natural language, and the system gen
 
 ```
 axiomcode/
-├── cli.py                      # Entire system (~1200 lines, zero external deps)
+├── cli.py                      # Entire system (1,984 lines; core deps: cffi + cryptography)
 ├── core/
 │   ├── __init__.py             # Security re-exports
 │   ├── security.py             # Encryption, certs, audit, sandbox, rate limiting
@@ -164,7 +164,7 @@ axiomcode/
 │       └── Algorithms/
 │           └── insertion_sort.lean  # Example verified algorithm
 ├── tests/
-│   └── test_core.py            # 134 tests passing
+│   └── test_core.py            # engine suite (280+ tests total incl. the API service suite)
 ├── docs/
 │   ├── QUICKSTART.md           # 5-minute quickstart
 │   ├── ARCHITECTURE.md         # Architecture diagrams and flowcharts
@@ -198,4 +198,4 @@ axiomcode/
 | Version | Date | Changes |
 |---------|------|---------|
 | 0.1.0 | 2026-03-31 | Initial release — all Phase 1 features |
-| 0.1.1 (unreleased) | — | Fix batch, code brought up to docs standard: llama.cpp-first OpenAI-compatible LLM layer (vLLM-ready); Pantograph M2M integration + iterative proof-search with self-correction; `verification_status` on certificates and honest CLI reporting; `sorry`-quarantine (`lean/drafts/`) + CI proof-honesty gate; no hardcoded keystore passphrase; theorem-name extraction fix; bare-description CLI UX; proprietary license |
+| 0.1.1 | 2026-10-05 | Fix batch, code brought up to docs standard: llama.cpp-first OpenAI-compatible LLM layer (vLLM-ready); Pantograph M2M integration + iterative proof-search with self-correction; `verification_status` on certificates and honest CLI reporting; `sorry`-quarantine (`lean/drafts/`) + CI proof-honesty gate; no hardcoded keystore passphrase; theorem-name extraction fix; bare-description CLI UX; proprietary license |
