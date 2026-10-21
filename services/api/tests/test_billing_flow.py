@@ -219,3 +219,75 @@ def test_webhook_route_with_real_stripe_verifier(monkeypatch):
     assert r.status_code == 200
     assert r.json()["handled"] is True
     assert store.balance_for(key_hash) == 1000
+
+
+# ─── checkout route ─────────────────────────────────────────────────
+# The landing build item: create_checkout_session existed with no
+# caller. POST /billing/checkout wires it, key-bound, 501-honest
+# when Stripe is not configured (same posture as the webhook).
+
+
+class _FakeStripeClient:
+    def __init__(self):
+        self.payloads = []
+
+    def create_checkout_session(self, payload):
+        self.payloads.append(payload)
+        return {"id": "cs_test_fake", "url": "https://checkout.stripe.com/c/cs_test_fake"}
+
+
+@pytest.fixture()
+def checkout_env(monkeypatch):
+    import sys
+    import types
+
+    monkeypatch.setitem(sys.modules, "stripe", types.ModuleType("stripe"))
+    monkeypatch.setenv("STRIPE_SECRET_KEY", "sk_test_fake")
+    monkeypatch.setenv("AXIOMCODE_STRIPE_PRICE_STARTER", "price_fake_starter")
+    fake = _FakeStripeClient()
+    monkeypatch.setattr(stripe_billing, "StripeClient", lambda *a, **k: fake)
+    return fake
+
+
+def _route_key(label):
+    plaintext = verify_api.STORE.create_api_key(label)
+    return plaintext, hash_api_key(plaintext)
+
+
+def test_checkout_route_creates_bound_session(checkout_env):
+    plaintext, h = _route_key("checkout-route")
+    client = TestClient(verify_api.app, raise_server_exceptions=False)
+    r = client.post("/billing/checkout", json={"pack": "starter"}, headers={"X-Api-Key": plaintext})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["checkout_url"] == "https://checkout.stripe.com/c/cs_test_fake"
+    assert body["session_id"] == "cs_test_fake" and body["pack"] == "starter"
+    payload = checkout_env.payloads[0]
+    assert payload["client_reference_id"] == h
+    assert payload["metadata"] == {"pack": "starter", "key_hash": h}
+    assert payload["line_items"] == [{"price": "price_fake_starter", "quantity": 1}]
+
+
+def test_checkout_route_unknown_pack_400(checkout_env):
+    plaintext, _h = _route_key("checkout-route-badpack")
+    client = TestClient(verify_api.app, raise_server_exceptions=False)
+    r = client.post("/billing/checkout", json={"pack": "platinum"}, headers={"X-Api-Key": plaintext})
+    assert r.status_code == 400 and "unknown pack" in r.json()["error"]
+
+
+def test_checkout_route_requires_auth(checkout_env):
+    client = TestClient(verify_api.app, raise_server_exceptions=False)
+    r = client.post("/billing/checkout", json={"pack": "starter"})
+    assert r.status_code == 401
+
+
+def test_checkout_route_501_without_secret_key(monkeypatch):
+    import sys
+    import types
+
+    monkeypatch.setitem(sys.modules, "stripe", types.ModuleType("stripe"))
+    monkeypatch.delenv("STRIPE_SECRET_KEY", raising=False)
+    plaintext, _h = _route_key("checkout-route-nosecret")
+    client = TestClient(verify_api.app, raise_server_exceptions=False)
+    r = client.post("/billing/checkout", json={"pack": "starter"}, headers={"X-Api-Key": plaintext})
+    assert r.status_code == 501

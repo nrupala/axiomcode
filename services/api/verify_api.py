@@ -72,6 +72,12 @@ class CheckRequest(BaseModel):
     certificate: dict
 
 
+class CheckoutRequest(BaseModel):
+    pack: str
+    success_url: str | None = None
+    cancel_url: str | None = None
+
+
 def require_api_key(request: Request) -> str:
     """Authenticate the caller; return the key's hash (its identity).
     Missing, unknown or revoked keys get a 401."""
@@ -194,6 +200,30 @@ def _plain_event_data(obj):
     if hasattr(obj, "to_dict"):
         return _plain_event_data(obj.to_dict())
     return obj
+
+
+@app.post("/billing/checkout")
+def billing_checkout(req: CheckoutRequest, key_hash: str = Depends(require_api_key)):
+    """Create a Stripe Checkout Session for a credit pack, bound to
+    the caller's key (the webhook grants on client_reference_id).
+    Like the webhook route, this answers 501 rather than pretending
+    when Stripe is not configured on this host."""
+    try:
+        import stripe  # noqa: F401 — availability probe, same as the webhook route
+    except ImportError:
+        return JSONResponse(status_code=501, content={"error": "stripe_not_configured"})
+    if not os.environ.get("STRIPE_SECRET_KEY"):
+        return JSONResponse(status_code=501, content={"error": "stripe_not_configured"})
+    try:
+        session = stripe_billing.create_checkout_session(
+            req.pack,
+            key_hash,
+            success_url=req.success_url or stripe_billing.DEFAULT_SUCCESS_URL,
+            cancel_url=req.cancel_url or stripe_billing.DEFAULT_CANCEL_URL,
+        )
+    except ValueError as e:  # unknown pack or unconfigured price
+        return JSONResponse(status_code=400, content={"error": str(e)})
+    return {"checkout_url": session.get("url"), "session_id": session.get("id"), "pack": req.pack}
 
 
 @app.post("/billing/webhook")
