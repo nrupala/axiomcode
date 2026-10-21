@@ -217,7 +217,8 @@ async def billing_webhook(request: Request):
 
     def verify_signature(raw: bytes, sig: str) -> dict:
         event = stripe.Webhook.construct_event(raw, sig, secret)
-        return _plain_event_data(event)
+        parsed: dict = _plain_event_data(event)
+        return parsed
 
     try:
         return stripe_billing.handle_webhook(STORE, payload, signature, verify_signature)
