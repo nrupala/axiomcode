@@ -104,3 +104,64 @@ def test_meter_events_recorded(store):
     # billing.usage_for routes to the same store numbers
     assert billing.usage_for(store, "key-1") == usage
     assert store.usage_for("key-2")["calls"] == 1
+
+
+# ─── operator CLI (revoke / list-revoked) ─────────────────────────────
+# F0 staging finding (2026-10-20): Store.revoke() had no operator
+# surface — no CLI, route, or tool called it. These tests drive the
+# CLI entry point itself.
+
+
+def test_cli_revoke_happy_path(tmp_path, cert, capsys):
+    import store as store_module
+
+    db = tmp_path / "cli.db"
+    s = Store(db)
+    s.record_cert(cert)
+    s.close()
+    rc = store_module._main(["revoke", cert["serial"], "--reason", "operator test", "--db", str(db)])
+    assert rc == 0
+    assert f"revoked: {cert['serial']}" in capsys.readouterr().out
+    s2 = Store(db)
+    assert s2.is_revoked(cert["serial"])
+    assert "revocation" in [e["event_type"] for e in s2.audit_events()]
+    s2.close()
+
+
+def test_cli_revoke_unknown_serial_refused(tmp_path, capsys):
+    import store as store_module
+
+    db = tmp_path / "cli.db"
+    Store(db).close()
+    rc = store_module._main(["revoke", "deadbeefcafe", "--db", str(db)])
+    assert rc == 2
+    assert "no certificate with serial" in capsys.readouterr().err
+
+
+def test_cli_revoke_already_revoked_reports_without_duplicate_audit(tmp_path, cert, capsys):
+    import store as store_module
+
+    db = tmp_path / "cli.db"
+    s = Store(db)
+    s.record_cert(cert)
+    s.revoke(cert["serial"])
+    s.close()
+    rc = store_module._main(["revoke", cert["serial"], "--db", str(db)])
+    assert rc == 0
+    assert "already revoked" in capsys.readouterr().out
+    s2 = Store(db)
+    assert [e["event_type"] for e in s2.audit_events()].count("revocation") == 1
+    s2.close()
+
+
+def test_cli_list_revoked(tmp_path, cert, capsys):
+    import store as store_module
+
+    db = tmp_path / "cli.db"
+    s = Store(db)
+    s.record_cert(cert)
+    s.revoke(cert["serial"])
+    s.close()
+    rc = store_module._main(["list-revoked", "--db", str(db)])
+    assert rc == 0
+    assert cert["serial"] in capsys.readouterr().out
