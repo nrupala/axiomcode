@@ -33,7 +33,9 @@ def lean_available(lean_bin: str = "lean", lake_bin: str = "lake") -> bool:
 
 def lean_version(lean_bin: str = "lean") -> str:
     try:
-        out = subprocess.run([lean_bin, "--version"], capture_output=True, text=True, timeout=30)
+        out = subprocess.run(
+            [lean_bin, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=30
+        )
         return out.stdout.strip().splitlines()[0] if out.returncode == 0 else ""
     except (FileNotFoundError, subprocess.SubprocessError):
         return ""
@@ -89,6 +91,8 @@ def lake_build(
             cwd=str(project_dir),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
         )
     except FileNotFoundError:
@@ -131,6 +135,8 @@ def elaborate_lean_file(
             cwd=str(project_dir),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
         )
     except subprocess.SubprocessError as e:
@@ -258,6 +264,8 @@ def audit_axioms(
             cwd=str(project_dir),
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             timeout=timeout,
         )
     except subprocess.SubprocessError as e:
