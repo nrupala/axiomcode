@@ -54,3 +54,7 @@ htmlcov/
 # Diagnostics and temporary files
 diagnostics/
 .sixth/
+
+# Production state (CA key, database, env secrets) — never in history.
+# Gate finding F-AX-1 (axiomcode-prod-2026-10-23).
+state/
