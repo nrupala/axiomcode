@@ -68,7 +68,8 @@ pw_page(
     "/paperwork/privacy/",
     "Privacy Policy",
     "AxiomCode Privacy Policy: what data we collect (submitted code, account, metering), why we keep it, retention and deletion, and our no-sale commitment.",
-    """<h2>1. What we collect</h2>
+    """<p><strong>Operator:</strong> AxiomCode is a service of 2351485 ALBERTA INC., a corporation registered in Alberta, Canada (&ldquo;we&rdquo;, &ldquo;us&rdquo;). This policy describes how 2351485 ALBERTA INC. collects, uses, and retains information when you use AxiomCode.</p>
+<h2>1. What we collect</h2>
 <ul>
 <li><strong>Submitted artifacts:</strong> the code you ask us to verify, its SHA-256 hash, the verdict, and the engine transcript. We cannot verify without it.</li>
 <li><strong>Account data:</strong> email address, API keys, credit balance, and purchase records from our merchant of record.</li>
