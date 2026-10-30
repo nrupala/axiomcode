@@ -37,11 +37,12 @@ page(
 </div></section>
 
 <section class="block" style="background:var(--wash)"><div class="wrap"><div class="prose">
-<div class="kicker">The guarantee</div>
+<div class="kicker">The discipline</div>
 <h2>Our honesty is structural, not promised.</h2>
 <p>A certificate authority lives or dies on one thing: never saying &ldquo;verified&rdquo; when it isn&rsquo;t. So we built the incentives into the system:</p>
 </div>
 <div class="cards">
+<div class="card"><h3>Cheats are caught before Lean runs</h3><p>Every submission is screened first: <code>#eval</code>, <code>run_cmd</code>, IO, <code>initialize</code>, <code>@[extern]</code>, <code>unsafe</code>, custom syntax, <code>debug.skipKernelTC</code>, <code>native_decide</code>, <code>sorryAx</code> and user axioms are rejected with the line number. Then every theorem&rsquo;s axioms are read from Lean itself, and anything beyond <code>propext</code>, <code>Classical.choice</code>, <code>Quot.sound</code> and <code>funext</code> fails. Elaboration runs sandboxed, with no network. The rule-set version is printed on every certificate.</p></div>
 <div class="card"><h3>Mis-issuance is the existential risk</h3><p>Every certificate carries a serial number, issuer identity, and validity window. If our toolchain is ever wrong, we revoke &mdash; publicly, through a published revocation list. Like TLS, but for correctness.</p></div>
 <div class="card"><h3>Expiry drives re-verification</h3><p>Certificates last 90 days. Software changes; proofs should be re-run. Renewal is the business model, the same way TLS renewal is.</p></div>
 <div class="card"><h3>You don&rsquo;t have to trust us</h3><p>The certificate binds the artifact hash and the proof transcript. Re-run the check yourself with the published toolchain. &ldquo;Don&rsquo;t trust our AI &mdash; verify our proof&rdquo; isn&rsquo;t a slogan; it&rsquo;s the architecture.</p></div>
