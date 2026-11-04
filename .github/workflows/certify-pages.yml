@@ -1,0 +1,71 @@
+name: certify-pages-deploy
+
+# Push-triggered certification for a Git-wired Cloudflare Pages project.
+# A push to the production branch IS the deploy (Pages Git integration);
+# this workflow makes the same push request a signed certificate from the
+# house signing service, so the deployment is born certified. The signer
+# attests only the live production deployment built from this exact
+# commit; this job goes red if signing is refused or never lands.
+
+on:
+  push:
+    branches: [launch/website]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  certify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Request the signed certificate for this push
+        env:
+          DEPLOY_SIGN_TOKEN: ${{ secrets.DEPLOY_SIGN_TOKEN }}
+          PAGES_PROJECT: axiomcode-site
+          GH_REPO: ${{ github.repository }}
+          GH_SHA: ${{ github.sha }}
+        run: |
+          python3 - <<'PYEOF'
+          import json, os, sys, time, urllib.request, urllib.error
+          ENDPOINT = "https://site-integrity.nrupalakolkar.workers.dev/__sign-request"
+          token = os.environ["DEPLOY_SIGN_TOKEN"]
+          payload = {"worker": os.environ["PAGES_PROJECT"], "repo": os.environ["GH_REPO"],
+                     "commit": os.environ["GH_SHA"], "surface": "ci",
+                     "sha256": None, "version_id": None}
+          def call(method, url, body=None):
+              data = json.dumps(body).encode() if body is not None else None
+              req = urllib.request.Request(url, data=data, method=method, headers={
+                  "Content-Type": "application/json", "x-sign-token": token,
+                  "User-Agent": "deploy-signed-client/ci"})
+              try:
+                  with urllib.request.urlopen(req, timeout=30) as resp:
+                      return resp.status, json.loads(resp.read())
+              except urllib.error.HTTPError as e:
+                  try:
+                      return e.code, json.loads(e.read())
+                  except Exception:
+                      return e.code, {"ok": False}
+          st, res = call("POST", ENDPOINT, payload)
+          if st != 200 or not res.get("ok"):
+              print(f"sign request rejected: {st} {res}")
+              sys.exit(3)
+          rid = res["id"]
+          print(f"sign request {rid} queued for {payload['worker']}; waiting for signer")
+          deadline = time.time() + 1800
+          while time.time() < deadline:
+              time.sleep(15)
+              st, res = call("GET", f"{ENDPOINT}/{rid}")
+              if st != 200 or not res.get("ok"):
+                  continue
+              rec = res["request"]
+              if rec["status"] == "signed":
+                  print("SIGNED:", json.dumps(rec.get("cert") or {})[:240])
+                  sys.exit(0)
+              if rec["status"] == "refused":
+                  print(f"signing REFUSED: {rec.get('reason')}")
+                  sys.exit(2)
+          print("timed out waiting for signer")
+          sys.exit(3)
+          PYEOF
