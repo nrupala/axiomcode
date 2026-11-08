@@ -32,6 +32,7 @@ its writes start failing and it exits. No state outside the store
 
 import hashlib
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -41,6 +42,13 @@ from pathlib import Path
 
 import billing
 from limits import ConcurrencyGate
+
+# The hosted service elaborates untrusted Lean: containment is mandatory.
+# core.sandbox refuses to run (fail closed) if bubblewrap is unavailable.
+# Operators may override only deliberately, e.g. AXIOMCODE_SANDBOX=auto in dev.
+os.environ.setdefault("AXIOMCODE_SANDBOX", "required")
+
+from core.proof_policy import POLICY_VERSION  # noqa: E402
 
 TRIAL_CASES = int(os.environ.get("AXIOMCODE_TRIAL_CASES", "10"))
 PROOF_TIMEOUT_S = float(os.environ.get("AXIOMCODE_PROOF_TIMEOUT_S", "600"))
@@ -68,7 +76,7 @@ class TooManyConcurrentError(Exception):
 def run_proof(code, max_attempts, *, work_root, prefix, toolchain, timeout_s, search):
     """Run the Lean prover in a fresh temp project with a deadline.
 
-    Returns (verified, attempts, compute_s). Raises ProofTimeoutError.
+    Returns (verified, attempts, compute_s, log). Raises ProofTimeoutError.
     The project dir is always removed, timeout path included."""
     proj = Path(tempfile.mkdtemp(prefix=prefix, dir=work_root))
     try:
@@ -94,16 +102,55 @@ def run_proof(code, max_attempts, *, work_root, prefix, toolchain, timeout_s, se
                 use_pantograph=False,
             )
             try:
-                verified, _final_code, attempts, _log = future.result(timeout=timeout_s)
+                verified, _final_code, attempts, log = future.result(timeout=timeout_s)
             except FutureTimeout:
                 raise ProofTimeoutError(f"proof exceeded {timeout_s:g}s") from None
-            return verified, attempts, time.time() - t0
+            return verified, attempts, time.time() - t0, log or ""
         finally:
             # Never wait for an orphaned prover thread on the timeout
             # path; it dies against the removed project dir.
             executor.shutdown(wait=False)
     finally:
         shutil.rmtree(proj, ignore_errors=True)
+
+
+_AXIOM_SUMMARY_RE = re.compile(r"axiom audit passed: (.*)")
+
+
+def verification_evidence(log: str, *, code_sha: str, toolchain: str) -> dict:
+    """Facts a buyer needs to trust (and re-check) a verdict, parsed from the
+    prover log. Recorded on certificates and returned on every response.
+
+    - policy_version / policy: which untrusted-source rule set ran and
+      whether it blocked the submission (and why).
+    - axioms: per theorem, the axioms Lean reports it depends on (from
+      `#print axioms`); empty when the audit did not pass.
+    - sandbox: how elaboration was contained on this run.
+    - reproduce: the offline command that re-runs the same check.
+    """
+    log = log or ""
+    axioms: dict[str, list[str]] = {}
+    m = _AXIOM_SUMMARY_RE.search(log)
+    if m:
+        for part in m.group(1).split("; "):
+            name, _, rest = part.partition(": [")
+            rest = rest.rstrip("]").strip()
+            if name:
+                axioms[name.strip()] = [] if rest in ("", "no axioms") else [a.strip() for a in rest.split(",")]
+    blocked = log.startswith("POLICY_BLOCKED")
+    sandbox_note = next((ln for ln in log.splitlines() if ln.startswith("sandbox:")), "sandbox: not recorded")
+    findings = [ln.strip()[2:] for ln in log.splitlines() if ln.strip().startswith("- [")] if blocked else []
+    return {
+        "policy_version": POLICY_VERSION,
+        "policy": {"blocked": blocked, "findings": findings},
+        "axioms": axioms,
+        "allowed_axioms": ["Classical.choice", "Quot.sound", "funext", "propext"],
+        "sandbox": sandbox_note,
+        "reproduce": (
+            f"echo '{toolchain}' > lean-toolchain && lake env lean V.lean  "
+            f"# V.lean = the submitted source, sha256 {code_sha}; then #print axioms on each theorem"
+        ),
+    }
 
 
 def execute_verification(
@@ -140,7 +187,7 @@ def execute_verification(
     if gate is not None and not gate.acquire(key_hash):
         raise TooManyConcurrentError(key_hash)
     try:
-        verified, attempts, compute_s = run_proof(
+        verified, attempts, compute_s, log = run_proof(
             code,
             max_attempts,
             work_root=work_root,
@@ -154,6 +201,7 @@ def execute_verification(
             gate.release(key_hash)
 
     code_sha = hashlib.sha256(code.encode()).hexdigest()
+    evidence = verification_evidence(log, code_sha=code_sha, toolchain=toolchain)
     if paid:
         usage = billing.meter(store, key_hash, code_sha, verified, compute_s)
         subject = {
@@ -162,6 +210,7 @@ def execute_verification(
             "attempts": attempts,
             "toolchain": toolchain,
             "key_id": key_hash,
+            **evidence,
         }
         if extra_subject:
             resolved = extra_subject() if callable(extra_subject) else extra_subject
@@ -169,7 +218,7 @@ def execute_verification(
         cert = authority.issue(subject)
         prior = store.find_prior_cert(key_hash, code_sha, exclude_serial=cert["serial"])
         store.record_cert(cert, renews=prior)
-        return {"verified": verified, "attempts": attempts, "certificate": cert, "usage": usage}
+        return {"verified": verified, "attempts": attempts, "certificate": cert, "usage": usage, "evidence": evidence}
 
     usage = billing.meter(store, key_hash, code_sha, verified, compute_s, trial=True)
     used += 1
@@ -178,6 +227,7 @@ def execute_verification(
         "attempts": attempts,
         "certificate": None,
         "usage": usage,
+        "evidence": evidence,
         "trial": {
             "cases_used": used,
             "cases_left": max(trial_cases - used, 0),

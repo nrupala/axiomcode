@@ -8,13 +8,13 @@ This agent is designed to:
 - Review the axiomcode language implementation.
 - Test the implementation rigorously, including over 100 different programs.
 - Provide comprehensive help for both CLI and GUI usage.
-- Ensure flawless execution of the software.
+- Check that the software behaves as its tests and proofs say, and report every failure plainly.
 
 ## Features
 - **Testing**: Develop and test over 100 programs to validate the axiomcode language.
 - **Review**: Analyze the implementation for correctness and adherence to best practices.
 - **Help**: Provide detailed guidance for CLI and GUI usage.
-- **Execution**: Ensure the software runs flawlessly in all scenarios.
+- **Execution**: Run the test and proof suites; record what passed, what failed and what was not run.
 
 
 ## Tool Preferences

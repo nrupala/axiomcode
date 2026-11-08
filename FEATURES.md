@@ -198,7 +198,7 @@ Every generated algorithm comes with a signed certificate containing:
 ### vs. Python LLM Code Generators (Copilot, Cursor, etc.)
 | Feature | AxiomCode | Copilot/Cursor |
 |---------|-----------|----------------|
-| Correctness guarantee | Machine-checked proof (when verified; status recorded honestly per artifact) | Probabilistic guess |
+| Correctness evidence | Machine-checked proof (when verified; status recorded honestly per artifact) | Probabilistic guess |
 | Verification | Independent, automated | Manual review required |
 | Security | Zero-trust, signed, encrypted | Trust the model |
 | Dependencies | Zero | Hundreds |

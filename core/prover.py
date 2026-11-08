@@ -24,6 +24,12 @@ import textwrap
 from collections.abc import Callable
 from pathlib import Path
 
+from core import sandbox as _sandbox
+from core.proof_policy import blocking as _blocking
+from core.proof_policy import format_findings as _format_findings
+from core.proof_policy import screen_source as _screen_source
+from core.proof_policy import theorem_names as _policy_theorem_names
+
 # ─── Lean toolchain detection ────────────────────────────────────────────────
 
 
@@ -130,19 +136,24 @@ def elaborate_lean_file(
     if shutil.which(lake_bin) is None or shutil.which(lean_bin) is None:
         return False, f"TOOLCHAIN_MISSING: {lake_bin}/{lean_bin} not found"
     try:
+        cmd, note = _sandbox.wrap([lake_bin, "env", lean_bin, str(lean_file)], project_dir)
+    except _sandbox.SandboxUnavailableError as e:
+        return False, f"SANDBOX_UNAVAILABLE: {e}"
+    try:
         result = subprocess.run(
-            [lake_bin, "env", lean_bin, str(lean_file)],
+            cmd,
             cwd=str(project_dir),
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
             timeout=timeout,
+            preexec_fn=_sandbox.preexec(),
         )
     except subprocess.SubprocessError as e:
         return False, f"ELABORATION_ERROR: {e}"
     log = (result.stdout or "") + ("\n" + result.stderr if result.stderr else "")
-    return result.returncode == 0, log.strip()
+    return result.returncode == 0, (log.strip() + "\n" + note).strip()
 
 
 # ─── Pantograph checking ─────────────────────────────────────────────────────
@@ -207,21 +218,11 @@ def _qualified_theorem_names(lean_code: str) -> list[str]:
     unambiguously. Note: Lean does NOT prefix declarations with the module
     name — a top-level `theorem foo` in module `E2E` is simply `foo`.
     """
-    names: list[str] = []
-    ns_stack: list[str] = []
-    for line in lean_code.splitlines():
-        m = _re.match(r"\s*namespace\s+([A-Za-z_][A-Za-z0-9_.']*)", line)
-        if m:
-            ns_stack.append(m.group(1))
-            continue
-        if _re.match(r"\s*end\b", line):
-            if ns_stack:
-                ns_stack.pop()
-            continue
-        m = _re.match(r"\s*(?:theorem|lemma)\s+([A-Za-z_][A-Za-z0-9_']*)", line)
-        if m:
-            names.append(".".join([*ns_stack, m.group(1)]))
-    return names
+    # Delegates to core.proof_policy.theorem_names, which also sees theorems
+    # carrying attributes (@[simp]), modifiers (protected, noncomputable) and
+    # sections. The old line regex missed `@[simp] theorem cheat ...`, so a
+    # smuggled-axiom theorem with an attribute escaped the audit entirely.
+    return _policy_theorem_names(lean_code)
 
 
 def audit_axioms(
@@ -259,15 +260,19 @@ def audit_axioms(
     checker = lean_file.with_name(f"{lean_file.stem}.axiomaudit.lean")
     try:
         checker.write_text(audit_src, encoding="utf-8")
+        cmd, _note = _sandbox.wrap([lake_bin, "env", lean_bin, str(checker)], project_dir)
         result = subprocess.run(
-            [lake_bin, "env", lean_bin, str(checker)],
+            cmd,
             cwd=str(project_dir),
             capture_output=True,
             text=True,
             encoding="utf-8",
             errors="replace",
             timeout=timeout,
+            preexec_fn=_sandbox.preexec(),
         )
+    except _sandbox.SandboxUnavailableError as e:
+        return False, f"axiom audit: {e}"
     except subprocess.SubprocessError as e:
         return False, f"axiom audit: checker run failed: {e}"
     finally:
@@ -365,6 +370,12 @@ def iterative_proof_search(
     code = initial_code
     log = ""
     attempts = 0
+    # Untrusted-source screen BEFORE anything elaborates: constructs that run
+    # code on the host or bypass the kernel are rejected outright, and are
+    # never handed to the LLM repair loop (adversarial input is not a typo).
+    findings = _screen_source(code)
+    if _blocking(findings):
+        return False, code, 0, "POLICY_BLOCKED\n" + _format_findings(findings)
     for attempt in range(1, max_attempts + 1):
         attempts = attempt
         lean_file = write_spec_fn(code)
@@ -409,6 +420,10 @@ def iterative_proof_search(
             break
         if not repaired or repaired == code:
             log += "\nrepair produced no changes; stopping"
+            break
+        rep_findings = _screen_source(repaired)
+        if _blocking(rep_findings):
+            log += "\nrepair introduced blocked constructs; stopping\n" + _format_findings(rep_findings)
             break
         code = repaired
     return False, code, attempts, log

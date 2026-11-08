@@ -25,7 +25,7 @@ Natural Language → Lean 4 Spec → Formal Proof → C Binary → Python Packag
 
 | Feature | AxiomCode | Copilot/Cursor | Traditional Verification |
 |---------|-----------|----------------|------------------------|
-| Correctness guarantee | **Machine-checked proof** (when verified; status recorded honestly per artifact) | Probabilistic guess | Manual (expert-only) |
+| Correctness evidence | **Machine-checked proof** (when verified; status recorded honestly per artifact) | Probabilistic guess | Manual (expert-only) |
 | Learning curve | **Plain English** | Plain English | Years of expertise |
 | Dependencies | **Minimal (stdlib + cffi + cryptography)** | Hundreds | Many |
 | Security | **Zero-trust, signed** | Trust the model | Varies |
