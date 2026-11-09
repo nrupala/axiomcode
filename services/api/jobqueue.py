@@ -41,8 +41,7 @@ GLOBAL_PROOF_SLOTS = int(os.environ.get("AXIOMCODE_MAX_GLOBAL_PROOFS", "4"))
 PER_KEY_PROOF_LIMIT = int(os.environ.get("AXIOMCODE_MAX_CONCURRENT_PROOFS", "2"))
 
 QUEUE_NOTE = (
-    "Your request is in line and will be verified in order. "
-    "Check its position and result at GET /verify/jobs/{job_id}."
+    "Your request is in line and will be verified in order. Check its position and result at GET /verify/jobs/{job_id}."
 )
 
 _JOBS_SCHEMA = """
@@ -116,13 +115,10 @@ class JobStore:
 
     def get_job(self, job_id: str) -> dict | None:
         with self._lock:
-            r = self._db.execute(
-                "SELECT rowid AS _rowid, * FROM jobs WHERE id = ?", (job_id,)
-            ).fetchone()
+            r = self._db.execute("SELECT rowid AS _rowid, * FROM jobs WHERE id = ?", (job_id,)).fetchone()
         return self._row(r)
 
-    def set_job_status(self, job_id: str, status: str, result: dict | None = None,
-                       error: str | None = None) -> None:
+    def set_job_status(self, job_id: str, status: str, result: dict | None = None, error: str | None = None) -> None:
         """Transition a job. Terminal transitions clear the submitted
         code — the store keeps the hash and the outcome, not the code."""
         now = int(time.time())
@@ -134,8 +130,7 @@ class JobStore:
                 )
             elif status in ("done", "failed"):
                 self._db.execute(
-                    "UPDATE jobs SET status = ?, result_json = ?, error = ?,"
-                    " finished_at = ?, code = '' WHERE id = ?",
+                    "UPDATE jobs SET status = ?, result_json = ?, error = ?, finished_at = ?, code = '' WHERE id = ?",
                     (
                         status,
                         json.dumps(result, sort_keys=True) if result is not None else None,
@@ -156,7 +151,7 @@ class JobStore:
             rows = self._db.execute(
                 "SELECT rowid AS _rowid, * FROM jobs WHERE status = 'queued' ORDER BY rowid"
             ).fetchall()
-        return [self._row(r) for r in rows]
+        return [job for job in (self._row(r) for r in rows) if job is not None]
 
     def job_position(self, job_id: str) -> int | None:
         """1-based place in line among waiting jobs, or None when the
@@ -173,9 +168,7 @@ class JobStore:
 
     def count_jobs(self, status: str) -> int:
         with self._lock:
-            r = self._db.execute(
-                "SELECT COUNT(*) AS n FROM jobs WHERE status = ?", (status,)
-            ).fetchone()
+            r = self._db.execute("SELECT COUNT(*) AS n FROM jobs WHERE status = ?", (status,)).fetchone()
         return int(r["n"])
 
     def reset_running_jobs(self) -> None:
@@ -195,8 +188,9 @@ class ProofQueue:
     paths share one set of counters.
     """
 
-    def __init__(self, jobs: JobStore, runner, global_slots: int = GLOBAL_PROOF_SLOTS,
-                 per_key_limit: int = PER_KEY_PROOF_LIMIT):
+    def __init__(
+        self, jobs: JobStore, runner, global_slots: int = GLOBAL_PROOF_SLOTS, per_key_limit: int = PER_KEY_PROOF_LIMIT
+    ):
         self.jobs = jobs
         self.runner = runner
         self.global_slots = global_slots
@@ -207,10 +201,7 @@ class ProofQueue:
         self._thread: threading.Thread | None = None
 
     def _can_start_locked(self, key_hash: str) -> bool:
-        return (
-            self._in_flight < self.global_slots
-            and self._per_key.get(key_hash, 0) < self.per_key_limit
-        )
+        return self._in_flight < self.global_slots and self._per_key.get(key_hash, 0) < self.per_key_limit
 
     def acquire_immediate(self, key_hash: str) -> bool:
         """Reserve a slot for a synchronous run. Refused when any job
@@ -238,6 +229,7 @@ class ProofQueue:
         """Persist a job and return (job_id, 1-based position)."""
         job_id = self.jobs.create_job(key_hash, code, max_attempts)
         position = self.jobs.job_position(job_id)
+        assert position is not None  # a just-created job is always waiting
         with self._cond:
             self._cond.notify_all()
         return job_id, position
@@ -246,9 +238,7 @@ class ProofQueue:
         """Recover interrupted jobs and start the drain thread."""
         self.jobs.reset_running_jobs()
         if self._thread is None or not self._thread.is_alive():
-            self._thread = threading.Thread(
-                target=self._drain_loop, name="ax-proof-queue", daemon=True
-            )
+            self._thread = threading.Thread(target=self._drain_loop, name="ax-proof-queue", daemon=True)
             self._thread.start()
 
     def _next_runnable_locked(self):
@@ -275,8 +265,6 @@ class ProofQueue:
                 result = self.runner(job)
                 self.jobs.set_job_status(job["id"], "done", result=result)
             except Exception as e:  # a failed job must never kill the drain
-                self.jobs.set_job_status(
-                    job["id"], "failed", error=f"{type(e).__name__}: {e}"
-                )
+                self.jobs.set_job_status(job["id"], "failed", error=f"{type(e).__name__}: {e}")
             finally:
                 self.release(job["key_hash"])

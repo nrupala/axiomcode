@@ -41,13 +41,17 @@ openapi = {
     },
     "servers": [{"url": API_BASE}],
     "paths": {
-        "/verify": {"post": {"summary": "Verify a Lean artifact (API key). 200 verdict, 202 queued with position, 402 trial exhausted."}},
-        "/verify/jobs/{job_id}": {"get": {"summary": "Queued job position or result (submitting key only; other keys get 404)"}},
+        "/verify": {
+            "post": {"summary": "Verify a Lean artifact (API key). 200 verdict, 202 queued, 402 trial exhausted."}
+        },
+        "/verify/jobs/{job_id}": {"get": {"summary": "Queued job position or result (submitting key only)"}},
         "/check": {"post": {"summary": "Validate a certificate JSON (API key)"}},
         "/revoked": {"get": {"summary": "Public revocation list (no auth)"}},
         "/.well-known/axiomcode-keys.json": {"get": {"summary": "CA public keys for offline validation (no auth)"}},
         "/health": {"get": {"summary": "Service health (no auth)"}},
-        "/billing/checkout": {"post": {"summary": "Create a credit-pack checkout session (API key; 501 while billing is paused)"}},
+        "/billing/checkout": {
+            "post": {"summary": "Credit-pack checkout session (API key; 501 while billing is paused)"}
+        },
         "/billing/webhook": {"post": {"summary": "Stripe webhook (signature-verified)"}},
     },
 }

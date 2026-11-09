@@ -98,10 +98,7 @@ def main() -> int:
         for f in failures:
             print(f"GATE CONTRACT FAIL: {f}")
         return 1
-    print(
-        f"gate contract OK: {len(declared)} routes, "
-        f"{len(gate.get('pathways') or [])} pathways, docs present"
-    )
+    print(f"gate contract OK: {len(declared)} routes, {len(gate.get('pathways') or [])} pathways, docs present")
     return 0
 
 
