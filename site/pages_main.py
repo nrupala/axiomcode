@@ -30,7 +30,7 @@ page(
 <p>Code review is opinion. Tests are samples. Audits are expensive snapshots. When software has to be <em>right</em> &mdash; money movement, access control, safety logic, smart contracts &mdash; &ldquo;looks good to me&rdquo; is not evidence. AxiomCode sells <strong>verification-as-evidence</strong>: a mechanical proof, checked by a real toolchain, sealed into a certificate you can hand to a regulator, a customer, or a counterparty.</p>
 </div>
 <div class="cards">
-<div class="card"><span class="num">1</span><h3>Submit</h3><p>Send a Lean 4 specification through the web UI, the REST API, or the MCP server &mdash; the way your agent already talks to tools.</p></div>
+<div class="card"><span class="num">1</span><h3>Submit</h3><p>Send a Lean 4 specification through the web UI or the REST API &mdash; the way your agent already talks to tools.</p></div>
 <div class="card"><span class="num">2</span><h3>We check it mechanically</h3><p>The engine compiles your spec with the real Lean toolchain and checks the proof. Vacuous builds, <code class="inline">sorry</code>, <code class="inline">admit</code>, and broken proofs are rejected &mdash; loudly.</p></div>
 <div class="card"><span class="num">3</span><h3>You get a certificate</h3><p>A signed certificate binding your artifact hash, the verdict, the toolchain, the issuer, and a validity window. Anyone can re-verify it without trusting us.</p></div>
 </div>
@@ -55,7 +55,7 @@ page(
 <ul>
 <li><strong>Regulated software teams</strong> &mdash; hand a certificate to the auditor instead of a test report.</li>
 <li><strong>Fintech &amp; smart contracts</strong> &mdash; money logic with a machine-checked proof attached.</li>
-<li><strong>AI agent builders</strong> &mdash; agents that ship code can now ship the proof too. Call us from your agent over MCP.</li>
+<li><strong>AI agent builders</strong> &mdash; agents that ship code can now ship the proof too. Call the API from your agent and attach the certificate to the code.</li>
 <li><strong>Procurement &amp; contracts</strong> &mdash; &ldquo;certified correct&rdquo; as a deliverable, checkable by the buyer.</li>
 </ul>
 <p><a class="cta" href="/pricing/">See pricing</a></p>
@@ -81,7 +81,7 @@ page(
 <p class="sub">Three steps. Every one of them checkable.</p>
 
 <h2>1. Submit the artifact</h2>
-<p>Paste Lean 4 code into the <a href="/verify/">web verifier</a>, <code class="inline">POST</code> it to the REST API, or call the <code class="inline">verify</code> tool on our MCP server. What you submit is hashed (SHA-256) the moment it arrives &mdash; that hash becomes part of the certificate, so the verdict can never drift away from the code it describes.</p>
+<p>Paste Lean 4 code into the <a href="/verify/">web verifier</a> or <code class="inline">POST</code> it to the REST API with your API key. What you submit is hashed (SHA-256) the moment it arrives &mdash; that hash becomes part of the certificate, so the verdict can never drift away from the code it describes. When every proof slot is busy, your submission joins a first-in-first-out queue and the response tells you your position &mdash; nobody jumps the line, and you can check your place at any time.</p>
 
 <h2>2. The engine checks the proof &mdash; for real</h2>
 <p>The verification engine runs the actual Lean toolchain (<code class="inline">lake build</code>) against your artifact in an isolated project. It is deliberately adversarial toward sloppy proofs:</p>
@@ -106,14 +106,14 @@ page(
 <tr><td><code class="inline">signature</code></td><td>CA signature over all of the above</td></tr>
 </table>
 <div class="sealbox">
-<p style="margin-top:0"><strong>Check any certificate, no account needed:</strong> paste it into the <a href="/check/">certificate checker</a>. You&rsquo;ll get <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, or <span class="badge b-warn">EXPIRED</span> &mdash; with the reason. Revocation is published, not hidden: if a toolchain bug ever invalidates a verdict, the serial goes on the public revocation list.</p>
+<p style="margin-top:0"><strong>Check any certificate:</strong> the revocation list and the CA&rsquo;s public keys are published openly, so anyone can validate a certificate offline against the published keys &mdash; no trust in our server required. With an API key, the <a href="/check/">certificate checker</a> does it in one call. You&rsquo;ll get <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, or <span class="badge b-warn">EXPIRED</span> &mdash; with the reason. Revocation is published, not hidden: if a toolchain bug ever invalidates a verdict, the serial goes on the public revocation list.</p>
 </div>
 
 <h2>Interfaces</h2>
 <ul>
 <li><strong>Humans:</strong> the <a href="/verify/">web verifier</a> and <a href="/check/">certificate checker</a>.</li>
 <li><strong>Applications:</strong> the <a href="/docs/api/">REST API</a> with API-key auth and metering.</li>
-<li><strong>Agents:</strong> the <a href="/docs/api/">MCP server</a> &mdash; <code class="inline">verify</code>, <code class="inline">check_certificate</code>, <code class="inline">pricing</code>, <code class="inline">usage_report</code>. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
+<li><strong>Agents:</strong> the <a href="/docs/api/">REST API</a> is agent-shaped (one key, JSON in, signed evidence out). An MCP server ships in the AxiomCode repository and runs against the same API locally; a hosted MCP endpoint is not live yet, and we say so rather than advertise one. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
 </ul>
 </div></div></section>
 """,
@@ -165,14 +165,14 @@ page(
     """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Pricing</h1>
 <p class="sub">The trial proves the engine. The certificate is the product.</p>
-<div class="note"><strong>Pre-launch:</strong> packs are not yet on sale &mdash; this page shows the launch pricing. Our pricing covers the full cost of running the service &mdash; infrastructure, compute, operations, support, and insurance &mdash; plus a standard margin. One credit is always <strong>US$0.01</strong>. Verification consumes credits by compute time; the certificate itself is included with every paid verification.</div>
+<div class="note"><strong>Billing is paused:</strong> the service is live, but credit packs are <strong>not yet on sale</strong> &mdash; this page shows the pricing that will apply when pack sales open. Until then, API keys with the 10-verification trial are issued free on request. Our pricing covers the full cost of running the service &mdash; infrastructure, compute, operations, support, and insurance &mdash; plus a standard margin. One credit is always <strong>US$0.01</strong>. Verification consumes credits by compute time; the certificate itself is included with every paid verification.</div>
 </div>
 <div class="ptable">
 <div class="plan">
 <h3>Trial</h3><div class="price">$0</div><div class="per">no card required</div>
 <ul>
-<li>10 verifications</li>
-<li>Full verdict + proof transcript</li>
+<li>10 verifications per API key</li>
+<li>Full verdict + usage record</li>
 <li><strong>No certificates</strong> &mdash; trial verdicts are not certifiable</li>
 <li>Rate-limited, fair use</li>
 </ul>
@@ -186,17 +186,17 @@ page(
 <li>REST API + API key</li>
 <li>Certificate checker + revocation list</li>
 </ul>
-<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Not yet on sale</span></p>
 </div>
 <div class="plan hot">
 <h3>Growth</h3><div class="price">$50</div><div class="per">5,000 credits, never expire</div>
 <ul>
 <li>Roughly 150&ndash;500 typical verifications</li>
 <li><strong>Signed certificates</strong> on every pass</li>
-<li>REST API + MCP server access</li>
-<li>Usage reports &amp; audit log</li>
+<li>REST API access</li>
+<li>Per-verification usage records &amp; audit log</li>
 </ul>
-<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Not yet on sale</span></p>
 </div>
 <div class="plan">
 <h3>Scale</h3><div class="price">$200</div><div class="per">20,000 credits, never expire</div>
@@ -204,14 +204,14 @@ page(
 <li>Roughly 600&ndash;2,000 typical verifications</li>
 <li><strong>Signed certificates</strong> on every pass</li>
 <li>Everything in Growth</li>
-<li>Priority verification queue</li>
+<li>The same fair FIFO queue as everyone &mdash; nobody jumps the line</li>
 </ul>
-<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Not yet on sale</span></p>
 </div>
 </div>
 <div class="wrap"><div class="prose" style="margin-top:36px">
 <h2>How metering works</h2>
-<p>Each verification is metered by compute time at <strong>0.9 credits/second</strong> (about $0.009/s). A small spec that checks in 12 seconds costs ~11 credits &mdash; eleven cents. You see the exact charge with every verdict, and your <a href="/docs/api/">usage report</a> itemizes all of it. Credits never expire. Unused credits are refundable within 14 days &mdash; see the <a href="/paperwork/refunds/">Refund Policy</a>.</p>
+<p>Each verification is metered by compute time at <strong>0.9 credits/second</strong> (about $0.009/s). A small spec that checks in 12 seconds costs ~11 credits &mdash; eleven cents. Every verdict response carries its exact usage record &mdash; compute seconds, rate, credits, and US dollars &mdash; so your bill always reconciles. Credits never expire. Unused credits are refundable within 14 days &mdash; see the <a href="/paperwork/refunds/">Refund Policy</a>.</p>
 <h2>Why the trial has no certificates</h2>
 <p>The trial exists so you can evaluate the engine: real verdicts, real transcripts, real evidence. But a certificate is a trust instrument &mdash; it says AxiomCode stakes its name on this verdict. We only stake our name in a commercial relationship, where the full cost of standing behind the verdict is covered. That boundary is what keeps the certificates meaningful.</p>
 <div class="faq">

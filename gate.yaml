@@ -1,0 +1,149 @@
+product: axiomcode
+version: "0.2.0"
+base_url: https://api.axiom-code.com
+types:
+  - web
+  - payments
+test_command: "python3 -m pytest services/api/tests -q"
+sensitive_points: true
+compliance:
+  - payments-via-processor
+  - privacy
+docs:
+  threat_model: docs/THREAT-MODEL.md
+  coverage_ledger: docs/COVERAGE-LEDGER.json
+  changelog: CHANGELOG.md
+routes:
+  - path: /health
+    methods:
+      - GET
+    auth: public
+    expect_status: 200
+  - path: /verify
+    methods:
+      - POST
+    auth: required
+    expect_status: 401
+    probe_body_json: "{}"
+  - path: /verify/jobs/{job_id}
+    methods:
+      - GET
+    auth: required
+    expect_status: 401
+    probe_path: /verify/jobs/probe
+  - path: /check
+    methods:
+      - POST
+    auth: required
+    expect_status: 401
+    probe_body_json: "{}"
+  - path: /revoked
+    methods:
+      - GET
+    auth: public
+    expect_status: 200
+  - path: /.well-known/axiomcode-keys.json
+    methods:
+      - GET
+    auth: public
+    expect_status: 200
+  - path: /billing/checkout
+    methods:
+      - POST
+    auth: required
+    expect_status: 401
+    probe_body_json: "{}"
+  - path: /billing/webhook
+    methods:
+      - POST
+    auth: public
+    expect_status:
+      - 400
+      - 501
+    probe_body_json: "{}"
+payments:
+  links:
+pathways:
+  - id: PW-VERIFY
+    covers: /verify
+    situation: an authenticated key holder submits a Lean 4 artifact for verification; the first 10 cases per key are a free trial (verdict and transcript, never a certificate), paid cases meter against the key's credit balance and issue a certificate on completion
+    gateway: verify_api.verify — the only path from a submission to a proof run; identity comes only from the presented API key (its SHA-256 hash), never from the request body
+    validation: API key authenticated against the hashed key store before anything runs; code size cap; per-key rate limit; trial/balance eligibility is checked before any proof runs (402 before compute, never after); when every proof slot is busy the request joins the durable FIFO queue instead of running
+  - id: PW-JOB-STATUS
+    covers: /verify/jobs/{job_id}
+    situation: a key holder checks the position or result of a verification job it queued
+    gateway: verify_api.verify_job — the only read path for queued jobs
+    validation: the job is returned only to the key that submitted it; any other key (or an unknown job id) answers 404, so job existence never leaks across customers
+  - id: PW-CHECK
+    covers: /check
+    situation: an authenticated key holder asks whether a certificate is valid
+    gateway: verify_api.check — verification is recomputed from the certificate and the CA's published key, then the revocation store is consulted
+    validation: API key required; a certificate whose signature does not verify, or whose serial is revoked, answers valid=false with the reason; the check is appended to the hash-chained audit log
+  - id: PW-PUBLIC-READS
+    covers:
+      - /health
+      - /revoked
+      - /.well-known/axiomcode-keys.json
+    situation: anyone — customers, relying parties, monitors — reads the service's public trust surface
+    gateway: verify_api public routes — read-only views over the revocation store and the CA's public keys
+    validation: none — these responses carry no customer data; the keys payload is how third parties verify certificates without trusting the server
+  - id: PW-CHECKOUT
+    covers: /billing/checkout
+    situation: an authenticated key holder buys a credit pack; the checkout session is bound to the caller's key hash so the webhook can grant the right key
+    gateway: verify_api.billing_checkout — the only path from a customer to a Stripe Checkout Session
+    validation: API key authenticated before any Stripe call; pack must be a known pack with a configured price; while billing is paused (no Stripe secret configured on the host) the route answers an honest 501 rather than pretending
+  - id: PW-WEBHOOK
+    covers: /billing/webhook
+    situation: Stripe reports a checkout completion or a refund; exactly one credit grant (or reversal) may result
+    gateway: stripe_billing.handle_webhook — the only path from a payment event to a credit grant
+    validation: Stripe HMAC signature verified against the webhook secret before the event is read; grants are idempotent on the Stripe session id (a replay grants nothing); refunds reverse the original grant
+isolation:
+  - point: CA private key (Ed25519)
+    kind: signing
+    tier: in-process-exception
+    acceptance: "Wright (builder), 2026-11-09 — the key lives only in the production state directory on the service host (mode 0600, git-ignored by the F-AX-1 guard), is loaded only by the API process, and never leaves the host; certificates are signed in-process after the engine's checks pass. A separated signing service is the named scale-up step in docs/THREAT-MODEL.md."
+  - point: customer API keys
+    kind: credentials
+    tier: in-process-exception
+    acceptance: "Wright (builder), 2026-11-09 — only SHA-256 hashes of keys are stored (store.py api_keys); the plaintext exists only in the customer's hands and the request header. Caller identity everywhere in the system is the hash."
+  - point: Stripe webhook secret
+    kind: credentials
+    tier: in-process-exception
+    acceptance: "Wright (builder), 2026-11-09 — held in the host's environment file (mode 0600) and read only by the webhook route. No Stripe secret key is configured on the host by construction: checkout session creation through the vaulted restricted key happens off-host, and the host route answers 501 while billing is paused."
+  - point: customer code held in the verification queue
+    kind: critical-data
+    tier: in-process-exception
+    acceptance: "Wright (builder), 2026-11-09 — a queued job's submitted code is stored only until the job completes, then cleared from the store (the code hash and result are kept). Queued jobs are visible only to the submitting key."
+# Notes for the gate (flip package, 2026-11-09):
+# - F-AX-8 disposition: /docs and /openapi.json on the API host stay
+#   PUBLIC by deliberate decision. They disclose the documented route
+#   table only — the same table this file declares and the public
+#   docs publish — and agent discovery is a designed surface of this
+#   product. Recorded here so the choice is on the record, per F-AX-8.
+# - types carries web + payments only. The product's judgment face
+#   (verdict correctness) does not fit the runner's web-check adapter
+#   shape (it needs an API key and a code payload, not {text}); the
+#   judgment differential is run agent-side per playbook section 7 —
+#   the gate's own corpus from the 2026-10-23 full gate is the
+#   standing set, re-run at this flip. The MCP face (mcp_server.py,
+#   Streamable HTTP) is built and tested in this repo but is NOT
+#   deployed on the public surface, so it is not declared as a probed
+#   type; the site says exactly that.
+# - payments.links is empty on purpose: billing is PAUSED by the
+#   owner's readiness-arming rule (2026-11-06). The Stripe webhook
+#   endpoint and the three Payment Links are deactivated in Stripe
+#   and stay deactivated at this flip; the site presents no buy
+#   links. The links join this file when the owner arms billing.
+# - No rate_limit block is declared: the per-key limiter (60/min,
+#   limits.py) is enforced only after authentication, so the runner's
+#   own-identity probes cannot reach it. RATE-BOUND proof is the
+#   authenticated behaviour tests (services/api/tests) plus gate
+#   spot-probes with a provisioned key — the same posture the gate
+#   accepted at the 2026-10-23 full gate (NOT RUN there, code-read).
+# - No artifacts block: this product predates the Stage-1/2 artifact
+#   set (PRODUCT-DEFINITION / FAILURE-ANALYSIS /
+#   SCAFFOLDING-CERTIFICATION were never produced for it), and the
+#   schema forbids backfilling a retroactive scaffolding
+#   certification. Its governing records are the production landing
+#   pack and the 2026-10-23 gate verdict, both named in the flip
+#   declaration.

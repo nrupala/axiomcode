@@ -10,14 +10,7 @@ SITE = "https://axiom-code.com"
 NAME = "AxiomCode"
 TAGLINE = "The certification authority for software correctness."
 HERO_LINE = "Don\u2019t trust our AI \u2014 verify our proof."
-API_BASE = "https://api.axiom-code.com"  # backend goes live in the next step
-PADDLE_VENDOR = 0  # set when Nrupal creates the products
-PADDLE_ENV = "production"
-PRICE_IDS = {  # set when Nrupal creates the products
-    "starter": "",
-    "growth": "",
-    "scale": "",
-}
+API_BASE = "https://api.axiom-code.com"  # production API — live since the 2026-11-09 public flip
 
 NAV = [
     ("How it works", "/how-it-works/"),
@@ -149,7 +142,7 @@ def header(active=""):
     links = []
     for label, href in NAV:
         links.append(f'<a href="{href}">{label}</a>')
-    return f"""<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+    return f"""<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/">{SEAL_SVG}<span>AxiomCode</span></a>
 <nav class="nav">{"".join(links)}</nav>
@@ -186,7 +179,7 @@ FOOTER = """<footer class="sitefoot"><div class="wrap">
 <li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
 </ul></div>
 </div>
-<div class="fine">Owned by <a href="https://nrupalakolkar.com">Nrupal Akolkar</a> &middot; Built with <a href="https://muse.ai/join">Muse by Meta</a>. &middot; &copy; 2026 AxiomCode. Verification is evidence, not opinion.</div>
+<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with <a href="https://muse.ai/join">Muse by Meta</a> &mdash; join Muse, then redeem code <strong>101EEK</strong> in Settings within 48 hours of joining and we both earn tokens. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
 </div></footer>
 </body>
 </html>"""

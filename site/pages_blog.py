@@ -55,15 +55,19 @@ page(
 # ---------- machine-readable extras (written by runner) ----------
 WELLKNOWN = {
     "service": "AxiomCode",
-    "status": "pre-launch",
+    "status": "live",
     "description": "Certification authority for software correctness. Machine-checked proofs, signed certificates.",
-    "note": "Pre-launch: the service is not yet open. The API, MCP server, revocation list, and CA public keys will be published here when the service opens; none are live yet, and certificates are not yet being issued.",
+    "note": "Live since 2026-11-09: the API at https://api.axiom-code.com is open (POST /verify, POST /check, GET /verify/jobs/{job_id}); the revocation list (GET /revoked) and CA public keys (GET /.well-known/axiomcode-keys.json) are public. The first 10 verification cases per API key are a free trial (no certificates). Credit packs are not yet on sale: billing is paused under the owner's readiness-arming rule, with the Stripe webhook and Payment Links deactivated until pack sales open. A hosted MCP endpoint is not live yet; the MCP server ships in the repository for local use.",
     "homepage": SITE,
     "llms_txt": SITE + "/llms.txt",
     "docs": SITE + "/docs/api/",
+    "api_base": "https://api.axiom-code.com",
+    "revocation_list": "https://api.axiom-code.com/revoked",
+    "ca_public_keys": "https://api.axiom-code.com/.well-known/axiomcode-keys.json",
     "certificate_checker": SITE + "/check/",
     "pricing": SITE + "/pricing/",
-    "trial": {"verifications": 10, "certificates": False},
+    "trial": {"verifications_per_api_key": 10, "certificates": False},
+    "billing": "paused — credit packs not yet on sale",
     "contact": "hello@axiom-code.com",
 }
 
@@ -75,27 +79,33 @@ AxiomCode verifies Lean 4 software specifications with a real toolchain and issu
 signed, revocable, independently verifiable certificates binding the artifact hash,
 verdict, toolchain, issuer, serial, and validity window.
 
-## Status: pre-launch
+## Status: live (opened 2026-11-09)
 
-The service is not yet open. The API and MCP endpoints below are planned, not yet
-live. We are not yet accepting submissions or payments, and certificates are not
-yet being issued. This file will be updated when the service opens.
+The service is open. The REST API below is live. Billing is paused: credit packs
+are not yet on sale, so certificates unlock when pack sales open; until then the
+trial runs on every new API key.
 
 ## For agents
 
 - API docs: https://axiom-code.com/docs/api/
 - Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json
-- Planned REST base: https://api.axiom-code.com (not yet live)
-- Planned MCP server: https://api.axiom-code.com/mcp with tools: verify, check_certificate, pricing, usage_report
-- Planned certificate check (no auth): GET https://api.axiom-code.com/v1/check?serial=...
-- Planned revocation list: https://api.axiom-code.com/v1/revoked
+- REST base (live): https://api.axiom-code.com
+- Verify: POST /verify with an API key (X-Api-Key header), body {"code": "..."}.
+  When every proof slot is busy the answer is 202 {"status":"queued","job_id":...,
+  "position":N}; poll GET /verify/jobs/{job_id} with the same key for the result.
+- Check a certificate: POST /check with an API key, body {"certificate": {...}}.
+- Revocation list (public, no auth): GET /revoked
+- CA public keys (public, no auth): GET /.well-known/axiomcode-keys.json
+- MCP: a server ships in the AxiomCode repository (github.com/nrupala/axiomcode)
+  and runs locally against this API. A hosted MCP endpoint is NOT live yet.
 
 ## Trial
 
-10 free verifications per email via POST /v1/trial/verify. Trial verdicts include the
-verdict and transcript but NEVER a certificate. Certificates are issued to paying
-customers only (credit packs from $10; 1 credit = $0.01; metered at 0.9 credits/sec
-of engine compute time).
+The first 10 verification cases per API key are free: POST /verify with a new key.
+Trial verdicts include the verdict and the usage record but NEVER a certificate.
+Certificates are issued to paying customers only (credit packs from $10 when sales
+open; 1 credit = $0.01; metered at 0.9 credits/sec of engine compute time). API keys
+are issued on request: hello@axiom-code.com.
 
 ## Scope (honest)
 
@@ -121,6 +131,10 @@ page(
     """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Release log</h1>
 <p class="sub">What changed, when &mdash; stated plainly.</p>
+<h2>2026-11-09 &mdash; Public opening</h2>
+<p><strong>AxiomCode is open.</strong> The verification service at api.axiom-code.com is live and accepting submissions: <code class="inline">POST /verify</code> with an API key (the first 10 cases per key are a free trial &mdash; verdicts and usage records, no certificates), <code class="inline">POST /check</code>, and the public revocation list and CA keys. This site&rsquo;s pre-launch posture is retired, and every page now describes the API that actually ships.</p>
+<p>New with the opening: a <strong>durable FIFO verification queue</strong>. When every proof slot is busy, submissions answer <code class="inline">202</code> with a job id and a checkable position instead of competing for the engine &mdash; one queue, in arrival order, no priority lane. The flip package also lands the release-gate declaration for the service (<code class="inline">gate.yaml</code>, threat model, and coverage ledger in the repository).</p>
+<p><strong>Billing stays paused.</strong> Credit packs are not on sale yet: the Stripe webhook and Payment Links remain deactivated under our readiness-arming rule until pack sales are deliberately opened. Release gate: the production service passed its full gate on 2026-10-23 (PASS WITH FINDINGS); the flip package clears the gate&rsquo;s standing conditions F-AX-4 and F-AX-5.</p>
 <h2>2026-10-15 &mdash; Honest pre-launch presentation</h2>
 <p>The site now presents the service as it is: <strong>pre-launch</strong>. Credit packs are not yet on sale, the API is not yet live, and certificates are not yet being issued. Buy buttons and operating-service claims stay down until the launch wiring exists.</p>
 <p>Release gate: PASS WITH FINDINGS (2026-10-15) &mdash; pre-launch presentation is a release candidate since 2026-10-15, graduates 2026-10-22.</p>

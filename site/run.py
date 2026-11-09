@@ -25,24 +25,34 @@ with open(os.path.join(wk, "axiomcode.json"), "w") as f:
 with open(os.path.join(OUT, "llms.txt"), "w") as f:
     f.write(pages_blog.LLMS_TXT)
 
-# stub OpenAPI for agents (full spec ships with the API)
+# OpenAPI summary for agents — mirrors the live API's route table.
+# The API's own live spec is served at https://api.axiom-code.com/openapi.json.
 openapi = {
     "openapi": "3.0.3",
     "info": {
         "title": "AxiomCode API",
-        "version": "1.0.0",
+        "version": "0.2.0",
         "description": (
-            "Verification and certification API. Planned API — not yet live; "
-            "the service is in pre-launch. Full reference at https://axiom-code.com/docs/api/"
+            "Verification and certification API — live since 2026-11-09. "
+            "The first 10 verification cases per API key are a free trial (no certificates). "
+            "When every proof slot is busy, POST /verify answers 202 with a queue position. "
+            "Full reference at https://axiom-code.com/docs/api/"
         ),
     },
     "servers": [{"url": API_BASE}],
     "paths": {
-        "/v1/trial/verify": {"post": {"summary": "Trial verification (email, 10 lifetime, no certificate)"}},
-        "/v1/verify": {"post": {"summary": "Paid verification with certificate (API key)"}},
-        "/v1/check": {"get": {"summary": "Certificate status by serial (no auth)"}},
-        "/v1/revoked": {"get": {"summary": "Public revocation list (no auth)"}},
-        "/v1/account": {"get": {"summary": "Balance and usage (API key)"}},
+        "/verify": {
+            "post": {"summary": "Verify a Lean artifact (API key). 200 verdict, 202 queued, 402 trial exhausted."}
+        },
+        "/verify/jobs/{job_id}": {"get": {"summary": "Queued job position or result (submitting key only)"}},
+        "/check": {"post": {"summary": "Validate a certificate JSON (API key)"}},
+        "/revoked": {"get": {"summary": "Public revocation list (no auth)"}},
+        "/.well-known/axiomcode-keys.json": {"get": {"summary": "CA public keys for offline validation (no auth)"}},
+        "/health": {"get": {"summary": "Service health (no auth)"}},
+        "/billing/checkout": {
+            "post": {"summary": "Credit-pack checkout session (API key; 501 while billing is paused)"}
+        },
+        "/billing/webhook": {"post": {"summary": "Stripe webhook (signature-verified)"}},
     },
 }
 api_dir = os.path.join(OUT, "docs", "api")

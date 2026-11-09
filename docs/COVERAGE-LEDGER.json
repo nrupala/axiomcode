@@ -1,0 +1,380 @@
+[
+  {
+    "coverage_id": "https%3A%2F%2Fapi.axiom-code.com%20%28network%20tier%29::Cloudflare%20tunnel%20to%20loopback%20%3A8890::deployment::ATTACK-CLASSES.md%23Network%20vulnerability",
+    "canonical_refs": {
+      "surface": "https://api.axiom-code.com (network tier)",
+      "boundary": "Cloudflare tunnel to loopback :8890",
+      "subsystem": "deployment",
+      "attack_class": "ATTACK-CLASSES.md#Network vulnerability"
+    },
+    "surface": "Network-tier offensive pass",
+    "boundary": "Tunnel and host listeners",
+    "subsystem": "deployment",
+    "attack_class": "ATTACK-CLASSES.md#Network vulnerability",
+    "starting_paths": [
+      "services/api/verify_api.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Network vulnerability",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "Kali bench pass was NOT RUN at the 2026-10-23 gate (bench landing slipped); the 8-route surface was hand-probed instead. The pass is owed at the next full gate and is named here so it cannot be silently passed."
+    ]
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fmcp_server.py%20%28MCP%2C%20Streamable%20HTTP%29::not%20deployed%20on%20the%20public%20surface::services%2Fapi::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "services/api/mcp_server.py (MCP, Streamable HTTP)",
+      "boundary": "not deployed on the public surface",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "MCP server surface",
+    "boundary": "Not deployed",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "services/api/mcp_server.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "out_of_scope",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "The MCP app is built and covered by the repo test suite but is not served on api.axiom-code.com; it enters this ledger as covered attack surface only when a deployment gate arms it."
+    ]
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fstore.py%23audit_log::services%2Fapi%2Fstore.py%23verify_chain::services%2Fapi::ATTACK-CLASSES.md%23Record%20tampering",
+    "canonical_refs": {
+      "surface": "services/api/store.py#audit_log",
+      "boundary": "services/api/store.py#verify_chain",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Record tampering"
+    },
+    "surface": "Audit log integrity",
+    "boundary": "Hash-chained append-only log",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Record tampering",
+    "starting_paths": [
+      "services/api/store.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Record tampering",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/store.py",
+      "services/api/verify_api.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/store.py",
+          "services/api/verify_api.py"
+        ],
+        "invariant": "Editing any stored audit payload, event type, or timestamp breaks the chain at that row and verify_chain reports it.",
+        "method": "local",
+        "result": "Chain format v2 binds prev_hash | event_type | ts | canonical payload; covered by services/api/tests/test_store.py.",
+        "artifact": "agents/wright/artifacts/audit-chain-acceptance-2026-10-22.md"
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fverify_api.py%23GET%20%2Fverify%2Fjobs%2F%7Bjob_id%7D::services%2Fapi%2Fverify_api.py%23verify_job%20owner-key%20check::services%2Fapi::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "services/api/verify_api.py#GET /verify/jobs/{job_id}",
+      "boundary": "services/api/verify_api.py#verify_job owner-key check",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "Queued job status reads",
+    "boundary": "Object ownership (submitting key only)",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "services/api/verify_api.py",
+      "services/api/jobqueue.py",
+      "services/api/store.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/jobqueue.py",
+      "services/api/verify_api.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/jobqueue.py",
+          "services/api/verify_api.py"
+        ],
+        "invariant": "A job is visible only to the key that submitted it; other keys and unknown ids answer 404, and submitted code is cleared from the store when the job completes.",
+        "method": "local",
+        "result": "services/api/tests/test_queue.py (this package): cross-key read -> 404; post-completion store row carries code='' with the code hash retained.",
+        "artifact": "agents/wright/artifacts/test-queue-pytest-2026-11-09.txt"
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fverify_api.py%23POST%20%2Fbilling%2Fwebhook::services%2Fapi%2Fstripe_billing.py%23handle_webhook::services%2Fapi::ATTACK-CLASSES.md%23Payment%20event%20forgery",
+    "canonical_refs": {
+      "surface": "services/api/verify_api.py#POST /billing/webhook",
+      "boundary": "services/api/stripe_billing.py#handle_webhook",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Payment event forgery"
+    },
+    "surface": "Stripe webhook grant path",
+    "boundary": "HMAC signature verification + idempotent grant",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Payment event forgery",
+    "starting_paths": [
+      "services/api/verify_api.py",
+      "services/api/stripe_billing.py",
+      "services/api/store.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Payment event forgery",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/store.py",
+      "services/api/stripe_billing.py",
+      "services/api/verify_api.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/store.py",
+          "services/api/stripe_billing.py",
+          "services/api/verify_api.py"
+        ],
+        "invariant": "An unsigned or badly signed event grants nothing; a genuine event grants exactly once.",
+        "method": "source",
+        "result": "Acceptance 2026-10-22: signed grant +1,000 credits, replay granted 0 (single grant row, DB-proven); gate 2026-10-23: garbage signature -> 400 invalid_signature_or_payload; refund reversal returned the key to 402.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fverify_api.py%23POST%20%2Fverify%20%28admission%29::services%2Fapi%2Flimits.py%20%2B%20services%2Fapi%2Fjobqueue.py%20bounds::services%2Fapi::ATTACK-CLASSES.md%23Resource%20exhaustion",
+    "canonical_refs": {
+      "surface": "services/api/verify_api.py#POST /verify (admission)",
+      "boundary": "services/api/limits.py + services/api/jobqueue.py bounds",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Resource exhaustion"
+    },
+    "surface": "Proof admission bounds",
+    "boundary": "Rate, concurrency, size, and time caps; FIFO queue",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Resource exhaustion",
+    "starting_paths": [
+      "services/api/limits.py",
+      "services/api/jobqueue.py",
+      "services/api/verify_service.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource exhaustion",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/jobqueue.py",
+      "services/api/limits.py",
+      "services/api/verify_api.py",
+      "services/api/verify_service.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/jobqueue.py",
+          "services/api/limits.py",
+          "services/api/verify_api.py",
+          "services/api/verify_service.py"
+        ],
+        "invariant": "No key can run unbounded proofs: 60 req/min, 2 concurrent per key, 4 global proof slots, 256 KB code cap, 600 s proof cap; excess demand queues with a checkable position instead of piling on.",
+        "method": "source",
+        "result": "Bounds are code-enforced (limits.py, jobqueue.py) and behaviour-tested (services/api/tests/test_hardening.py, test_queue.py); the 2026-10-23 gate read the limiter code and named live 429 behaviour NOT RUN — it joins the flip gate's spot-probes.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fverify_api.py%23POST%20%2Fverify::services%2Fapi%2Fverify_api.py%23require_api_key::services%2Fapi::ATTACK-CLASSES.md%23Authentication",
+    "canonical_refs": {
+      "surface": "services/api/verify_api.py#POST /verify",
+      "boundary": "services/api/verify_api.py#require_api_key",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Authentication"
+    },
+    "surface": "POST /verify authentication",
+    "boundary": "API key authentication",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Authentication",
+    "starting_paths": [
+      "services/api/verify_api.py",
+      "services/api/store.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Authentication",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/store.py",
+      "services/api/verify_api.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/store.py",
+          "services/api/verify_api.py"
+        ],
+        "invariant": "Requests without a valid key are refused before any other processing.",
+        "method": "source",
+        "result": "Gate probes 2026-10-23: POST /verify without a key -> 401; identity is the key's SHA-256 hash only; request bodies carry no identity.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fverify_service.py%23execute_verification::core%2Fprover%20axiom%20audit%20%28fails%20closed%29::services%2Fapi%20%2B%20core::ATTACK-CLASSES.md%23Judgment%20integrity",
+    "canonical_refs": {
+      "surface": "services/api/verify_service.py#execute_verification",
+      "boundary": "core/prover axiom audit (fails closed)",
+      "subsystem": "services/api + core",
+      "attack_class": "ATTACK-CLASSES.md#Judgment integrity"
+    },
+    "surface": "Verification verdict correctness (mis-issuance)",
+    "boundary": "Proof checking and axiom audit",
+    "subsystem": "services/api + core",
+    "attack_class": "ATTACK-CLASSES.md#Judgment integrity",
+    "starting_paths": [
+      "services/api/verify_service.py",
+      "core/prover"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Judgment integrity",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/verify_api.py",
+      "services/api/verify_service.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/verify_api.py",
+          "services/api/verify_service.py"
+        ],
+        "invariant": "False, sorry-based, and axiom-smuggled proofs never verify; trial keys never receive certificates.",
+        "method": "source",
+        "result": "Gate judgment differential 2026-10-23 on a fresh key: true->true, false->false, sorry->false, axiom-smuggle->false, forall->true; acceptance 2026-10-22: 10 trial cases issued no certificates, 11th answered 402 before proving.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  },
+  {
+    "coverage_id": "state%2Fca_key.pem%20%28production%20state%20directory%29::.gitignore%20state%2F%20guard%20%2B%20file%20modes%20700%2F600::deployment::ATTACK-CLASSES.md%23Credential%20exposure",
+    "canonical_refs": {
+      "surface": "state/ca_key.pem (production state directory)",
+      "boundary": ".gitignore state/ guard + file modes 700/600",
+      "subsystem": "deployment",
+      "attack_class": "ATTACK-CLASSES.md#Credential exposure"
+    },
+    "surface": "CA private key custody",
+    "boundary": "State directory guard and permissions",
+    "subsystem": "deployment",
+    "attack_class": "ATTACK-CLASSES.md#Credential exposure",
+    "starting_paths": [
+      ".gitignore",
+      "services/api/ca.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Credential exposure",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      ".gitignore",
+      "services/api/ca.py",
+      "services/api/verify_api.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          ".gitignore",
+          "services/api/ca.py",
+          "services/api/verify_api.py"
+        ],
+        "invariant": "The CA key, database, and env secrets can never be swept into a commit, and are readable only by the service account.",
+        "method": "source",
+        "result": "Gate F-AX-1 closed 2026-10-23: state/ git-ignored (PR #30), state/ 700, key/env/DB 600, key proven never in git history (gate's own ls-files/history read).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": []
+  }
+]
