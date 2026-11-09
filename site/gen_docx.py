@@ -105,7 +105,7 @@ for path, title, _desc, body, _ in PAGES:
     r.font.size = Pt(20)
     r.font.color.rgb = INK
     s = doc.add_paragraph()
-    r = s.add_run("AxiomCode \u2014 Last updated 26 September 2026")
+    r = s.add_run("AxiomCode \u2014 Last updated 9 November 2026")
     r.font.size = Pt(10)
     r.font.color.rgb = MUTED
     body_to_docx(doc, body)
