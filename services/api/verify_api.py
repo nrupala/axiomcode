@@ -43,11 +43,12 @@ import jobqueue
 import limits
 import stripe_billing
 import verify_service
-from core.prover import iterative_proof_search, lean_version
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from store import Store
+
+from core.prover import iterative_proof_search, lean_version
 
 TOOLCHAIN = "leanprover/lean4:v4.35.0-rc3"
 WORK_ROOT = os.environ.get("AXIOMCODE_WORK_ROOT", tempfile.gettempdir())
