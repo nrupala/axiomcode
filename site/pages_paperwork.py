@@ -2,7 +2,7 @@ from build import page
 
 # ---------- paperwork ----------
 PW_INTRO = """<section class="block"><div class="wrap"><div class="prose">
-<div class="note"><strong>Pre-launch status:</strong> AxiomCode has not yet opened. These documents take effect when the service opens for submissions and payments; no certificates have been publicly issued under them yet.</div>
+<div class="note"><strong>Status:</strong> AxiomCode opened on 9 November 2026 and these documents govern the service as it operates today. One exception, stated plainly: credit packs are not yet on sale (billing opens separately), so the payment terms describe the packs as they will be sold.</div>
 <div class="note">These documents govern the AxiomCode service. They are written in plain language and describe process and outcomes, not marketing claims. Material liability and warranty terms should be reviewed by qualified legal counsel before they are relied upon in any dispute.</div>
 """
 
@@ -15,7 +15,7 @@ def pw_page(path, title, desc, body):
         title,
         desc,
         PW_INTRO
-        + f'<h1 class="pt">{title}</h1><p class="sub">Last updated: 26 September 2026</p>'
+        + f'<h1 class="pt">{title}</h1><p class="sub">Last updated: 9 November 2026</p>'
         + dl
         + body
         + "</div></div></section>",
@@ -44,15 +44,15 @@ pw_page(
     "Terms of Service",
     "AxiomCode Terms of Service: the service, trial terms, credits and payment, acceptable use, certificate reliance, liability limits.",
     """<h2>1. The service</h2>
-<p>AxiomCode (&ldquo;we&rdquo;) provides machine-checked verification of software specifications and issues signed certificates recording the verification outcome (&ldquo;certificates&rdquo;). The service is offered through a web interface, a REST API, and an MCP server.</p>
+<p>AxiomCode (&ldquo;we&rdquo;) provides machine-checked verification of software specifications and issues signed certificates recording the verification outcome (&ldquo;certificates&rdquo;). The service is offered through a web interface and a REST API. An MCP server ships in our repository for local use against the API; a hosted MCP endpoint is not offered yet.</p>
 <h2>2. Trial</h2>
-<p>New users may run up to 10 trial verifications without payment. Trial verdicts include the verdict and the engine transcript; <strong>trial verdicts never include certificates</strong>. Trial access is rate-limited and may not be resold, shared across accounts to evade the limit, or used to probe the engine adversarially.</p>
+<p>Each new API key includes up to 10 trial verifications without payment. Trial verdicts include the verdict and the usage record; <strong>trial verdicts never include certificates</strong>. Trial access is rate-limited and may not be resold, multiplied across keys to evade the limit, or used to probe the engine adversarially.</p>
 <h2>3. Credits and payment</h2>
-<p>Paid verification consumes credits (1 credit = US$0.01), metered by engine compute time at the published rate. Credits are purchased in packs through our merchant of record and never expire. Meter records are itemized in your usage report. If you believe a charge is wrong, contact us within 30 days; we correct genuine metering errors with credit.</p>
+<p>Paid verification consumes credits (1 credit = US$0.01), metered by engine compute time at the published rate. Credits are purchased in packs (payment processed by Stripe) and never expire. Every verification response carries its usage record. If you believe a charge is wrong, contact us within 30 days; we correct genuine metering errors with credit.</p>
 <h2>4. Acceptable use</h2>
 <p>You may not: (a) submit code you have no right to submit; (b) use the service to verify malware, weapons systems, or any unlawful purpose; (c) attempt to extract the CA signing keys, evade metering, or disrupt the service; (d) misrepresent a trial verdict as a certificate, or a revoked/expired certificate as valid.</p>
 <h2>5. Your responsibilities</h2>
-<p>You are responsible for the specifications you submit: the certificate binds the artifact hash, not your intent. The certificate credentials the code &mdash; it is our assessment that the submitted artifact was built to its specification, as mechanically checked under the stated toolchain. It does not state that your specification is correct, complete, safe, or fit for any purpose. <strong>We hold no responsibility beyond this assessment.</strong> Relying parties must read the <a href="/paperwork/certificate-policy/">Certificate Policy</a> and validate every certificate through the published checker.</p>
+<p>You are responsible for the specifications you submit: the certificate binds the artifact hash, not your intent. The certificate credentials the code &mdash; it is our assessment that the submitted artifact was built to its specification, as mechanically checked under the stated toolchain. It does not state that your specification is correct, complete, safe, or fit for any purpose. <strong>We hold no responsibility beyond this assessment.</strong> Relying parties must read the <a href="/paperwork/certificate-policy/">Certificate Policy</a> and validate every certificate &mdash; against the published CA keys and revocation list, or through the certificate checker.</p>
 <h2>6. Certificates and reliance</h2>
 <p>Certificates credential the code submitted: our assessment that the artifact was built to its specification, as mechanically checked. They are factual statements about a verification event, valid for 90 days unless revoked earlier. We publish a revocation list and will revoke certificates affected by toolchain or engine defects. Certificates are not insurance, warranties, or guarantees of software behavior. We hold no responsibility beyond the assessment stated in the certificate.</p>
 <h2>7. Liability</h2>
@@ -71,24 +71,24 @@ pw_page(
     """<p><strong>Operator:</strong> AxiomCode is a service of 2351485 ALBERTA INC., a corporation registered in Alberta, Canada (&ldquo;we&rdquo;, &ldquo;us&rdquo;). This policy describes how 2351485 ALBERTA INC. collects, uses, and retains information when you use AxiomCode.</p>
 <h2>1. What we collect</h2>
 <ul>
-<li><strong>Submitted artifacts:</strong> the code you ask us to verify, its SHA-256 hash, the verdict, and the engine transcript. We cannot verify without it.</li>
-<li><strong>Account data:</strong> email address, API keys, credit balance, and purchase records from our merchant of record.</li>
+<li><strong>Submitted artifacts:</strong> the code you ask us to verify, its SHA-256 hash, the verdict, and the usage record. We cannot verify without it. Code held in the verification queue is deleted from the job record when the job completes; the hash and the outcome are kept.</li>
+<li><strong>Account data:</strong> API keys &mdash; only the SHA-256 hash of your key is stored, never the key itself &mdash; credit balance, and purchase records from our payment processor (Stripe).</li>
 <li><strong>Metering records:</strong> compute time, credits charged, timestamps &mdash; kept in a tamper-evident log so your bill always reconciles.</li>
 <li><strong>Operational logs:</strong> IP addresses and request metadata for abuse prevention, kept briefly.</li>
 </ul>
 <h2>2. What we never do</h2>
-<p>We <strong>never sell your data</strong>. We never use your submitted code to train models. We never disclose your artifacts except as needed to operate the service (e.g., payment processing by our merchant of record) or as required by law.</p>
+<p>We <strong>never sell your data</strong>. We never use your submitted code to train models. We never disclose your artifacts except as needed to operate the service (e.g., payment processing by Stripe) or as required by law.</p>
 <h2>3. Why certificates are public-ish</h2>
 <p>A certificate is useful precisely because third parties can check it. Certificate contents (artifact hash, verdict, toolchain, serial, validity) and the revocation list are queryable by anyone. The artifact <em>source</em> itself is not published &mdash; only its hash.</p>
 <h2>4. Retention and deletion</h2>
 <ul>
-<li>Artifacts and transcripts: retained while your account is active, to support re-verification and dispute handling; deleted within 90 days of account closure on request.</li>
+<li>Artifacts and usage records: retained while your account is active, to support re-verification and dispute handling; deleted within 90 days of account closure on request.</li>
 <li>Metering and purchase records: retained as required for tax and accounting (typically 7 years), in anonymized form where possible after closure.</li>
 <li>Operational logs: 30 days.</li>
 </ul>
 <p>To request deletion or a copy of your data: <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>. Some records (revoked certificate entries, tax records) cannot be deleted while the law requires them.</p>
 <h2>5. Security</h2>
-<p>CA signing keys are held separately from the web service with restricted access; see <a href="/paperwork/security/">Security</a>. No method is perfect; we disclose breaches affecting your data promptly.</p>
+<p>The CA signing key is held in a restricted state directory on the service host (file mode 0600), loaded only by the API process; see <a href="/paperwork/security/">Security</a>. No method is perfect; we disclose breaches affecting your data promptly.</p>
 """,
 )
 
@@ -99,13 +99,13 @@ pw_page(
     """<p>This document follows the structure of RFC 3647. It states what AxiomCode certificates mean, how they are issued, and what happens when something goes wrong. <em>It should be reviewed by qualified legal counsel and a PKI auditor before certificates are relied upon in regulated contexts.</em></p>
 <h2>1. Introduction</h2>
 <p><strong>1.1 Overview.</strong> AxiomCode operates a certification authority (&ldquo;AxiomCode CA&rdquo;) that issues certificates binding a software artifact&rsquo;s hash to a machine-checked verification verdict. Verification-as-evidence, not verification-as-opinion: every certificate carries the evidence needed to re-check it.</p>
-<p><strong>1.2 Document name.</strong> AxiomCode Certificate Policy and Certification Practice Statement, version 1.0 (2026-09-26).</p>
+<p><strong>1.2 Document name.</strong> AxiomCode Certificate Policy and Certification Practice Statement, version 1.1 (2026-11-09; version 1.0 was dated 2026-09-26).</p>
 <p><strong>1.3 Participants.</strong> The CA (AxiomCode), subscribers (paying customers who request verification), and relying parties (anyone who validates a certificate).</p>
 <p><strong>1.4 Certificate usage.</strong> Each certificate credentials the code submitted: it is our assessment that the artifact with the stated hash was built to its specification, as mechanically checked by the stated toolchain on the stated date. <strong>We hold no responsibility beyond this assessment.</strong> Appropriate uses: audit evidence, procurement deliverables, counterparty assurance. Prohibited reliance: treating a certificate as a warranty of safety, fitness, or intent &mdash; see &sect;9.</p>
 <h2>2. Publication</h2>
-<p>The CP/CPS, the CA&rsquo;s public verification keys, and the revocation list are published at axiom-code.com and queryable without an account.</p>
+<p>The CP/CPS is published at axiom-code.com; the CA&rsquo;s public verification keys and the revocation list are published at api.axiom-code.com and queryable without an account.</p>
 <h2>3. Identification and authentication</h2>
-<p>Subscribers are identified by account (email + API key). Artifacts are identified by SHA-256 hash computed at submission. No identity vetting of persons is performed: the certificate speaks about the artifact, not the author.</p>
+<p>Subscribers are identified by API key; the service stores only the key&rsquo;s SHA-256 hash. Artifacts are identified by SHA-256 hash computed at submission. No identity vetting of persons is performed: the certificate speaks about the artifact, not the author.</p>
 <h2>4. Certificate life-cycle</h2>
 <p><strong>4.1 Application.</strong> A paid verification request is a certificate application. Trial requests are never applications &mdash; no certificate can result.</p>
 <p><strong>4.2 Issuance.</strong> On a PASSED verdict, the CA signs a certificate containing artifact hash, verdict, toolchain versions, issuer name, unique serial, and a 90-day validity window. FAILED and INCOMPLETE verdicts produce no certificate, ever.</p>
@@ -113,11 +113,11 @@ pw_page(
 <p><strong>4.4 Revocation.</strong> The CA revokes a certificate when: (a) a toolchain or engine defect undermines the verdict; (b) the certificate was mis-issued; (c) the subscriber requests it. Revocations are published to the revocation list promptly (target: within 24 hours of the decision) and are permanent.</p>
 <p><strong>4.5 Incident handling.</strong> Suspected mis-issuance triggers an internal review; confirmed mis-issuance triggers revocation, a public incident note, and re-verification of affected artifacts at our expense. Mis-issuance is treated as the CA&rsquo;s existential risk.</p>
 <h2>5. Operational controls</h2>
-<p>Verification runs in isolated, single-use build environments. CA signing keys are segregated from the web/API tier; signing requires the isolated CA service. All issuance, revocation, and metering events are written to a tamper-evident append-only log.</p>
+<p>Each verification runs in a fresh temporary project directory that is removed when the run ends. The CA signing key is held in a restricted state directory on the service host (file mode 0600), loaded only by the API process; a separated signing service is the named scale-up step in our published threat model. All issuance, revocation, and metering events are written to a tamper-evident append-only log.</p>
 <h2>6. Technical security controls</h2>
 <p>Certificates are signed with modern asymmetric signatures (Ed25519); the CA&rsquo;s public keys are published for independent verification. Key generation uses a vetted CSPRNG; private keys are access-controlled and backed up encrypted. Key compromise triggers key rollover, re-issuance of affected certificates, and public disclosure.</p>
 <h2>7. Certificate and revocation profiles</h2>
-<p>Certificates are signed JSON documents with the fields listed in <a href="/how-it-works/">How it works</a> &sect;3. The revocation list is a signed JSON document listing revoked serials with reason codes and timestamps, updated on every revocation.</p>
+<p>Certificates are signed JSON documents with the fields listed in <a href="/how-it-works/">How it works</a> &sect;3. The revocation list is a JSON document naming the issuer and the revoked serials, updated on every revocation.</p>
 <h2>8. Compliance</h2>
 <p>We log every issuance and revocation; logs are available to auditors under NDA. Annual self-assessment against this CP/CPS is published in summary form.</p>
 <h2>9. Legal matters</h2>
@@ -130,13 +130,13 @@ pw_page(
     "Billing, trial & refund policy",
     "AxiomCode billing policy: the 10-verification trial, credit packs, how metering works, cancellations, and the 14-day refund rule for unused credits.",
     """<h2>1. Trial</h2>
-<p>Every new email address gets 10 free verifications. Trial verdicts include the verdict and transcript but <strong>never a certificate</strong>. The trial demonstrates the engine; certification is the paid product. One trial per person; creating multiple accounts to harvest trials is abuse and will be suspended.</p>
+<p>Every new API key includes 10 free verifications. Trial verdicts include the verdict and the usage record but <strong>never a certificate</strong>. The trial demonstrates the engine; certification is the paid product. Keys are issued on request during the initial opening; harvesting multiple keys to multiply trials is abuse and will be suspended.</p>
 <h2>2. Credits</h2>
 <ul>
 <li>1 credit = US$0.01. Packs: Starter $10 (1,000 credits), Growth $50 (5,000), Scale $200 (20,000).</li>
-<li>Verification consumes credits by engine compute time at 0.9 credits/second, shown with every verdict and itemized in your usage report.</li>
+<li>Verification consumes credits by engine compute time at 0.9 credits/second, shown in every verdict&rsquo;s usage record.</li>
 <li>Credits never expire and are not transferable between accounts.</li>
-<li>Payment is processed by our merchant of record (Paddle); we never see or store your card.</li>
+<li>Payment is processed by Stripe; we never see or store your card.</li>
 </ul>
 <h2>3. Refunds</h2>
 <p><strong>Unused credits are refundable within 14 days of purchase</strong> &mdash; email <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a> and we return the unused portion to the original payment method. Credits already consumed by verifications are not refundable: the compute was spent and the evidence delivered. Genuine metering errors are always corrected with credit, no time limit.</p>
@@ -154,12 +154,12 @@ pw_page(
     """<h2>1. Uptime</h2>
 <p><strong>Target: 99% monthly availability</strong> for the API and certificate checker, excluding scheduled maintenance (announced 48h ahead) and upstream outages. The static site and published revocation list are served from the edge and targeted higher, but the commitment we make is 99% on the API.</p>
 <h2>2. Verification queue</h2>
-<p>Verifications normally start within 60 seconds. At high load, paid verifications queue ahead of trial verifications, and Scale customers queue ahead of others. Engine time per call is capped; very large artifacts may be asked to split submissions.</p>
+<p>Verifications normally start immediately. When every proof slot is busy, submissions join a single first-in-first-out queue &mdash; paid and trial alike, strictly in arrival order; there is no priority lane. The submission response gives you your position, and you can check it at any time. Engine time per call is capped; very large artifacts may be asked to split submissions.</p>
 <h2>3. Support</h2>
 <ul>
 <li><strong>Email:</strong> <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a> &mdash; target first response 1 business day.</li>
 <li><strong>Mis-issuance / revocation issues:</strong> treated as critical; target acknowledgment 4 business hours.</li>
-<li><strong>Docs and status:</strong> this site&rsquo;s documentation; a status page ships with the production rollout.</li>
+<li><strong>Docs and status:</strong> this site&rsquo;s documentation; the API&rsquo;s health endpoint (<code class="inline">GET /health</code> on api.axiom-code.com) is public and machine-checkable.</li>
 </ul>
 <h2>4. Remedies</h2>
 <p>If monthly API availability falls below 99%, affected paying customers receive a 10% credit rebate for the month, applied automatically. This is our sole remedy for downtime and is without prejudice to the liability limits in the <a href="/paperwork/terms/">Terms</a>.</p>
@@ -172,16 +172,16 @@ pw_page(
     "AxiomCode security: how the CA and signing keys are protected, what we ask of researchers, and how to report vulnerabilities.",
     """<h2>1. How we protect the CA</h2>
 <ul>
-<li><strong>Key segregation:</strong> CA signing keys live in an isolated service, separate from the web and API tiers. The public internet never touches the signer.</li>
+<li><strong>Key custody:</strong> the CA signing key lives in a restricted state directory on the service host (file mode 0600, excluded from version control), loaded only by the API process. A separated signing service is the named scale-up step in our published threat model &mdash; we state the current arrangement plainly rather than claim isolation we have not built.</li>
 <li><strong>Least privilege:</strong> few humans can touch the CA; every touch is logged.</li>
 <li><strong>Tamper-evident logs:</strong> issuance, revocation, and metering are append-only and hash-chained. If the log doesn&rsquo;t reconcile, we treat it as an incident.</li>
-<li><strong>Isolated builds:</strong> every verification runs in a single-use environment; artifacts can&rsquo;t see each other or the host.</li>
+<li><strong>Single-use build directories:</strong> every verification runs in a fresh temporary project directory that is deleted when the run ends.</li>
 <li><strong>Dependency hygiene:</strong> the Lean toolchain is pinned; upgrades are tested against the regression suite before they touch production verdicts.</li>
 </ul>
 <h2>2. Responsible disclosure</h2>
 <p>Found a vulnerability? Email <a href="mailto:security@axiom-code.com">security@axiom-code.com</a> with the details and a way to reach you. We ask for a reasonable window (90 days) before public disclosure so we can fix, revoke affected certificates if needed, and publish an incident note. We commit to acknowledging within 2 business days and keeping you updated.</p>
 <h2>3. Scope</h2>
-<p>In scope: the API, the MCP server, the certificate checker, the CA issuance path, and this site. Out of scope: third-party services (Paddle, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
+<p>In scope: the API, the certificate checker, the CA issuance path, and this site. (The MCP server ships in our repository and is not hosted yet.) Out of scope: third-party services (Stripe, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
 <h2>4. What we won&rsquo;t do</h2>
 <p>We won&rsquo;t threaten researchers who follow this policy, and we won&rsquo;t ask law enforcement to chill good-faith research. If you&rsquo;re unsure whether something is in scope, ask first.</p>
 """,

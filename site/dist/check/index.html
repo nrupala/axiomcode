@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Check a certificate | AxiomCode</title>
-<meta name="description" content="Validate an AxiomCode certificate: paste the certificate JSON and get VALID, REVOKED, or EXPIRED with the reason. No account needed.">
+<meta name="description" content="Validate an AxiomCode certificate: anyone can check a serial against the public revocation list; full signature validation runs with an API key or offline against the published CA keys.">
 <link rel="canonical" href="https://axiom-code.com/check/">
 <meta property="og:site_name" content="AxiomCode">
 <meta property="og:title" content="Check a certificate | AxiomCode">
-<meta property="og:description" content="Validate an AxiomCode certificate: paste the certificate JSON and get VALID, REVOKED, or EXPIRED with the reason. No account needed.">
+<meta property="og:description" content="Validate an AxiomCode certificate: anyone can check a serial against the public revocation list; full signature validation runs with an API key or offline against the published CA keys.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://axiom-code.com/check/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Check a certificate | AxiomCode">
-<meta name="twitter:description" content="Validate an AxiomCode certificate: paste the certificate JSON and get VALID, REVOKED, or EXPIRED with the reason. No account needed.">
+<meta name="twitter:description" content="Validate an AxiomCode certificate: anyone can check a serial against the public revocation list; full signature validation runs with an API key or offline against the published CA keys.">
 <style>
 :root{--ink:#101828;--mut:#475467;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
 --gold:#b98a2f;--goldsoft:#faf3e3;--green:#12805c;--greensoft:#e9f7f0;
@@ -103,7 +103,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
@@ -111,37 +111,62 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 </div></div>
 <section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Check a certificate</h1>
-<p class="sub">No account needed. Paste the certificate JSON &mdash; we&rsquo;ll tell you if it&rsquo;s <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, or <span class="badge b-warn">EXPIRED</span>, and why.</p>
+<p class="sub">Paste the certificate JSON. Anyone can check its serial against the <strong>public revocation list</strong>; full signature validation runs with your API key &mdash; or offline, against the CA&rsquo;s <a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">published keys</a>, without trusting our server at all.</p>
 <label class="fl" for="cert">Certificate JSON</label>
-<textarea class="codebox" id="cert" spellcheck="false" placeholder='{"serial": "AX-2026-000001", ...}'></textarea>
+<textarea class="codebox" id="cert" spellcheck="false" placeholder='{"serial": "&hellip;", "payload": {&hellip;}, "signature": "&hellip;"}'></textarea>
+<label class="fl" for="apikey2">API key (for full validation; optional for the revocation check)</label>
+<input type="text" id="apikey2" placeholder="your API key" autocomplete="off">
 <p style="margin-top:18px"><button class="go" id="go2">Check certificate</button></p>
 <div class="result" id="result2"></div>
 <div class="note blue" style="margin-top:24px"><strong>Don&rsquo;t trust our AI &mdash; verify our proof.</strong> A certificate is only as good as its checkability. This page, the <a href="/docs/api/">API</a>, and the published revocation list are how you hold us accountable.</div>
 </div></div></section>
 <script>
 var API2 = "https://api.axiom-code.com";
+function esc2(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
 document.getElementById('go2').addEventListener('click', function(){
   var btn = this, res = document.getElementById('result2');
   var raw = document.getElementById('cert').value.trim();
+  var key = document.getElementById('apikey2').value.trim();
   if (!raw) { alert('Paste a certificate JSON first.'); return; }
   var cert; try { cert = JSON.parse(raw); }
   catch(e){ alert('That is not valid JSON.'); return; }
-  btn.disabled = true; btn.textContent = 'Checking…';
-  res.className = 'result show'; res.innerHTML = '<p>Consulting the revocation list…</p>';
-  var serial = cert.serial || '';
-  fetch(API2 + '/v1/check?serial=' + encodeURIComponent(serial))
-  .then(function(r){ return r.json().then(function(j){ return {ok: r.ok, j: j}; }); })
-  .then(function(x){
-    btn.disabled = false; btn.textContent = 'Check certificate';
-    var j = x.j || {};
-    var st = (j.status || 'UNKNOWN').toUpperCase();
-    var badge = st === 'VALID' ? 'b-pass' : (st === 'REVOKED' ? 'b-fail' : 'b-warn');
-    res.innerHTML = '<p><span class="badge ' + badge + '">' + st + '</span></p>'
-      + '<pre class="code">' + JSON.stringify(j, null, 2) + '</pre>';
+  var serial = cert.serial || (cert.payload && cert.payload.serial) || '';
+  btn.disabled = true; btn.textContent = 'Checking\u2026';
+  res.className = 'result show'; res.innerHTML = '<p>Consulting the public revocation list\u2026</p>';
+  function done(){ btn.disabled = false; btn.textContent = 'Check certificate'; }
+  fetch(API2 + '/revoked')
+  .then(function(r){ return r.json(); })
+  .then(function(rev){
+    var revoked = serial && (rev.revoked || []).indexOf(serial) >= 0;
+    if (revoked) {
+      done();
+      res.innerHTML = '<p><span class="badge b-fail">REVOKED</span></p><p style="color:var(--mut)">Serial ' + esc2(serial) + ' is on the public revocation list. Do not rely on this certificate.</p>';
+      return;
+    }
+    if (!key) {
+      done();
+      res.innerHTML = '<p><span class="badge b-pass">NOT REVOKED</span></p><p style="color:var(--mut)">Serial ' + esc2(serial || '(none found in the JSON)') + ' is not on the public revocation list. For full signature validation, add your API key above, or verify the signature offline against the published CA keys.</p>';
+      return;
+    }
+    return fetch(API2 + '/check', {method:'POST', headers:{'Content-Type':'application/json','X-Api-Key': key}, body: JSON.stringify({certificate: cert})})
+    .then(function(r){ return r.json().then(function(j){ return {status: r.status, j: j}; }); })
+    .then(function(x){
+      done();
+      if (x.status === 401) { res.innerHTML = '<p><span class="badge b-warn">INVALID KEY</span></p><p style="color:var(--mut)">That API key was not accepted for full validation. The revocation check above is unaffected: this serial is not revoked.</p>'; return; }
+      var j = x.j || {};
+      if (j.valid) {
+        res.innerHTML = '<p><span class="badge b-pass">VALID</span></p><p style="color:var(--mut)">The signature verifies against the CA key and the serial is not revoked.</p><pre class="code">' + esc2(JSON.stringify(j, null, 2)) + '</pre>';
+      } else {
+        var reason = (j.reason || 'invalid');
+        var badge = reason === 'revoked' ? 'b-fail' : 'b-warn';
+        var word = reason === 'revoked' ? 'REVOKED' : reason.toUpperCase();
+        res.innerHTML = '<p><span class="badge ' + badge + '">' + esc2(word) + '</span></p><pre class="code">' + esc2(JSON.stringify(j, null, 2)) + '</pre>';
+      }
+    });
   })
   .catch(function(e){
-    btn.disabled = false; btn.textContent = 'Check certificate';
-    res.innerHTML = '<p><span class="badge b-warn">API UNREACHABLE</span></p><p style="color:var(--mut)">The checker backend is not connected yet. Try again shortly.</p>';
+    done();
+    res.innerHTML = '<p><span class="badge b-warn">API UNREACHABLE</span></p><p style="color:var(--mut)">The checker backend did not answer. Try again shortly.</p>';
   });
 });
 </script>

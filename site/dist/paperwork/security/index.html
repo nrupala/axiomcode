@@ -103,27 +103,27 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
 <a class="cta" href="/verify/">Try free</a>
 </div></div>
 <section class="block"><div class="wrap"><div class="prose">
-<div class="note"><strong>Pre-launch status:</strong> AxiomCode has not yet opened. These documents take effect when the service opens for submissions and payments; no certificates have been publicly issued under them yet.</div>
+<div class="note"><strong>Status:</strong> AxiomCode opened on 9 November 2026 and these documents govern the service as it operates today. One exception, stated plainly: credit packs are not yet on sale (billing opens separately), so the payment terms describe the packs as they will be sold.</div>
 <div class="note">These documents govern the AxiomCode service. They are written in plain language and describe process and outcomes, not marketing claims. Material liability and warranty terms should be reviewed by qualified legal counsel before they are relied upon in any dispute.</div>
-<h1 class="pt">Security & responsible disclosure</h1><p class="sub">Last updated: 26 September 2026</p><p><a href="/paperwork/paperwork-security.docx" download>Download as Word (.docx)</a></p><h2>1. How we protect the CA</h2>
+<h1 class="pt">Security & responsible disclosure</h1><p class="sub">Last updated: 9 November 2026</p><p><a href="/paperwork/paperwork-security.docx" download>Download as Word (.docx)</a></p><h2>1. How we protect the CA</h2>
 <ul>
-<li><strong>Key segregation:</strong> CA signing keys live in an isolated service, separate from the web and API tiers. The public internet never touches the signer.</li>
+<li><strong>Key custody:</strong> the CA signing key lives in a restricted state directory on the service host (file mode 0600, excluded from version control), loaded only by the API process. A separated signing service is the named scale-up step in our published threat model &mdash; we state the current arrangement plainly rather than claim isolation we have not built.</li>
 <li><strong>Least privilege:</strong> few humans can touch the CA; every touch is logged.</li>
 <li><strong>Tamper-evident logs:</strong> issuance, revocation, and metering are append-only and hash-chained. If the log doesn&rsquo;t reconcile, we treat it as an incident.</li>
-<li><strong>Isolated builds:</strong> every verification runs in a single-use environment; artifacts can&rsquo;t see each other or the host.</li>
+<li><strong>Single-use build directories:</strong> every verification runs in a fresh temporary project directory that is deleted when the run ends.</li>
 <li><strong>Dependency hygiene:</strong> the Lean toolchain is pinned; upgrades are tested against the regression suite before they touch production verdicts.</li>
 </ul>
 <h2>2. Responsible disclosure</h2>
 <p>Found a vulnerability? Email <a href="mailto:security@axiom-code.com">security@axiom-code.com</a> with the details and a way to reach you. We ask for a reasonable window (90 days) before public disclosure so we can fix, revoke affected certificates if needed, and publish an incident note. We commit to acknowledging within 2 business days and keeping you updated.</p>
 <h2>3. Scope</h2>
-<p>In scope: the API, the MCP server, the certificate checker, the CA issuance path, and this site. Out of scope: third-party services (Paddle, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
+<p>In scope: the API, the certificate checker, the CA issuance path, and this site. (The MCP server ships in our repository and is not hosted yet.) Out of scope: third-party services (Stripe, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
 <h2>4. What we won&rsquo;t do</h2>
 <p>We won&rsquo;t threaten researchers who follow this policy, and we won&rsquo;t ask law enforcement to chill good-faith research. If you&rsquo;re unsure whether something is in scope, ask first.</p>
 </div></div></section><footer class="sitefoot"><div class="wrap">

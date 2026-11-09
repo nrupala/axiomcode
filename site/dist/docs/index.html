@@ -103,7 +103,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
@@ -135,7 +135,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <pre class="code">-- A tiny, honest spec: addition commutes on naturals.
 theorem add_comm_nat (a b : Nat) : a + b = b + a := by
   exact Nat.add_comm a b</pre>
-<p>Submit this in the <a href="/verify/">web verifier</a>: the engine compiles it, the proof checks, the verdict is <span class="badge b-pass">PASSED</span>.</p>
+<p>Submit this through the <a href="/docs/api/">API</a> or the <a href="/verify/">web verifier</a> with your API key: the engine compiles it, the proof checks, the verdict is <span class="badge b-pass">PASSED</span>.</p>
 
 <h2 id="verdicts">Reading verdicts</h2>
 <table class="spec">
@@ -144,10 +144,10 @@ theorem add_comm_nat (a b : Nat) : a + b = b + a := by
 <tr><td><span class="badge b-fail">FAILED</span></td><td>The proof does not check. The transcript shows why.</td><td>No</td></tr>
 <tr><td><span class="badge b-warn">INCOMPLETE</span></td><td>Doesn&rsquo;t compile yet, or the target is vacuous. Fix and resubmit.</td><td>No</td></tr>
 </table>
-<p>Every verdict ships with the engine transcript and the exact compute time you were charged for.</p>
+<p>Every verdict response carries its usage record &mdash; the exact compute time and what you were charged. Paid passes also carry the signed certificate.</p>
 
 <h2 id="certificates">Certificates</h2>
-<p>A certificate is a signed JSON document. Fields are defined in the <a href="/paperwork/certificate-policy/">Certificate Policy</a>. Validate any certificate at <a href="/check/">/check</a> &mdash; no account required. Possible outcomes: <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, <span class="badge b-warn">EXPIRED</span>.</p>
+<p>A certificate is a signed JSON document. Fields are defined in the <a href="/paperwork/certificate-policy/">Certificate Policy</a>. Anyone can check a certificate&rsquo;s serial against the <a href="/check/">public revocation list</a>; full signature validation runs offline against the CA&rsquo;s published keys, or through the <a href="/check/">certificate checker</a> with an API key. Possible outcomes: <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, <span class="badge b-warn">EXPIRED</span>.</p>
 
 <h2 id="scope">Scope &amp; limits</h2>
 <ul>

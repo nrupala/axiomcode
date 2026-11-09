@@ -103,7 +103,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
@@ -112,6 +112,10 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Release log</h1>
 <p class="sub">What changed, when &mdash; stated plainly.</p>
+<h2>2026-11-09 &mdash; Public opening</h2>
+<p><strong>AxiomCode is open.</strong> The verification service at api.axiom-code.com is live and accepting submissions: <code class="inline">POST /verify</code> with an API key (the first 10 cases per key are a free trial &mdash; verdicts and usage records, no certificates), <code class="inline">POST /check</code>, and the public revocation list and CA keys. This site&rsquo;s pre-launch posture is retired, and every page now describes the API that actually ships.</p>
+<p>New with the opening: a <strong>durable FIFO verification queue</strong>. When every proof slot is busy, submissions answer <code class="inline">202</code> with a job id and a checkable position instead of competing for the engine &mdash; one queue, in arrival order, no priority lane. The flip package also lands the release-gate declaration for the service (<code class="inline">gate.yaml</code>, threat model, and coverage ledger in the repository).</p>
+<p><strong>Billing stays paused.</strong> Credit packs are not on sale yet: the Stripe webhook and Payment Links remain deactivated under our readiness-arming rule until pack sales are deliberately opened. Release gate: the production service passed its full gate on 2026-10-23 (PASS WITH FINDINGS); the flip package clears the gate&rsquo;s standing conditions F-AX-4 and F-AX-5.</p>
 <h2>2026-10-15 &mdash; Honest pre-launch presentation</h2>
 <p>The site now presents the service as it is: <strong>pre-launch</strong>. Credit packs are not yet on sale, the API is not yet live, and certificates are not yet being issued. Buy buttons and operating-service claims stay down until the launch wiring exists.</p>
 <p>Release gate: PASS WITH FINDINGS (2026-10-15) &mdash; pre-launch presentation is a release candidate since 2026-10-15, graduates 2026-10-22.</p>

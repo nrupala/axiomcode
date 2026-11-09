@@ -103,7 +103,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
@@ -114,7 +114,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <p class="sub">Three steps. Every one of them checkable.</p>
 
 <h2>1. Submit the artifact</h2>
-<p>Paste Lean 4 code into the <a href="/verify/">web verifier</a>, <code class="inline">POST</code> it to the REST API, or call the <code class="inline">verify</code> tool on our MCP server. What you submit is hashed (SHA-256) the moment it arrives &mdash; that hash becomes part of the certificate, so the verdict can never drift away from the code it describes.</p>
+<p>Paste Lean 4 code into the <a href="/verify/">web verifier</a> or <code class="inline">POST</code> it to the REST API with your API key. What you submit is hashed (SHA-256) the moment it arrives &mdash; that hash becomes part of the certificate, so the verdict can never drift away from the code it describes. When every proof slot is busy, your submission joins a first-in-first-out queue and the response tells you your position &mdash; nobody jumps the line, and you can check your place at any time.</p>
 
 <h2>2. The engine checks the proof &mdash; for real</h2>
 <p>The verification engine runs the actual Lean toolchain (<code class="inline">lake build</code>) against your artifact in an isolated project. It is deliberately adversarial toward sloppy proofs:</p>
@@ -139,14 +139,14 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <tr><td><code class="inline">signature</code></td><td>CA signature over all of the above</td></tr>
 </table>
 <div class="sealbox">
-<p style="margin-top:0"><strong>Check any certificate, no account needed:</strong> paste it into the <a href="/check/">certificate checker</a>. You&rsquo;ll get <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, or <span class="badge b-warn">EXPIRED</span> &mdash; with the reason. Revocation is published, not hidden: if a toolchain bug ever invalidates a verdict, the serial goes on the public revocation list.</p>
+<p style="margin-top:0"><strong>Check any certificate:</strong> the revocation list and the CA&rsquo;s public keys are published openly, so anyone can validate a certificate offline against the published keys &mdash; no trust in our server required. With an API key, the <a href="/check/">certificate checker</a> does it in one call. You&rsquo;ll get <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, or <span class="badge b-warn">EXPIRED</span> &mdash; with the reason. Revocation is published, not hidden: if a toolchain bug ever invalidates a verdict, the serial goes on the public revocation list.</p>
 </div>
 
 <h2>Interfaces</h2>
 <ul>
 <li><strong>Humans:</strong> the <a href="/verify/">web verifier</a> and <a href="/check/">certificate checker</a>.</li>
 <li><strong>Applications:</strong> the <a href="/docs/api/">REST API</a> with API-key auth and metering.</li>
-<li><strong>Agents:</strong> the <a href="/docs/api/">MCP server</a> &mdash; <code class="inline">verify</code>, <code class="inline">check_certificate</code>, <code class="inline">pricing</code>, <code class="inline">usage_report</code>. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
+<li><strong>Agents:</strong> the <a href="/docs/api/">REST API</a> is agent-shaped (one key, JSON in, signed evidence out). An MCP server ships in the AxiomCode repository and runs against the same API locally; a hosted MCP endpoint is not live yet, and we say so rather than advertise one. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
 </ul>
 </div></div></section>
 <footer class="sitefoot"><div class="wrap">
