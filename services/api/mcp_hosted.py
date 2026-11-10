@@ -176,16 +176,25 @@ class McpMount:
         usage: Callable[[str], dict],
         pricing: Callable[[], dict],
     ):
-        self._deps = {
-            "submit": submit,
-            "job_view": job_view,
-            "check": check,
-            "revoked_view": revoked_view,
-            "usage": usage,
-            "pricing": pricing,
-        }
-        self._current: HostedMcp | None = build_hosted_mcp(**self._deps)
+        self._submit = submit
+        self._job_view = job_view
+        self._check = check
+        self._revoked_view = revoked_view
+        self._usage = usage
+        self._pricing = pricing
+        self._current: HostedMcp | None = self._build()
         self._authed = KeyAuthMiddleware(self._dispatch, authenticate)
+
+    def _build(self) -> HostedMcp:
+        """Assemble a HostedMcp from the injected REST callables."""
+        return build_hosted_mcp(
+            submit=self._submit,
+            job_view=self._job_view,
+            check=self._check,
+            revoked_view=self._revoked_view,
+            usage=self._usage,
+            pricing=self._pricing,
+        )
 
     async def __call__(self, scope, receive, send):
         await self._authed(scope, receive, send)
@@ -204,7 +213,7 @@ class McpMount:
         session manager for the life of the app. A failed rebuild
         disables the leg (503s) but never takes REST down with it."""
         try:
-            self._current = build_hosted_mcp(**self._deps)
+            self._current = self._build()
         except Exception as e:  # noqa: BLE001 — the leg dies, not the API
             print(f"mcp_hosted: rebuild failed ({type(e).__name__}: {e})", flush=True)
             self._current = None
@@ -230,7 +239,6 @@ def build_hosted_mcp(
     REST /verify admission path itself; job_view and check are the
     shared bodies behind GET /verify/jobs/{id} and POST /check.
     """
-    _pricing_source = pricing
     # streamable_http_path="/": the app is mounted at /mcp by
     # verify_api, so the transport must answer at the mount root —
     # the FastMCP default path ("/mcp") would nest it at /mcp/mcp.
@@ -291,12 +299,10 @@ def build_hosted_mcp(
         """Total metered spend for the calling API key, in credits and USD."""
         return usage(_caller())
 
-    @server.tool()
-    def pricing() -> dict:
+    @server.tool(name="pricing")
+    def pricing_tool() -> dict:
         """Current price list: rate per compute-second and what it covers."""
-        # The injected callable is captured under a different name:
-        # this tool's own def rebinds `pricing` in the builder scope.
-        return _pricing_source()
+        return pricing()
 
     app = server.streamable_http_app()
     return HostedMcp(server=server, app=app, session_manager=server.session_manager)

@@ -5,7 +5,12 @@ that actually ships. Fails when:
 - gate.yaml does not parse, or a required top-level key is missing;
 - a declared route does not exist in services/api/verify_api.py
   (path + method), or the API serves a route the declaration hides;
-- a declared pathway covers a path with no declared route;
+- a declared route is not backed by an app mount where the API
+  mounts it (app.mount("/mcp", ...) serves a whole subtree with the
+  sub-app's own method handling), or the API mounts a path the
+  declaration hides;
+- a declared pathway covers a path with no declared route, or a
+  declared route is covered by no pathway;
 - a declared doc (threat model, coverage ledger, changelog) is
   missing, or the coverage ledger is not a JSON list of units each
   carrying coverage_id + status.
@@ -54,27 +59,41 @@ def main() -> int:
     served: dict[str, set[str]] = {}
     for method, path in re.findall(r"@app\.(get|post|put|delete|patch)\(\"([^\"]+)\"\)", src):
         served.setdefault(path, set()).add(method.upper())
+    # An app.mount("/mcp", ...) serves its whole subtree with the
+    # mounted app's own method handling; the declaration names the
+    # mount path as a route, and the checker holds it to the mount.
+    mounts = set(re.findall(r"\.mount\(\s*[\"']([^\"']+)[\"']", src))
 
     declared: dict[str, set[str]] = {}
     for route in gate.get("routes") or []:
         declared.setdefault(route["path"], set()).update(m.upper() for m in route["methods"])
-        if route["path"] not in served:
-            fail(f"declared route not served by the API: {route['path']}")
-        else:
+        if route["path"] in served:
             for m in route["methods"]:
                 if m.upper() not in served[route["path"]]:
                     fail(f"declared method not served: {m} {route['path']}")
+        elif route["path"] in mounts:
+            pass  # served by the mount; methods are the mounted app's own
+        else:
+            fail(f"declared route not served by the API: {route['path']}")
     for path in served:
         if path not in declared:
             fail(f"API serves a route gate.yaml does not declare: {path}")
+    for path in mounts:
+        if path not in declared:
+            fail(f"API mounts a path gate.yaml does not declare: {path}")
 
     # --- pathways cover declared routes --------------------------------
+    covered: set[str] = set()
     for pw in gate.get("pathways") or []:
         covers = pw.get("covers")
         paths = covers if isinstance(covers, list) else [covers]
         for p in paths:
+            covered.add(p)
             if p not in declared:
                 fail(f"pathway {pw.get('id')} covers undeclared route: {p}")
+    for path in declared:
+        if path not in covered:
+            fail(f"declared route covered by no pathway: {path}")
 
     # --- declared docs exist -------------------------------------------
     docs = gate.get("docs") or {}

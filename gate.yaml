@@ -1,5 +1,5 @@
 product: axiomcode
-version: "0.2.0"
+version: "0.3.0"
 base_url: https://api.axiom-code.com
 types:
   - web
@@ -32,6 +32,12 @@ routes:
     expect_status: 401
     probe_path: /verify/jobs/probe
   - path: /check
+    methods:
+      - POST
+    auth: required
+    expect_status: 401
+    probe_body_json: "{}"
+  - path: /mcp
     methods:
       - POST
     auth: required
@@ -87,6 +93,11 @@ pathways:
     situation: anyone — customers, relying parties, monitors — reads the service's public trust surface
     gateway: verify_api public routes — read-only views over the revocation store and the CA's public keys
     validation: none — these responses carry no customer data; the keys payload is how third parties verify certificates without trusting the server
+  - id: PW-MCP
+    covers: /mcp
+    situation: an agent caller (an MCP client acting for a developer or an autonomous agent) presents an API key and calls the verification tools — submit a proof, poll a queued job, check a certificate, read the revocation list, usage and pricing; the trial and balance rules are PW-VERIFY's (the first 10 cases per key are a trial, verdicts never certificates)
+    gateway: mcp_hosted.McpMount behind KeyAuthMiddleware — the MCP transport's only entry point; every tool calls the same verify_api callables the REST routes call (submit_verification, job_view, check_certificate_body), so admission, metering and revocation cannot drift between the legs
+    validation: the API key is authenticated by KeyAuthMiddleware (through verify_api.authenticate_key, the single identity rule) before the MCP app runs; a missing, unknown or revoked key answers one identical 401 body; identity travels in a request-scoped ContextVar and tools take no identity parameter; DNS-rebinding protection is on, with a Host allowlist (loopback + api.axiom-code.com, extensible via AXIOMCODE_MCP_ALLOWED_HOSTS); sessions are stateless; admission is queue-shared with REST (eligibility before admission, durable FIFO when busy), and a job is readable only by the key that submitted it
   - id: PW-CHECKOUT
     covers: /billing/checkout
     situation: an authenticated key holder buys a credit pack; the checkout session is bound to the caller's key hash so the webhook can grant the right key
@@ -125,10 +136,14 @@ isolation:
 #   shape (it needs an API key and a code payload, not {text}); the
 #   judgment differential is run agent-side per playbook section 7 —
 #   the gate's own corpus from the 2026-10-23 full gate is the
-#   standing set, re-run at this flip. The MCP face (mcp_server.py,
-#   Streamable HTTP) is built and tested in this repo but is NOT
-#   deployed on the public surface, so it is not declared as a probed
-#   type; the site says exactly that.
+#   standing set, re-run at this flip. The standalone MCP server
+#   (mcp_server.py, Streamable HTTP) is built and tested in this repo
+#   but is NOT deployed on the public surface, so it is not declared
+#   as a probed type; the site says exactly that. The HOSTED MCP leg
+#   (mcp_hosted.py, mounted at /mcp in the API process) is a
+#   different face: it is declared in this file as the /mcp route
+#   under its own pathway PW-MCP in the 0.3.0 package (gate record
+#   axiomcode-mcp-slice1-2026-11-09, Ruling 2).
 # - payments.links is empty on purpose: billing is PAUSED by the
 #   owner's readiness-arming rule (2026-11-06). The Stripe webhook
 #   endpoint and the three Payment Links are deactivated in Stripe
@@ -147,3 +162,26 @@ isolation:
 #   certification. Its governing records are the production landing
 #   pack and the 2026-10-23 gate verdict, both named in the flip
 #   declaration.
+# - MCP slice package (0.3.0, 2026-11-09): PW-MCP is its OWN pathway
+#   (gate record axiomcode-mcp-slice1-2026-11-09, Ruling 2) — a new
+#   transport with its own auth middleware is a distinct gate, even
+#   though every tool behind it calls the same verify_api callables
+#   the REST routes call. Version moves 0.2.0 -> 0.3.0 with this
+#   release (minor: a new declared face, no REST behaviour change).
+# - Per-transport auth-error difference, DECLARED and accepted (same
+#   record, Ruling 3): on authentication failure the MCP leg answers
+#   401 with the MCP error-envelope body {"error": "invalid or
+#   missing API key"}, where REST answers FastAPI's {"detail": ...}
+#   envelope. On each leg the 401 body is identical for a missing,
+#   unknown or revoked key (no validity oracle), and every post-auth
+#   body on the MCP leg is the REST body verbatim (tool results ARE
+#   the REST response dicts). No harmonization is planned; the
+#   difference is confined to the auth-failure envelope key
+#   (error vs detail).
+# - Legacy standalone mcp_server.py is recorded NAMED DRIFT (same
+#   record, Ruling 4): deployed nowhere, and it must never be
+#   deployed as-is — it predates the FIFO queue (per-key gate
+#   admission) and keeps caller identity in a module global.
+#   Hosting it would be a new gate declaration, not a config
+#   change. The coverage ledger's MCP out_of_scope unit refers to
+#   the standalone only; the hosted leg carries its own unit.
