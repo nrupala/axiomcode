@@ -37,7 +37,7 @@
       "subsystem": "services/api",
       "attack_class": "ATTACK-CLASSES.md#Access control"
     },
-    "surface": "MCP server surface",
+    "surface": "Legacy standalone MCP server surface",
     "boundary": "Not deployed",
     "subsystem": "services/api",
     "attack_class": "ATTACK-CLASSES.md#Access control",
@@ -56,7 +56,53 @@
     "local_checks": [],
     "result_fingerprints": [],
     "unresolved": [
-      "The MCP app is built and covered by the repo test suite but is not served on api.axiom-code.com; it enters this ledger as covered attack surface only when a deployment gate arms it."
+      "Recorded NAMED DRIFT (gate record axiomcode-mcp-slice1-2026-11-09, Ruling 4): this unit refers ONLY to the legacy standalone mcp_server.py. It is deployed nowhere and must never be deployed as-is — it predates the durable FIFO queue (it admits through the legacy per-key gate) and keeps the caller's identity in a module-level variable. Hosting it would be a new gate declaration, not a config change. The HOSTED MCP leg (mcp_hosted.py, mounted at /mcp in the API process) is a separate unit in this ledger."
+    ]
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fmcp_hosted.py%23%2Fmcp%20mount::services%2Fapi%2Fmcp_hosted.py%23KeyAuthMiddleware::services%2Fapi::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "services/api/mcp_hosted.py#/mcp mount",
+      "boundary": "services/api/mcp_hosted.py#KeyAuthMiddleware",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "Hosted MCP leg (/mcp mount)",
+    "boundary": "KeyAuthMiddleware API-key authentication; tools share the REST callables",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Access control",
+    "starting_paths": [
+      "services/api/mcp_hosted.py",
+      "services/api/verify_api.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/mcp_hosted.py",
+      "services/api/verify_api.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/mcp_hosted.py",
+          "services/api/verify_api.py"
+        ],
+        "invariant": "The MCP leg adds no trust surface: a missing, unknown or revoked key is refused 401 by the middleware before any tool runs, with one identical body (no validity oracle); caller identity is request-scoped (ContextVar, never a module global); tools call the same verify_api callables as REST, so the trial (verdicts without certificates), eligibility-before-admission (402, never queued) and owner-only job reads behave identically on both legs; DNS-rebinding protection restricts the Host header to an allowlist.",
+        "method": "local",
+        "result": "services/api/tests/test_mcp_hosted.py (9 tests): exact 401 body for no key and the identical refusal for an unknown key; both credential forms; the 7-tool table; trial verdict with certificate None; payment_required after trial exhaustion with zero queued jobs; queued submit -> owner poll -> done with the job's code cleared; other-key and unknown job ids both not_found; certificate check valid -> revoked -> unknown. Declared as pathway PW-MCP (gate record axiomcode-mcp-slice1-2026-11-09, Ruling 2); the gate's post-deploy live probes (initialize + tools/list with a key -> 7 tools, 401 without) are deploy conditions and join this unit's evidence at deploy.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [
+      "Identity isolation under true concurrency is proven sequentially in the tests; a concurrent two-key stress test is owed with the burst/load work (named in the slice-1 report)."
     ]
   },
   {

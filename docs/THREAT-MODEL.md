@@ -2,7 +2,8 @@
 
 Filed for gate finding F-AX-4 (2026-10-23 full gate). Repo-grounded:
 every claim below names the code or the deployment fact it rests on.
-Updated at the public flip, 2026-11-09.
+Updated at the public flip, 2026-11-09; the hosted MCP transport
+(T8) was added with the 0.3.0 package, 2026-11-09.
 
 ## What this service is
 
@@ -132,12 +133,50 @@ isn't — and this model is organised around it.
   sandboxing the prover (the burst-worker design runs prover-only
   workers off-host) is the named next step, gated separately.
 
+### T8 — The hosted MCP transport (agent callers)
+- The hosted MCP leg (`mcp_hosted.py`, mounted at `/mcp` in this
+  same process) is a second transport onto the same store, CA and
+  queue. It is declared as its own pathway (PW-MCP in `gate.yaml`,
+  gate record axiomcode-mcp-slice1-2026-11-09, Ruling 2): a new
+  transport with its own auth middleware is a distinct gate, even
+  though every tool calls the same `verify_api` callables the REST
+  routes call, so admission, eligibility, metering and revocation
+  cannot drift between legs.
+- Authentication runs in a pure-ASGI middleware
+  (`KeyAuthMiddleware`) BEFORE the MCP app sees the request: the
+  same API keys, resolved by the same `authenticate_key`; a
+  missing, unknown or revoked key gets one identical 401 body (no
+  validity oracle). The caller's identity travels in a
+  request-scoped ContextVar — never a module global — and tools
+  take no identity parameter, so no caller can act under another
+  key.
+- The transport is stateless (no server-side sessions to pin or
+  hijack; queued jobs are durable in the store, not in a session),
+  answers JSON, and runs with DNS-rebinding protection ON: a Host
+  allowlist (loopback + `api.axiom-code.com`, extensible via
+  `AXIOMCODE_MCP_ALLOWED_HOSTS`); other Hosts are refused 421
+  before auth.
+- Admission is queue-shared with REST: eligibility (trial/balance)
+  is decided before admission on this leg too, so an agent can
+  neither run nor queue a proof it could not pay for, and its jobs
+  are readable only by the submitting key (other keys and unknown
+  ids answer the same not_found body).
+- Declared difference (gate-accepted, Ruling 3): on auth failure
+  this leg's 401 body uses the MCP `{"error": ...}` envelope where
+  REST uses FastAPI's `{"detail": ...}`; every post-auth body is
+  the REST body verbatim.
+- The legacy standalone server (`mcp_server.py`) is NOT this leg:
+  recorded named drift (pre-queue admission, module-global
+  identity), deployed nowhere, and it must never be deployed
+  as-is; hosting it would be a new gate declaration.
+
 ## Out of scope / not claimed
 
 - No protection is claimed against a compromised host OS (see T2).
-- The MCP server in this repo is not deployed on the public
-  surface; it is not part of this model's attack surface until it
-  is, at which point it gets its own pathways and gate.
+- The legacy standalone MCP server (`mcp_server.py`) is not
+  deployed and is recorded named drift (see T8); it is not part of
+  this model's attack surface. The hosted MCP leg IS in scope —
+  T8 above and pathway PW-MCP in `gate.yaml`.
 - Burst proving workers do not exist yet in production. Their
   design invariant — a worker's wrong verdict cannot mint a
   certificate, because issuance stays behind this host's own
