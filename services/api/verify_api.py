@@ -35,9 +35,11 @@ hash-chained audit log.
 import os
 import sys
 import tempfile
+from contextlib import asynccontextmanager
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
+import billing
 import ca
 import jobqueue
 import limits
@@ -60,12 +62,6 @@ CA = ca.CA.load_or_create()
 STORE = Store()
 LIMITER = limits.RateLimiter()
 GATE = limits.ConcurrencyGate()  # legacy per-key gate; admission is owned by QUEUE below
-
-app = FastAPI(
-    title="AxiomCode Verify",
-    description="Verification-as-evidence: every verdict ships a signed certificate "
-    "anyone can re-check without trusting us. Don't trust our AI — verify our proof.",
-)
 
 
 def _payment_required_body() -> dict:
@@ -115,9 +111,153 @@ JOBS = jobqueue.JobStore()
 QUEUE = jobqueue.ProofQueue(JOBS, _run_queued_job)
 
 
-@app.on_event("startup")
-def _start_queue() -> None:
+def authenticate_key(presented: str) -> str | None:
+    """Resolve a presented API key to its identity — the key's
+    SHA-256 hash — or None when the key is missing, unknown or
+    revoked. The one identity rule for every interface: the REST
+    dependency and the hosted-MCP middleware both resolve through
+    here, so no leg can authenticate differently."""
+    row = STORE.authenticate_api_key(presented) if presented else None
+    return str(row["key_hash"]) if row is not None else None
+
+
+def submit_verification(key_hash: str, code: str, max_attempts: int) -> tuple[int, dict]:
+    """Admission + execution for one verification case, shared by the
+    REST /verify route and the hosted MCP verify tool so the two
+    interfaces cannot drift: same size cap, same rate limit, same
+    eligibility, same fast path, same queue. Returns (status, body).
+
+    Eligibility is decided BEFORE admission: a key that cannot pay
+    gets its 402 here and never occupies a proof slot or a place in
+    line (no free compute, no queue squatting). Eligibility is also
+    re-checked inside execute_verification, so a queued job whose
+    trial ran out while it waited still refuses before proving."""
+    if len(code.encode()) > MAX_CODE_BYTES:
+        return 413, {"error": "code_too_large", "max_bytes": MAX_CODE_BYTES}
+    if not LIMITER.allow(key_hash):
+        return 429, {
+            "error": "rate_limited",
+            "detail": f"over {LIMITER.limit} requests per minute for this key",
+        }
+    if STORE.balance_for(key_hash) <= 0 and STORE.trial_cases_used(key_hash) >= TRIAL_CASES:
+        return 402, _payment_required_body()
+    # Fast path: a slot is free and nobody is waiting — run now, the
+    # response shape is unchanged from the pre-queue service.
+    if QUEUE.acquire_immediate(key_hash):
+        try:
+            body, status = _run_once(key_hash, code, max_attempts)
+            return status, body
+        finally:
+            QUEUE.release(key_hash)
+    # Busy: the submission joins the durable FIFO queue (F-AX-5). The
+    # caller gets a job id and a checkable position — never a silent
+    # wait.
+    job_id, position = QUEUE.enqueue(key_hash, code, max_attempts)
+    STORE.append_audit("job_queued", {"job_id": job_id, "key_hash": key_hash, "position": position})
+    return 202, {
+        "status": "queued",
+        "job_id": job_id,
+        "position": position,
+        "note": jobqueue.QUEUE_NOTE,
+    }
+
+
+def job_view(key_hash: str, job_id: str) -> dict | None:
+    """Queue position / result for a job, or None when the job does
+    not exist OR belongs to another key — deliberately
+    indistinguishable, so a job's existence never leaks across
+    customers. Shared by REST and MCP."""
+    job = JOBS.get_job(job_id)
+    if job is None or job["key_hash"] != key_hash:
+        return None
+    if job["status"] == "queued":
+        return {"status": "queued", "job_id": job_id, "position": JOBS.job_position(job_id)}
+    if job["status"] == "running":
+        return {"status": "running", "job_id": job_id}
+    if job["status"] == "done":
+        return {"status": "done", "job_id": job_id, "result": job["result"]}
+    return {"status": "failed", "job_id": job_id, "error": job["error"]}
+
+
+def check_certificate_body(key_hash: str, certificate: dict, via: str) -> tuple[int, dict]:
+    """Certificate re-verification shared by REST /check and the MCP
+    check_certificate tool: authenticated + rate limited, revocation
+    aware, audited under the calling interface's name (via). A read
+    of an existing certificate — consumes no trial case, no credits.
+    Returns (status, body)."""
+    if not LIMITER.allow(key_hash):
+        return 429, {
+            "error": "rate_limited",
+            "detail": f"over {LIMITER.limit} requests per minute for this key",
+        }
+    result = ca.verify_certificate(certificate, ca=CA)
+    serial = certificate.get("serial") if isinstance(certificate, dict) else None
+    if result.get("valid") and serial and STORE.is_revoked(serial):
+        result = {"valid": False, "reason": "revoked", "payload": certificate}
+    STORE.append_audit(
+        "verification",
+        {
+            "serial": serial,
+            "valid": bool(result.get("valid")),
+            "reason": result.get("reason"),
+            "via": via,
+        },
+    )
+    return 200, result
+
+
+def _pricing_view() -> dict:
+    p = billing.load_pricing()
+    return {
+        "rate_credits_per_s": round(billing.price_per_compute_s(p), 4),
+        "credit_usd": 0.01,
+        "covers": {k: v for k, v in p.items() if k != "multiple"},
+        "multiple": p["multiple"],
+    }
+
+
+# ─── hosted MCP (the agent gate) ─────────────────────────────────────
+# The MCP leg runs in this process, mounted at /mcp, and shares this
+# module's store, CA, limiter and proof queue through the callables
+# above — it owns no state of its own (mcp_hosted.py carries the
+# design). If the mcp package is unavailable or incompatible in this
+# environment, REST must not die with it: the mount is guarded and
+# the failure is printed, never swallowed.
+MCP_MOUNT = None
+try:
+    import mcp_hosted
+
+    MCP_MOUNT = mcp_hosted.McpMount(
+        authenticate=authenticate_key,
+        submit=submit_verification,
+        job_view=job_view,
+        check=lambda key_hash, cert: check_certificate_body(key_hash, cert, via="mcp"),
+        revoked_view=lambda: {"issuer": ca.ISSUER, "revoked": sorted(STORE.revoked_serials())},
+        usage=lambda key_hash: billing.usage_for(STORE, key_hash),
+        pricing=_pricing_view,
+    )
+except Exception as e:  # noqa: BLE001 — the guard is the point; see above
+    print(f"verify_api: hosted MCP disabled ({type(e).__name__}: {e})", flush=True)
+
+
+@asynccontextmanager
+async def _lifespan(_app: FastAPI):
     QUEUE.start()
+    if MCP_MOUNT is not None:
+        async with MCP_MOUNT.run():
+            yield
+    else:
+        yield
+
+
+app = FastAPI(
+    title="AxiomCode Verify",
+    description="Verification-as-evidence: every verdict ships a signed certificate "
+    "anyone can re-check without trusting us. Don't trust our AI — verify our proof.",
+    lifespan=_lifespan,
+)
+if MCP_MOUNT is not None:
+    app.mount("/mcp", MCP_MOUNT)
 
 
 class VerifyRequest(BaseModel):
@@ -142,19 +282,10 @@ def require_api_key(request: Request) -> str:
     if not presented:
         auth = request.headers.get("authorization", "")
         presented = auth[7:] if auth.lower().startswith("bearer ") else ""
-    row = STORE.authenticate_api_key(presented) if presented else None
-    if row is None:
+    key_hash = authenticate_key(presented)
+    if key_hash is None:
         raise HTTPException(status_code=401, detail="invalid or missing API key")
-    return str(row["key_hash"])
-
-
-def _rate_limited(key_hash: str) -> JSONResponse | None:
-    if LIMITER.allow(key_hash):
-        return None
-    return JSONResponse(
-        status_code=429,
-        content={"error": "rate_limited", "detail": f"over {LIMITER.limit} requests per minute for this key"},
-    )
+    return key_hash
 
 
 @app.get("/health")
@@ -164,41 +295,10 @@ def health():
 
 @app.post("/verify")
 def verify(req: VerifyRequest, key_hash: str = Depends(require_api_key)):
-    if len(req.code.encode()) > MAX_CODE_BYTES:
-        return JSONResponse(
-            status_code=413,
-            content={"error": "code_too_large", "max_bytes": MAX_CODE_BYTES},
-        )
-    limited = _rate_limited(key_hash)
-    if limited is not None:
-        return limited
-    # Eligibility is decided BEFORE admission: a key that cannot pay
-    # gets its 402 here and never occupies a proof slot or a place in
-    # line (no free compute, no queue squatting).
-    if STORE.balance_for(key_hash) <= 0 and STORE.trial_cases_used(key_hash) >= TRIAL_CASES:
-        return JSONResponse(status_code=402, content=_payment_required_body())
-    # Fast path: a slot is free and nobody is waiting — run now, the
-    # response shape is unchanged from the pre-queue service.
-    if QUEUE.acquire_immediate(key_hash):
-        try:
-            body, status = _run_once(key_hash, req.code, req.max_attempts)
-        finally:
-            QUEUE.release(key_hash)
-        return JSONResponse(status_code=status, content=body) if status != 200 else body
-    # Busy: the request joins the durable FIFO queue (F-AX-5). The
-    # caller gets a job id and a checkable position — never a silent
-    # wait. Eligibility is re-checked when the job runs.
-    job_id, position = QUEUE.enqueue(key_hash, req.code, req.max_attempts)
-    STORE.append_audit("job_queued", {"job_id": job_id, "key_hash": key_hash, "position": position})
-    return JSONResponse(
-        status_code=202,
-        content={
-            "status": "queued",
-            "job_id": job_id,
-            "position": position,
-            "note": jobqueue.QUEUE_NOTE,
-        },
-    )
+    # The admission path itself lives in submit_verification, shared
+    # with the hosted MCP verify tool so the interfaces cannot drift.
+    status, body = submit_verification(key_hash, req.code, req.max_attempts)
+    return JSONResponse(status_code=status, content=body) if status != 200 else body
 
 
 @app.get("/verify/jobs/{job_id}")
@@ -206,39 +306,18 @@ def verify_job(job_id: str, key_hash: str = Depends(require_api_key)):
     """Queue position / result for a job. Only the submitting key can
     read its job — any other key (or an unknown id) gets a 404, so a
     job's existence never leaks across customers."""
-    job = JOBS.get_job(job_id)
-    if job is None or job["key_hash"] != key_hash:
+    view = job_view(key_hash, job_id)
+    if view is None:
         raise HTTPException(status_code=404, detail="no such job")
-    if job["status"] == "queued":
-        return {"status": "queued", "job_id": job_id, "position": JOBS.job_position(job_id)}
-    if job["status"] == "running":
-        return {"status": "running", "job_id": job_id}
-    if job["status"] == "done":
-        return {"status": "done", "job_id": job_id, "result": job["result"]}
-    return {"status": "failed", "job_id": job_id, "error": job["error"]}
+    return view
 
 
 @app.post("/check")
 def check(req: CheckRequest, key_hash: str = Depends(require_api_key)):
     # A read of an existing certificate: authenticated + rate limited,
     # but consumes no trial case and no credits.
-    limited = _rate_limited(key_hash)
-    if limited is not None:
-        return limited
-    result = ca.verify_certificate(req.certificate, ca=CA)
-    serial = req.certificate.get("serial") if isinstance(req.certificate, dict) else None
-    if result.get("valid") and serial and STORE.is_revoked(serial):
-        result = {"valid": False, "reason": "revoked", "payload": req.certificate}
-    STORE.append_audit(
-        "verification",
-        {
-            "serial": serial,
-            "valid": bool(result.get("valid")),
-            "reason": result.get("reason"),
-            "via": "rest",
-        },
-    )
-    return result
+    status, body = check_certificate_body(key_hash, req.certificate, via="rest")
+    return JSONResponse(status_code=status, content=body) if status != 200 else body
 
 
 @app.get("/revoked")

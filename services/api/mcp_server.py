@@ -21,6 +21,14 @@ verify_service flow so the interfaces cannot drift.
 
 Run: uvicorn mcp_server:mcp_app --port 8092
 (Uses Streamable HTTP transport so remote agents can connect.)
+
+NOTE (2026-11-09): this standalone server predates the durable
+proof queue (F-AX-5). It still admits through the per-key
+ConcurrencyGate and refuses with too_many_concurrent_proofs when
+busy; it knows nothing of jobs. The queue-true hosted interface is
+the /mcp mount in verify_api.py (mcp_hosted.py), which shares the
+production store, CA, limiter and FIFO queue. This module remains
+the repo-local form; prefer the hosted leg where both exist.
 """
 
 import os
@@ -28,7 +36,6 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, "/home/hatch/workspace/axiomcode/repo")
 sys.path.insert(0, os.path.dirname(__file__))
 
 import ca
