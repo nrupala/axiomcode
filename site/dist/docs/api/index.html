@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>REST &amp; MCP API | AxiomCode</title>
-<meta name="description" content="AxiomCode API for applications and AI agents: REST endpoints, MCP tools, authentication, metering, and machine-readable discovery.">
+<meta name="description" content="AxiomCode API for applications and AI agents: REST endpoints, authentication, the verification queue, metering, and machine-readable discovery.">
 <link rel="canonical" href="https://axiom-code.com/docs/api/">
 <meta property="og:site_name" content="AxiomCode">
 <meta property="og:title" content="REST &amp; MCP API | AxiomCode">
-<meta property="og:description" content="AxiomCode API for applications and AI agents: REST endpoints, MCP tools, authentication, metering, and machine-readable discovery.">
+<meta property="og:description" content="AxiomCode API for applications and AI agents: REST endpoints, authentication, the verification queue, metering, and machine-readable discovery.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://axiom-code.com/docs/api/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="REST &amp; MCP API | AxiomCode">
-<meta name="twitter:description" content="AxiomCode API for applications and AI agents: REST endpoints, MCP tools, authentication, metering, and machine-readable discovery.">
+<meta name="twitter:description" content="AxiomCode API for applications and AI agents: REST endpoints, authentication, the verification queue, metering, and machine-readable discovery.">
 <style>
 :root{--ink:#101828;--mut:#475467;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
 --gold:#b98a2f;--goldsoft:#faf3e3;--green:#12805c;--greensoft:#e9f7f0;
@@ -103,62 +103,57 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
 <a class="cta" href="/verify/">Try free</a>
 </div></div>
 <section class="block"><div class="wrap"><div class="prose">
-<h1 class="pt">REST &amp; MCP API</h1>
+<h1 class="pt">REST API</h1>
 <p class="sub">Built for agents first. Humans welcome.</p>
 <div class="docnav"><strong>Machine-readable:</strong> &nbsp;<a href="/llms.txt">llms.txt</a> &middot; <a href="/.well-known/axiomcode.json">/.well-known/axiomcode.json</a> &middot; <a href="/docs/api/openapi.json">OpenAPI (JSON)</a></div>
 
 <h2>Base URL</h2>
-<p><code class="inline">https://api.axiom-code.com</code></p>
+<p><code class="inline">https://api.axiom-code.com</code> &mdash; live.</p>
 
 <h2>Authentication</h2>
-<p>Paid endpoints take an API key in the <code class="inline">X-API-Key</code> header. Keys are issued after any credit purchase. Trial endpoints take an email address and are limited to 10 verifications with no certificates.</p>
+<p>Every non-public endpoint takes an API key in the <code class="inline">X-API-Key</code> header (or <code class="inline">Authorization: Bearer &hellip;</code>). Your identity <em>is</em> the key &mdash; the service stores only its SHA-256 hash, and request bodies carry no identity. Keys are issued on request during the initial opening: email <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>. <strong>The first 10 verification cases on a new key are a free trial</strong>: real verdicts and usage records, but never a certificate. Certificates unlock when the key holds paid credits (credit packs are not yet on sale &mdash; billing is paused while the opening completes).</p>
 
 <h2>REST endpoints</h2>
 <table class="spec">
 <tr><th>Method &amp; path</th><th>Auth</th><th>What it does</th></tr>
-<tr><td><code class="inline">POST /v1/trial/verify</code></td><td>email</td><td>Verify a Lean artifact. Returns verdict + transcript. No certificate. 10 lifetime uses per email.</td></tr>
-<tr><td><code class="inline">POST /v1/verify</code></td><td>API key</td><td>Verify and, on pass, issue a signed certificate. Metered by compute time.</td></tr>
-<tr><td><code class="inline">GET /v1/check?serial=...</code></td><td>none</td><td>Certificate status: VALID / REVOKED / EXPIRED, with reason.</td></tr>
-<tr><td><code class="inline">GET /v1/revoked</code></td><td>none</td><td>The public revocation list.</td></tr>
-<tr><td><code class="inline">GET /v1/account</code></td><td>API key</td><td>Credit balance and usage report.</td></tr>
+<tr><td><code class="inline">POST /verify</code></td><td>API key</td><td>Verify a Lean artifact: <code class="inline">{"code": "&hellip;"}</code>. Returns the verdict, attempts, usage record, and &mdash; on a paid pass &mdash; the signed certificate. When every proof slot is busy, answers <code class="inline">202</code> with a queue position instead (see below). Answers <code class="inline">402</code> when the trial is exhausted and the key holds no credits &mdash; before any compute runs.</td></tr>
+<tr><td><code class="inline">GET /verify/jobs/{job_id}</code></td><td>API key</td><td>Your queued job&rsquo;s position, or its finished result. Only the submitting key can read a job &mdash; any other key gets <code class="inline">404</code>.</td></tr>
+<tr><td><code class="inline">POST /check</code></td><td>API key</td><td>Validate a certificate: <code class="inline">{"certificate": {&hellip;}}</code>. Recomputes the signature against the CA key and consults the revocation list.</td></tr>
+<tr><td><code class="inline">GET /revoked</code></td><td>public</td><td>The public revocation list: issuer + revoked serials.</td></tr>
+<tr><td><code class="inline">GET /.well-known/axiomcode-keys.json</code></td><td>public</td><td>The CA&rsquo;s published public keys &mdash; validate certificates offline, without trusting this server.</td></tr>
+<tr><td><code class="inline">GET /health</code></td><td>public</td><td>Service health.</td></tr>
 </table>
 
-<h3>Example: trial verification</h3>
-<pre class="code">curl -X POST https://api.axiom-code.com/v1/trial/verify \
-  -H 'Content-Type: application/json' \
-  -d '{"email":"you@example.com",
-       "code":"theorem add_comm_nat (a b : Nat) : a + b = b + a := by\n  exact Nat.add_comm a b"}'
-# {"verdict":"PASSED","compute_seconds":11.8,"credits_charged":0,
-#  "trial_remaining":9,"certificate":null,
-#  "note":"Trial verdicts carry no certificate."}</pre>
+<h3>Example: verification</h3>
+<pre class="code">curl -X POST https://api.axiom-code.com/verify \
+  -H 'X-Api-Key: YOUR_KEY' -H 'Content-Type: application/json' \
+  -d '{"code":"theorem add_comm_nat (a b : Nat) : a + b = b + a := by\n  exact Nat.add_comm a b"}'
+# {"verified":true,"attempts":1,"certificate":null,
+#  "usage":{"compute_s":11.8,"rate_credits_per_s":0.9,"credits":0,"usd":0},
+#  "trial":{"cases_used":1,"cases_left":9,"certificates":"unlock with a credit pack"}}</pre>
+
+<h2>The queue</h2>
+<p>Proofs run in a bounded number of slots. When they are all busy, <code class="inline">POST /verify</code> does not fail and does not pile on &mdash; your request joins a <strong>durable first-in-first-out queue</strong> and the response says so: <code class="inline">202 {"status":"queued","job_id":"&hellip;","position":N}</code>. Poll <code class="inline">GET /verify/jobs/{job_id}</code> for the position and, when it finishes, the same result an inline run would have returned. One queue for everyone, in arrival order &mdash; there is no priority lane. A key that cannot pay never takes a place in line: eligibility is decided before admission.</p>
 
 <h2>MCP server</h2>
-<p>Endpoint: <code class="inline">https://api.axiom-code.com/mcp</code> (streamable HTTP). Tools:</p>
-<table class="spec">
-<tr><th>Tool</th><th>What it does</th></tr>
-<tr><td><code class="inline">verify</code></td><td>Submit a Lean artifact; returns verdict, transcript, and (paid) certificate.</td></tr>
-<tr><td><code class="inline">check_certificate</code></td><td>Validate a certificate by serial.</td></tr>
-<tr><td><code class="inline">pricing</code></td><td>Current credit price and pack list.</td></tr>
-<tr><td><code class="inline">usage_report</code></td><td>Metered usage for your API key.</td></tr>
-</table>
-<div class="note blue"><strong>Agent pattern:</strong> after your coding agent finishes a safety-critical function, have it write the Lean spec and call <code class="inline">verify</code>. Ship the certificate with the code &mdash; your user can check it without trusting your agent.</div>
+<p>An MCP server (<code class="inline">verify</code>, <code class="inline">check_certificate</code>) ships in the <a href="https://github.com/nrupala/axiomcode">AxiomCode repository</a> and runs locally against this API. <strong>A hosted MCP endpoint is not live yet</strong> &mdash; when it is, it will be announced here and in the release log. Until then, agents should call the REST API.</p>
+<div class="note blue"><strong>Agent pattern:</strong> after your coding agent finishes a safety-critical function, have it write the Lean spec and call <code class="inline">POST /verify</code>. Ship the certificate with the code &mdash; your user can check it without trusting your agent.</div>
 
 <h2>Metering</h2>
-<p>Compute time is metered at 0.9 credits/second (1 credit = US$0.01). Every response includes <code class="inline">compute_seconds</code> and <code class="inline">credits_charged</code>. Meter records are append-only and tamper-evident; your <code class="inline">usage_report</code> always reconciles.</p>
+<p>Compute time is metered at 0.9 credits/second (1 credit = US$0.01). Every verdict response includes its usage record &mdash; <code class="inline">compute_s</code>, <code class="inline">rate_credits_per_s</code>, <code class="inline">credits</code>, <code class="inline">usd</code> &mdash; and meter records are append-only in a hash-chained audit log, so your bill always reconciles.</p>
 
 <h2>Rate limits &amp; abuse</h2>
 <ul>
-<li>Trial: 10 verifications per email, lifetime; 1 concurrent request.</li>
-<li>Paid: 5 concurrent verifications per key by default; contact us for more.</li>
-<li>Submissions are capped at 2 MB of source; engine time is capped per call.</li>
-<li>We may suspend keys used to probe the engine adversarially or to resell trial access. See the <a href="/paperwork/terms/">Terms</a>.</li>
+<li>60 requests per minute per key; up to 2 proofs in flight per key &mdash; beyond that, requests queue (above) rather than fail.</li>
+<li>Submissions are capped at 256 KB of source; proof wall-clock is capped per call.</li>
+<li>We may suspend keys used to probe the engine adversarially or to multiply trials. See the <a href="/paperwork/terms/">Terms</a>.</li>
 </ul>
 </div></div></section>
 <footer class="sitefoot"><div class="wrap">
@@ -189,7 +184,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
 </ul></div>
 </div>
-<div class="fine">Owned by <a href="https://nrupalakolkar.com">Nrupal Akolkar</a> &middot; Built with <a href="https://muse.ai/join">Muse by Meta</a> &mdash; join Muse, then redeem code <strong>101EEK</strong> in Settings within 48 hours of joining and we both earn tokens. &middot; &copy; 2026 AxiomCode. Verification is evidence, not opinion.</div>
+<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
 </div></footer>
 </body>
 </html>

@@ -6,27 +6,33 @@ AxiomCode verifies Lean 4 software specifications with a real toolchain and issu
 signed, revocable, independently verifiable certificates binding the artifact hash,
 verdict, toolchain, issuer, serial, and validity window.
 
-## Status: pre-launch
+## Status: live (opened 2026-11-09)
 
-The service is not yet open. The API and MCP endpoints below are planned, not yet
-live. We are not yet accepting submissions or payments, and certificates are not
-yet being issued. This file will be updated when the service opens.
+The service is open. The REST API below is live. Billing is paused: credit packs
+are not yet on sale, so certificates unlock when pack sales open; until then the
+trial runs on every new API key.
 
 ## For agents
 
 - API docs: https://axiom-code.com/docs/api/
 - Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json
-- Planned REST base: https://api.axiom-code.com (not yet live)
-- Planned MCP server: https://api.axiom-code.com/mcp with tools: verify, check_certificate, pricing, usage_report
-- Planned certificate check (no auth): GET https://api.axiom-code.com/v1/check?serial=...
-- Planned revocation list: https://api.axiom-code.com/v1/revoked
+- REST base (live): https://api.axiom-code.com
+- Verify: POST /verify with an API key (X-Api-Key header), body {"code": "..."}.
+  When every proof slot is busy the answer is 202 {"status":"queued","job_id":...,
+  "position":N}; poll GET /verify/jobs/{job_id} with the same key for the result.
+- Check a certificate: POST /check with an API key, body {"certificate": {...}}.
+- Revocation list (public, no auth): GET /revoked
+- CA public keys (public, no auth): GET /.well-known/axiomcode-keys.json
+- MCP: a server ships in the AxiomCode repository (github.com/nrupala/axiomcode)
+  and runs locally against this API. A hosted MCP endpoint is NOT live yet.
 
 ## Trial
 
-10 free verifications per email via POST /v1/trial/verify. Trial verdicts include the
-verdict and transcript but NEVER a certificate. Certificates are issued to paying
-customers only (credit packs from $10; 1 credit = $0.01; metered at 0.9 credits/sec
-of engine compute time).
+The first 10 verification cases per API key are free: POST /verify with a new key.
+Trial verdicts include the verdict and the usage record but NEVER a certificate.
+Certificates are issued to paying customers only (credit packs from $10 when sales
+open; 1 credit = $0.01; metered at 0.9 credits/sec of engine compute time). API keys
+are issued on request: hello@axiom-code.com.
 
 ## Scope (honest)
 
