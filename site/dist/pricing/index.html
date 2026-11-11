@@ -144,7 +144,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 </script>
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
@@ -153,14 +153,14 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Pricing</h1>
 <p class="sub">The trial proves the engine. The certificate is the product.</p>
-<div class="note"><strong>Pre-launch:</strong> packs are not yet on sale &mdash; this page shows the launch pricing. Our pricing covers the full cost of running the service &mdash; infrastructure, compute, operations, support, and insurance &mdash; plus a standard margin. One credit is always <strong>US$0.01</strong>. Verification consumes credits by compute time; the certificate itself is included with every paid verification.</div>
+<div class="note"><strong>Billing is paused:</strong> the service is live, but credit packs are <strong>not yet on sale</strong> &mdash; this page shows the pricing that will apply when pack sales open. Until then, API keys with the 10-verification trial are issued free on request. Our pricing covers the full cost of running the service &mdash; infrastructure, compute, operations, support, and insurance &mdash; plus a standard margin. One credit is always <strong>US$0.01</strong>. Verification consumes credits by compute time; the certificate itself is included with every paid verification.</div>
 </div>
 <div class="ptable">
 <div class="plan">
 <h3>Trial</h3><div class="price">$0</div><div class="per">no card required</div>
 <ul>
-<li>10 verifications</li>
-<li>Full verdict + proof transcript</li>
+<li>10 verifications per API key</li>
+<li>Full verdict + usage record</li>
 <li><strong>No certificates</strong> &mdash; trial verdicts are not certifiable</li>
 <li>Rate-limited, fair use</li>
 </ul>
@@ -174,17 +174,17 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <li>REST API + API key</li>
 <li>Certificate checker + revocation list</li>
 </ul>
-<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Not yet on sale</span></p>
 </div>
 <div class="plan hot">
 <h3>Growth</h3><div class="price">$50</div><div class="per">5,000 credits, never expire</div>
 <ul>
 <li>Roughly 150&ndash;500 typical verifications</li>
 <li><strong>Signed certificates</strong> on every pass</li>
-<li>REST API + MCP server access</li>
-<li>Usage reports &amp; audit log</li>
+<li>REST API access</li>
+<li>Per-verification usage records &amp; audit log</li>
 </ul>
-<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Not yet on sale</span></p>
 </div>
 <div class="plan">
 <h3>Scale</h3><div class="price">$200</div><div class="per">20,000 credits, never expire</div>
@@ -192,14 +192,14 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <li>Roughly 600&ndash;2,000 typical verifications</li>
 <li><strong>Signed certificates</strong> on every pass</li>
 <li>Everything in Growth</li>
-<li>Priority verification queue</li>
+<li>The same fair FIFO queue as everyone &mdash; nobody jumps the line</li>
 </ul>
-<p><span class="cta" style="opacity:.55;cursor:default">Available at launch</span></p>
+<p><span class="cta" style="opacity:.55;cursor:default">Not yet on sale</span></p>
 </div>
 </div>
 <div class="wrap"><div class="prose" style="margin-top:36px">
 <h2>How metering works</h2>
-<p>Each verification is metered by compute time at <strong>0.9 credits/second</strong> (about $0.009/s). A small spec that checks in 12 seconds costs ~11 credits &mdash; eleven cents. You see the exact charge with every verdict, and your <a href="/docs/api/">usage report</a> itemizes all of it. Credits never expire. Unused credits are refundable within 14 days &mdash; see the <a href="/paperwork/refunds/">Refund Policy</a>.</p>
+<p>Each verification is metered by compute time at <strong>0.9 credits/second</strong> (about $0.009/s). A small spec that checks in 12 seconds costs ~11 credits &mdash; eleven cents. Every verdict response carries its exact usage record &mdash; compute seconds, rate, credits, and US dollars &mdash; so your bill always reconciles. Credits never expire. Unused credits are refundable within 14 days &mdash; see the <a href="/paperwork/refunds/">Refund Policy</a>.</p>
 <h2>Why the trial has no certificates</h2>
 <p>The trial exists so you can evaluate the engine: real verdicts, real transcripts, real evidence. But a certificate is a trust instrument &mdash; it says AxiomCode stakes its name on this verdict. We only stake our name in a commercial relationship, where the full cost of standing behind the verdict is covered. That boundary is what keeps the certificates meaningful.</p>
 <div class="faq">
@@ -237,7 +237,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
 </ul></div>
 </div>
-<div class="fine">Owned by <a href="https://nrupalakolkar.com">Nrupal Akolkar</a> &middot; Built with <a href="https://muse.ai/join">Muse by Meta</a> &mdash; join Muse, then redeem code <strong>101EEK</strong> in Settings within 48 hours of joining and we both earn tokens. &middot; &copy; 2026 AxiomCode. Verification is evidence, not opinion.</div>
+<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
 </div></footer>
 </body>
 </html>

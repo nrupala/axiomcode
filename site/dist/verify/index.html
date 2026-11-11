@@ -4,16 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Verify — free trial | AxiomCode</title>
-<meta name="description" content="Try AxiomCode free: submit a Lean 4 specification, get a real machine-checked verdict and proof transcript. 10 free verifications; trial verdicts carry no certificate.">
+<meta name="description" content="Run an AxiomCode verification: submit a Lean 4 specification with your API key and get a real machine-checked verdict. The first 10 cases on a new key are free; trial verdicts carry no certificate.">
 <link rel="canonical" href="https://axiom-code.com/verify/">
 <meta property="og:site_name" content="AxiomCode">
 <meta property="og:title" content="Verify — free trial | AxiomCode">
-<meta property="og:description" content="Try AxiomCode free: submit a Lean 4 specification, get a real machine-checked verdict and proof transcript. 10 free verifications; trial verdicts carry no certificate.">
+<meta property="og:description" content="Run an AxiomCode verification: submit a Lean 4 specification with your API key and get a real machine-checked verdict. The first 10 cases on a new key are free; trial verdicts carry no certificate.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://axiom-code.com/verify/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Verify — free trial | AxiomCode">
-<meta name="twitter:description" content="Try AxiomCode free: submit a Lean 4 specification, get a real machine-checked verdict and proof transcript. 10 free verifications; trial verdicts carry no certificate.">
+<meta name="twitter:description" content="Run an AxiomCode verification: submit a Lean 4 specification with your API key and get a real machine-checked verdict. The first 10 cases on a new key are free; trial verdicts carry no certificate.">
 <style>
 :root{--ink:#101828;--mut:#475467;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
 --gold:#b98a2f;--goldsoft:#faf3e3;--green:#12805c;--greensoft:#e9f7f0;
@@ -103,51 +103,87 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
 <a class="cta" href="/verify/">Try free</a>
 </div></div>
 <section class="block"><div class="wrap"><div class="prose">
-<h1 class="pt">Verify &mdash; free trial</h1>
-<p class="sub">10 free verifications. Real verdicts, real transcripts. <strong>No certificates on trial</strong> &mdash; the certificate is the product, and it ships with paid verification.</p>
-<div class="note">The verification backend is being connected to this page as part of the launch rollout. If the button reports the API as unreachable, the engine isn&rsquo;t wired yet &mdash; check back shortly or email <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div>
-<label class="fl" for="email">Email (counts your 10 trial uses)</label>
-<input type="email" id="email" placeholder="you@example.com" autocomplete="email">
+<h1 class="pt">Verify</h1>
+<p class="sub">The first <strong>10 verifications on a new API key are free</strong> &mdash; real verdicts, real usage records. <strong>No certificates on trial</strong> &mdash; the certificate is the product, and it ships with paid verification.</p>
+<div class="note">You need an API key. Keys are issued free on request during the initial opening &mdash; email <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a> and we&rsquo;ll send one. Your key is sent only to the AxiomCode API from this page; it is never stored by the page.</div>
+<label class="fl" for="apikey">API key</label>
+<input type="text" id="apikey" placeholder="your API key" autocomplete="off">
 <label class="fl" for="code">Lean 4 code</label>
 <textarea class="codebox" id="code" spellcheck="false">theorem add_comm_nat (a b : Nat) : a + b = b + a := by
   exact Nat.add_comm a b</textarea>
 <p style="margin-top:18px"><button class="go" id="go">Run verification</button></p>
 <div class="result" id="result"></div>
-<p style="color:var(--mut);font-size:15px">A <span class="badge b-pass">PASSED</span> trial verdict proves the engine works. To get the <strong>signed certificate</strong> &mdash; the thing you can hand to an auditor, a customer, or a counterparty &mdash; <a href="/pricing/">buy credits</a>.</p>
+<p style="color:var(--mut);font-size:15px">A <span class="badge b-pass">PASSED</span> trial verdict proves the engine works. To get the <strong>signed certificate</strong> &mdash; the thing you can hand to an auditor, a customer, or a counterparty &mdash; your key needs paid credits; see <a href="/pricing/">pricing</a> (packs open when billing is armed).</p>
 </div></div></section>
 <script>
 var API = "https://api.axiom-code.com";
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+function showResult(res, j){
+  var badge = j.verified ? 'b-pass' : 'b-fail';
+  var word = j.verified ? 'PASSED' : 'FAILED';
+  var h = '<p><span class="badge ' + badge + '">' + word + '</span></p>';
+  var meta = [];
+  if (j.attempts != null) meta.push('attempts: ' + j.attempts);
+  if (j.usage) meta.push('engine time: ' + j.usage.compute_s + 's &middot; credits: ' + j.usage.credits);
+  if (j.trial) meta.push('trial cases left: ' + j.trial.cases_left + ' &middot; no certificate (trial)');
+  if (meta.length) h += '<p style="color:var(--mut);font-size:15px">' + meta.join(' &middot; ') + '</p>';
+  if (j.certificate) h += '<p><strong>Certificate</strong></p><pre class="code">' + esc(JSON.stringify(j.certificate, null, 2)) + '</pre>';
+  res.innerHTML = h;
+}
+function showError(res, title, msg){
+  res.innerHTML = '<p><span class="badge b-warn">' + title + '</span></p><p style="color:var(--mut)">' + msg + '</p>';
+}
 document.getElementById('go').addEventListener('click', function(){
   var btn = this, res = document.getElementById('result');
-  var email = document.getElementById('email').value.trim();
+  var key = document.getElementById('apikey').value.trim();
   var code = document.getElementById('code').value;
-  if (!email || email.indexOf('@') < 0) { alert('Enter your email so we can count your 10 trial uses.'); return; }
+  if (!key) { alert('Enter your API key. No key yet? Email hello@axiom-code.com and we will issue one free.'); return; }
   if (!code.trim()) { alert('Paste some Lean 4 code first.'); return; }
-  btn.disabled = true; btn.textContent = 'Verifying…';
-  res.className = 'result show'; res.innerHTML = '<p>Running the Lean toolchain against your artifact…</p>';
-  fetch(API + '/v1/trial/verify', {method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({email: email, code: code})})
-  .then(function(r){ return r.json().then(function(j){ return {ok: r.ok, j: j}; }); })
+  var headers = {'Content-Type':'application/json', 'X-Api-Key': key};
+  btn.disabled = true; btn.textContent = 'Verifying\u2026';
+  res.className = 'result show'; res.innerHTML = '<p>Running the Lean toolchain against your artifact\u2026</p>';
+  function done(){ btn.disabled = false; btn.textContent = 'Run verification'; }
+  fetch(API + '/verify', {method:'POST', headers: headers, body: JSON.stringify({code: code})})
+  .then(function(r){ return r.json().then(function(j){ return {status: r.status, j: j}; }); })
   .then(function(x){
-    btn.disabled = false; btn.textContent = 'Run verification';
-    if (!x.ok) { res.innerHTML = '<p><span class="badge b-fail">ERROR</span></p><pre class="code">' + JSON.stringify(x.j, null, 2) + '</pre>'; return; }
-    var j = x.j;
-    var badge = j.verdict === 'PASSED' ? 'b-pass' : (j.verdict === 'FAILED' ? 'b-fail' : 'b-warn');
-    res.innerHTML = '<p><span class="badge ' + badge + '">' + j.verdict + '</span></p>'
-      + '<p style="color:var(--mut);font-size:15px">Engine time: ' + j.compute_seconds + 's &middot; trial uses remaining: ' + j.trial_remaining + ' &middot; no certificate (trial)</p>'
-      + '<pre class="code">' + (j.transcript || 'no transcript') + '</pre>'
-      + (j.verdict === 'PASSED' ? '<p><a class="cta" href="/pricing/">Get this certified &rarr;</a></p>' : '');
+    if (x.status === 200) { done(); showResult(res, x.j); return; }
+    if (x.status === 202) {
+      var jobId = x.j.job_id;
+      res.innerHTML = '<p><span class="badge b-warn">QUEUED</span></p><p style="color:var(--mut)">Every proof slot is busy. Your place in line: <strong>' + x.j.position + '</strong>. This page checks for you &mdash; leave it open.</p>';
+      var tries = 0;
+      var iv = setInterval(function(){
+        tries++;
+        fetch(API + '/verify/jobs/' + encodeURIComponent(jobId), {headers: headers})
+        .then(function(r){ return r.json().then(function(j){ return {status: r.status, j: j}; }); })
+        .then(function(y){
+          if (y.j.status === 'done') { clearInterval(iv); done(); showResult(res, y.j.result || {}); }
+          else if (y.j.status === 'failed') { clearInterval(iv); done(); showError(res, 'JOB FAILED', esc(y.j.error || 'the verification job failed')); }
+          else if (y.j.status === 'queued') { res.innerHTML = '<p><span class="badge b-warn">QUEUED</span></p><p style="color:var(--mut)">Your place in line: <strong>' + y.j.position + '</strong>. Checking again in a few seconds\u2026</p>'; }
+          else if (y.j.status === 'running') { res.innerHTML = '<p><span class="badge b-warn">RUNNING</span></p><p style="color:var(--mut)">Your proof is running now\u2026</p>'; }
+          if (tries > 100) { clearInterval(iv); done(); showError(res, 'STILL QUEUED', 'The queue is long. Your job id is ' + esc(jobId) + ' &mdash; check it any time at GET /verify/jobs/' + esc(jobId) + ' with your key.'); }
+        })
+        .catch(function(){ /* transient; keep polling */ });
+      }, 3000);
+      return;
+    }
+    done();
+    if (x.status === 401) showError(res, 'INVALID KEY', 'That API key was not accepted. Check it, or email hello@axiom-code.com for a key.');
+    else if (x.status === 402) showError(res, 'TRIAL EXHAUSTED', 'Your 10 free trial cases are used and the key holds no credits. Certificates unlock with a credit pack &mdash; packs open when billing is armed.');
+    else if (x.status === 413) showError(res, 'TOO LARGE', 'Submissions are capped at 256 KB of source.');
+    else if (x.status === 429) showError(res, 'RATE LIMITED', 'Over 60 requests per minute for this key. Wait a moment and retry.');
+    else if (x.status === 504) showError(res, 'PROOF TIMEOUT', 'The proof exceeded the per-call time cap. Split the artifact or simplify the target.');
+    else showError(res, 'ERROR ' + x.status, esc(JSON.stringify(x.j)));
   })
   .catch(function(e){
-    btn.disabled = false; btn.textContent = 'Run verification';
-    res.innerHTML = '<p><span class="badge b-warn">API UNREACHABLE</span></p><p style="color:var(--mut)">The verification backend is not connected yet. Your code is fine &mdash; the wiring is still being rolled out. Try again shortly.</p>';
+    done();
+    showError(res, 'API UNREACHABLE', 'The verification API did not answer. Try again in a moment; if it persists, email hello@axiom-code.com.');
   });
 });
 </script>
@@ -179,7 +215,7 @@ document.getElementById('go').addEventListener('click', function(){
 <li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
 </ul></div>
 </div>
-<div class="fine">Owned by <a href="https://nrupalakolkar.com">Nrupal Akolkar</a> &middot; Built with <a href="https://muse.ai/join">Muse by Meta</a> &mdash; join Muse, then redeem code <strong>101EEK</strong> in Settings within 48 hours of joining and we both earn tokens. &middot; &copy; 2026 AxiomCode. Verification is evidence, not opinion.</div>
+<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
 </div></footer>
 </body>
 </html>

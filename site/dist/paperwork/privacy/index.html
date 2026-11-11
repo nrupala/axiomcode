@@ -103,35 +103,36 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Pre-launch:</strong> AxiomCode is not yet open &mdash; we are not yet accepting submissions or payments, and certificates are not yet being issued. These pages describe the service as it will operate when it opens.</div></div>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
 <nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/paperwork/">Paperwork</a></nav>
 <a class="cta" href="/verify/">Try free</a>
 </div></div>
 <section class="block"><div class="wrap"><div class="prose">
-<div class="note"><strong>Pre-launch status:</strong> AxiomCode has not yet opened. These documents take effect when the service opens for submissions and payments; no certificates have been publicly issued under them yet.</div>
+<div class="note"><strong>Status:</strong> AxiomCode opened on 9 November 2026 and these documents govern the service as it operates today. One exception, stated plainly: credit packs are not yet on sale (billing opens separately), so the payment terms describe the packs as they will be sold.</div>
 <div class="note">These documents govern the AxiomCode service. They are written in plain language and describe process and outcomes, not marketing claims. Material liability and warranty terms should be reviewed by qualified legal counsel before they are relied upon in any dispute.</div>
-<h1 class="pt">Privacy Policy</h1><p class="sub">Last updated: 26 September 2026</p><p><a href="/paperwork/paperwork-privacy.docx" download>Download as Word (.docx)</a></p><h2>1. What we collect</h2>
+<h1 class="pt">Privacy Policy</h1><p class="sub">Last updated: 9 November 2026</p><p><a href="/paperwork/paperwork-privacy.docx" download>Download as Word (.docx)</a></p><p><strong>Operator:</strong> AxiomCode is a service of 2351485 ALBERTA INC., a corporation registered in Alberta, Canada (&ldquo;we&rdquo;, &ldquo;us&rdquo;). This policy describes how 2351485 ALBERTA INC. collects, uses, and retains information when you use AxiomCode.</p>
+<h2>1. What we collect</h2>
 <ul>
-<li><strong>Submitted artifacts:</strong> the code you ask us to verify, its SHA-256 hash, the verdict, and the engine transcript. We cannot verify without it.</li>
-<li><strong>Account data:</strong> email address, API keys, credit balance, and purchase records from our merchant of record.</li>
+<li><strong>Submitted artifacts:</strong> the code you ask us to verify, its SHA-256 hash, the verdict, and the usage record. We cannot verify without it. Code held in the verification queue is deleted from the job record when the job completes; the hash and the outcome are kept.</li>
+<li><strong>Account data:</strong> API keys &mdash; only the SHA-256 hash of your key is stored, never the key itself &mdash; credit balance, and purchase records from our payment processor (Stripe).</li>
 <li><strong>Metering records:</strong> compute time, credits charged, timestamps &mdash; kept in a tamper-evident log so your bill always reconciles.</li>
 <li><strong>Operational logs:</strong> IP addresses and request metadata for abuse prevention, kept briefly.</li>
 </ul>
 <h2>2. What we never do</h2>
-<p>We <strong>never sell your data</strong>. We never use your submitted code to train models. We never disclose your artifacts except as needed to operate the service (e.g., payment processing by our merchant of record) or as required by law.</p>
+<p>We <strong>never sell your data</strong>. We never use your submitted code to train models. We never disclose your artifacts except as needed to operate the service (e.g., payment processing by Stripe) or as required by law.</p>
 <h2>3. Why certificates are public-ish</h2>
 <p>A certificate is useful precisely because third parties can check it. Certificate contents (artifact hash, verdict, toolchain, serial, validity) and the revocation list are queryable by anyone. The artifact <em>source</em> itself is not published &mdash; only its hash.</p>
 <h2>4. Retention and deletion</h2>
 <ul>
-<li>Artifacts and transcripts: retained while your account is active, to support re-verification and dispute handling; deleted within 90 days of account closure on request.</li>
+<li>Artifacts and usage records: retained while your account is active, to support re-verification and dispute handling; deleted within 90 days of account closure on request.</li>
 <li>Metering and purchase records: retained as required for tax and accounting (typically 7 years), in anonymized form where possible after closure.</li>
 <li>Operational logs: 30 days.</li>
 </ul>
 <p>To request deletion or a copy of your data: <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>. Some records (revoked certificate entries, tax records) cannot be deleted while the law requires them.</p>
 <h2>5. Security</h2>
-<p>CA signing keys are held separately from the web service with restricted access; see <a href="/paperwork/security/">Security</a>. No method is perfect; we disclose breaches affecting your data promptly.</p>
+<p>The CA signing key is held in a restricted state directory on the service host (file mode 0600), loaded only by the API process; see <a href="/paperwork/security/">Security</a>. No method is perfect; we disclose breaches affecting your data promptly.</p>
 </div></div></section><footer class="sitefoot"><div class="wrap">
 <div class="cols">
 <div><h4>Product</h4><ul>
@@ -160,7 +161,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
 </ul></div>
 </div>
-<div class="fine">Owned by <a href="https://nrupalakolkar.com">Nrupal Akolkar</a> &middot; Built with <a href="https://muse.ai/join">Muse by Meta</a> &mdash; join Muse, then redeem code <strong>101EEK</strong> in Settings within 48 hours of joining and we both earn tokens. &middot; &copy; 2026 AxiomCode. Verification is evidence, not opinion.</div>
+<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
 </div></footer>
 </body>
 </html>
