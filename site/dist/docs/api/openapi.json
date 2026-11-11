@@ -26,6 +26,16 @@
         "summary": "Validate a certificate JSON (API key)"
       }
     },
+    "/shell/turn": {
+      "post": {
+        "summary": "Interactive shell turn: optional verify/check action plus conversation; facts rendered in code, the model never judges (API key)"
+      }
+    },
+    "/shell/jobs/{job_id}": {
+      "get": {
+        "summary": "Shell polling read for a queued job (submitting key only)"
+      }
+    },
     "/revoked": {
       "get": {
         "summary": "Public revocation list (no auth)"

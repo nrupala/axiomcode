@@ -15,6 +15,7 @@ API_BASE = "https://api.axiom-code.com"  # production API — live since the 202
 NAV = [
     ("How it works", "/how-it-works/"),
     ("Pricing", "/pricing/"),
+    ("Ask", "/ask/"),
     ("Docs", "/docs/"),
     ("API", "/docs/api/"),
     ("Paperwork", "/paperwork/"),
@@ -157,6 +158,7 @@ FOOTER = """<footer class="sitefoot"><div class="wrap">
 <li><a href="/how-it-works/">How it works</a></li>
 <li><a href="/pricing/">Pricing</a></li>
 <li><a href="/verify/">Try free</a></li>
+<li><a href="/ask/">Ask AxiomCode</a></li>
 <li><a href="/check/">Check a certificate</a></li>
 </ul></div>
 <div><h4>Developers &amp; agents</h4><ul>

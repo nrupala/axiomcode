@@ -111,7 +111,7 @@ page(
 
 <h2>Interfaces</h2>
 <ul>
-<li><strong>Humans:</strong> the <a href="/verify/">web verifier</a> and <a href="/check/">certificate checker</a>.</li>
+<li><strong>Humans:</strong> the <a href="/verify/">web verifier</a>, the <a href="/check/">certificate checker</a>, and the <a href="/ask/">Ask shell</a> &mdash; chat and voice in front of the same service; the assistant explains, the service decides.</li>
 <li><strong>Applications:</strong> the <a href="/docs/api/">REST API</a> with API-key auth and metering.</li>
 <li><strong>Agents:</strong> the <a href="/docs/api/">REST API</a> is agent-shaped (one key, JSON in, signed evidence out). An MCP server ships in the AxiomCode repository and runs against the same API locally; a hosted MCP endpoint is not live yet, and we say so rather than advertise one. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
 </ul>

@@ -7,6 +7,10 @@ POST /verify {code} -> {verified, attempts, certificate, usage}
 GET  /verify/jobs/{job_id} -> queue position or the finished result
      (the submitting key only; any other key gets a 404)
 POST /check  {certificate} -> {valid, ...}
+POST /shell/turn {message, action, ...} -> {facts, result, explanation}
+     — the interactive shell (PW-SHELL, shell.py): conversation over
+     the same callables, verdicts rendered in code, never by the model
+GET  /shell/jobs/{job_id} -> the shell page's owner-only job read
 GET  /revoked -> {issuer, revoked: [serial...]}   (public CRL)
 GET  /.well-known/axiomcode-keys.json -> published CA public keys
 GET  /health -> {status: ok}
@@ -43,11 +47,12 @@ import billing
 import ca
 import jobqueue
 import limits
+import shell
 import stripe_billing
 import verify_service
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from store import Store
 
 from core.prover import iterative_proof_search, lean_version
@@ -216,6 +221,40 @@ def _pricing_view() -> dict:
     }
 
 
+# ─── interactive shell (the Ask leg, PW-SHELL) ──────────────────────
+# shell.py orchestrates conversation over the same callables the REST
+# routes and the MCP tools call — it owns no store, no CA and no
+# admission path, and its model never judges: verdicts are rendered
+# in code from the payloads these callables return.
+
+
+def _account_view(key_hash: str) -> dict:
+    """The caller's own account facts for the shell: usage totals,
+    balance, and trial state, all read from the store."""
+    usage = billing.usage_for(STORE, key_hash)
+    used = STORE.trial_cases_used(key_hash)
+    return {
+        "calls": usage.get("calls", 0),
+        "credits_used": usage.get("credits_used", 0),
+        "usd_used": usage.get("usd_used", 0),
+        "balance_credits": STORE.balance_for(key_hash),
+        "trial_cases_used": used,
+        "trial_cases_left": max(TRIAL_CASES - used, 0),
+        "trial_cases_total": TRIAL_CASES,
+    }
+
+
+SHELL_DEPS = shell.ShellDeps(
+    submit=submit_verification,
+    job_view=job_view,
+    check=lambda key_hash, cert: check_certificate_body(key_hash, cert, via="shell"),
+    account=_account_view,
+    pricing=_pricing_view,
+    revoked=lambda: {"issuer": ca.ISSUER, "revoked": sorted(STORE.revoked_serials())},
+    model_chat=shell.chat_completion,
+)
+
+
 # ─── hosted MCP (the agent gate) ─────────────────────────────────────
 # The MCP leg runs in this process, mounted at /mcp, and shares this
 # module's store, CA, limiter and proof queue through the callables
@@ -259,6 +298,11 @@ app = FastAPI(
 if MCP_MOUNT is not None:
     app.mount("/mcp", MCP_MOUNT)
 
+# Browser CORS for the site's own pages (shell.py carries the why):
+# path-scoped to the browser-facing routes, origin-scoped to
+# axiom-code.com; every other caller sees the API exactly as before.
+app.add_middleware(shell.BrowserCorsMiddleware)
+
 
 class VerifyRequest(BaseModel):
     code: str
@@ -267,6 +311,15 @@ class VerifyRequest(BaseModel):
 
 class CheckRequest(BaseModel):
     certificate: dict
+
+
+class ShellTurnRequest(BaseModel):
+    message: str = ""
+    action: str = "chat"
+    code: str | None = None
+    certificate: dict | None = None
+    max_attempts: int = 1
+    history: list[dict] = Field(default_factory=list)
 
 
 class CheckoutRequest(BaseModel):
@@ -318,6 +371,29 @@ def check(req: CheckRequest, key_hash: str = Depends(require_api_key)):
     # but consumes no trial case and no credits.
     status, body = check_certificate_body(key_hash, req.certificate, via="rest")
     return JSONResponse(status_code=status, content=body) if status != 200 else body
+
+
+@app.post("/shell/turn")
+def shell_turn(req: ShellTurnRequest, key_hash: str = Depends(require_api_key)):
+    """One interactive-shell turn (PW-SHELL): an optional service
+    action (verify / check) plus conversation, answered with
+    code-rendered facts and an optional model explanation. The
+    shell's orchestration — grounding, refusals, degradation — lives
+    in shell.handle_turn; this route is only its authenticated edge."""
+    status, body = shell.handle_turn(SHELL_DEPS, key_hash, req.model_dump())
+    return JSONResponse(status_code=status, content=body) if status != 200 else body
+
+
+@app.get("/shell/jobs/{job_id}")
+def shell_job(job_id: str, key_hash: str = Depends(require_api_key)):
+    """The shell page's polling read for a queued job: the same
+    owner-only view as GET /verify/jobs/{job_id} (any other key, or
+    an unknown id, gets a 404), plus the code-rendered fact block
+    the page displays."""
+    view = job_view(key_hash, job_id)
+    if view is None:
+        raise HTTPException(status_code=404, detail="no such job")
+    return {"job": view, "fact": shell.render_job(view)}
 
 
 @app.get("/revoked")

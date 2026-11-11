@@ -56,7 +56,7 @@
     "local_checks": [],
     "result_fingerprints": [],
     "unresolved": [
-      "Recorded NAMED DRIFT (gate record axiomcode-mcp-slice1-2026-11-09, Ruling 4): this unit refers ONLY to the legacy standalone mcp_server.py. It is deployed nowhere and must never be deployed as-is — it predates the durable FIFO queue (it admits through the legacy per-key gate) and keeps the caller's identity in a module-level variable. Hosting it would be a new gate declaration, not a config change. The HOSTED MCP leg (mcp_hosted.py, mounted at /mcp in the API process) is a separate unit in this ledger."
+      "Recorded NAMED DRIFT (gate record axiomcode-mcp-slice1-2026-11-09, Ruling 4): this unit refers ONLY to the legacy standalone mcp_server.py. It is deployed nowhere and must never be deployed as-is \u2014 it predates the durable FIFO queue (it admits through the legacy per-key gate) and keeps the caller's identity in a module-level variable. Hosting it would be a new gate declaration, not a config change. The HOSTED MCP leg (mcp_hosted.py, mounted at /mcp in the API process) is a separate unit in this ledger."
     ]
   },
   {
@@ -282,7 +282,7 @@
         ],
         "invariant": "No key can run unbounded proofs: 60 req/min, 2 concurrent per key, 4 global proof slots, 256 KB code cap, 600 s proof cap; excess demand queues with a checkable position instead of piling on.",
         "method": "source",
-        "result": "Bounds are code-enforced (limits.py, jobqueue.py) and behaviour-tested (services/api/tests/test_hardening.py, test_queue.py); the 2026-10-23 gate read the limiter code and named live 429 behaviour NOT RUN — it joins the flip gate's spot-probes.",
+        "result": "Bounds are code-enforced (limits.py, jobqueue.py) and behaviour-tested (services/api/tests/test_hardening.py, test_queue.py); the 2026-10-23 gate read the limiter code and named live 429 behaviour NOT RUN \u2014 it joins the flip gate's spot-probes.",
         "artifact": null
       }
     ],
@@ -422,5 +422,56 @@
     ],
     "result_fingerprints": [],
     "unresolved": []
+  },
+  {
+    "coverage_id": "services%2Fapi%2Fshell.py%23%2Fshell%20routes%20%2B%20%2Fask%20page::services%2Fapi%2Fshell.py%23grounding%20renderers%20%2B%20BrowserCorsMiddleware::services%2Fapi::ATTACK-CLASSES.md%23Judgment%20integrity",
+    "canonical_refs": {
+      "surface": "services/api/shell.py#/shell routes + /ask page",
+      "boundary": "services/api/shell.py#grounding renderers + BrowserCorsMiddleware",
+      "subsystem": "services/api",
+      "attack_class": "ATTACK-CLASSES.md#Judgment integrity"
+    },
+    "surface": "Interactive shell leg (/shell routes + /ask page)",
+    "boundary": "Grounding renderers (facts rendered in code from API payloads); BrowserCorsMiddleware (site origin, browser paths only)",
+    "subsystem": "services/api",
+    "attack_class": "ATTACK-CLASSES.md#Judgment integrity",
+    "starting_paths": [
+      "services/api/shell.py",
+      "services/api/verify_api.py",
+      "site/pages_shell.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Judgment integrity",
+    "selected_companion_blocks": [],
+    "excluded_blocks": [],
+    "prior_status": "new",
+    "attempts": [],
+    "wave": 1,
+    "status": "covered",
+    "agent_id": "wright",
+    "reviewed_paths": [
+      "services/api/shell.py",
+      "services/api/verify_api.py",
+      "site/pages_shell.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "wright",
+        "reviewed_paths": [
+          "services/api/shell.py",
+          "services/api/verify_api.py",
+          "site/pages_shell.py"
+        ],
+        "invariant": "The conversational layer cannot corrupt the judgment: verdicts and every other service fact reach the user only as blocks rendered in code from API payloads (the model's text is a separate channel nothing parses for facts); a trial verdict never renders as a certificate; the caller's key is never stored, echoed, or placed in the model's context; when the service cannot answer, the turn carries a fixed honesty fact and the model is not called; when the model cannot answer, the facts still ship (degraded). Browser access to the API is limited to the site's own origin on the browser-facing paths.",
+        "method": "local",
+        "result": "services/api/tests/test_shell.py (19 tests): 401s without/with unknown key on both shell routes; trial verdict fact (no-certificate language pinned) vs paid verdict fact (serial named from the payload); failed verdicts (trial: no certificate; paid: the verdict-recording certificate described as exactly that); payment_required fact after trial exhaustion; check facts valid -> revoked -> unknown; queued turn -> owner-only /shell/jobs poll -> done with the code-rendered verdict (cross-key 404); model context carries facts and neither the key nor its hash; model outage degrades to facts; action failure returns the honesty fact with the model uncalled; account/pricing intent facts carry true numbers; the presented key is absent from the state DB and the work root after turns; shell rate limit 429; history sanitization drops smuggled system turns; CORS preflight succeeds for the site origin on /shell + legacy browser paths, is absent for other origins, and is absent on non-browser paths.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [],
+    "unresolved": [
+      "Declared on the build branch (gate package 0.4.0, PW-SHELL): gate certification and the post-deploy live probes (a real-browser first session on /ask/, the judgment differential re-run, a preflight from the live site origin) are deploy conditions and join this unit's evidence at deploy.",
+      "Explanation quality of the box-local 7B model is judged by the user-leg walk (the first-time-customer test named in the Switchboard assignment), owed before the face is called proven; it cannot affect verdicts either way.",
+      "Pre-existing, found by this slice: the API had no CORS leg before this package, so the live /verify and /check pages could not complete a submission from a real browser (preflight answered 405 with no Access-Control-Allow-Origin). The fix rides this package; the gate is asked to note the finding against the flip package."
+    ]
   }
 ]
