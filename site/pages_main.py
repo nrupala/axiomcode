@@ -27,7 +27,7 @@ page(
 <section class="block"><div class="wrap"><div class="prose">
 <div class="kicker">The problem</div>
 <h2>AI writes code. Nobody can prove it&rsquo;s right.</h2>
-<p>Code review is opinion. Tests are samples. Audits are expensive snapshots. When software has to be <em>right</em> &mdash; money movement, access control, safety logic, smart contracts &mdash; &ldquo;looks good to me&rdquo; is not evidence. AxiomCode sells <strong>verification-as-evidence</strong>: a mechanical proof, checked by a real toolchain, sealed into a certificate you can hand to a regulator, a customer, or a counterparty.</p>
+<p>Code review is opinion. Tests are samples. Audits are expensive snapshots. When software has to be <em>right</em> &mdash; money movement, access control, safety logic &mdash; &ldquo;looks good to me&rdquo; is not evidence. AxiomCode sells <strong>verification-as-evidence</strong>: a mechanical proof, checked by a real toolchain, sealed into a certificate you can hand to a regulator, a customer, or a counterparty.</p>
 </div>
 <div class="cards">
 <div class="card"><span class="num">1</span><h3>Submit</h3><p>Send a Lean 4 specification through the web UI or the REST API &mdash; the way your agent already talks to tools.</p></div>
@@ -54,7 +54,7 @@ page(
 <p>The buyer isn&rsquo;t whoever writes the code. It&rsquo;s whoever must demonstrate correctness to a third party:</p>
 <ul>
 <li><strong>Regulated software teams</strong> &mdash; hand a certificate to the auditor instead of a test report.</li>
-<li><strong>Fintech &amp; smart contracts</strong> &mdash; money logic with a machine-checked proof attached.</li>
+<li><strong>Fintech</strong> &mdash; money-movement and access-control logic expressed as Lean 4 specifications, with a machine-checked proof attached.</li>
 <li><strong>AI agent builders</strong> &mdash; agents that ship code can now ship the proof too. Call the API from your agent and attach the certificate to the code.</li>
 <li><strong>Procurement &amp; contracts</strong> &mdash; &ldquo;certified correct&rdquo; as a deliverable, checkable by the buyer.</li>
 </ul>
@@ -113,7 +113,7 @@ page(
 <ul>
 <li><strong>Humans:</strong> the <a href="/verify/">web verifier</a>, the <a href="/check/">certificate checker</a>, and the <a href="/ask/">Ask shell</a> &mdash; chat and voice in front of the same service; the assistant explains, the service decides.</li>
 <li><strong>Applications:</strong> the <a href="/docs/api/">REST API</a> with API-key auth and metering.</li>
-<li><strong>Agents:</strong> the <a href="/docs/api/">REST API</a> is agent-shaped (one key, JSON in, signed evidence out). An MCP server ships in the AxiomCode repository and runs against the same API locally; a hosted MCP endpoint is not live yet, and we say so rather than advertise one. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
+<li><strong>Agents:</strong> the <a href="/docs/api/">REST API</a> is agent-shaped (one key, JSON in, signed evidence out). A hosted MCP endpoint is live at https://api.axiom-code.com/mcp/ &mdash; the same API key, the same queue, seven tools (verify, job_status, check_certificate, revoked, health, usage_report, pricing); an MCP server also ships in the AxiomCode repository for local use. Plus <a href="/llms.txt">llms.txt</a> and <a href="/.well-known/axiomcode.json">machine-readable service info</a>.</li>
 </ul>
 </div></div></section>
 """,

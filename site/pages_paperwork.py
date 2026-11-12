@@ -44,7 +44,7 @@ pw_page(
     "Terms of Service",
     "AxiomCode Terms of Service: the service, trial terms, credits and payment, acceptable use, certificate reliance, liability limits.",
     """<h2>1. The service</h2>
-<p>AxiomCode (&ldquo;we&rdquo;) provides machine-checked verification of software specifications and issues signed certificates recording the verification outcome (&ldquo;certificates&rdquo;). The service is offered through a web interface and a REST API. An MCP server ships in our repository for local use against the API; a hosted MCP endpoint is not offered yet.</p>
+<p>AxiomCode (&ldquo;we&rdquo;) provides machine-checked verification of software specifications and issues signed certificates recording the verification outcome (&ldquo;certificates&rdquo;). The service is offered through a web interface and a REST API. An MCP server ships in our repository for local use against the API, and a hosted MCP endpoint is offered at https://api.axiom-code.com/mcp/.</p>
 <h2>2. Trial</h2>
 <p>Each new API key includes up to 10 trial verifications without payment. Trial verdicts include the verdict and the usage record; <strong>trial verdicts never include certificates</strong>. Trial access is rate-limited and may not be resold, multiplied across keys to evade the limit, or used to probe the engine adversarially.</p>
 <h2>3. Credits and payment</h2>
@@ -181,7 +181,7 @@ pw_page(
 <h2>2. Responsible disclosure</h2>
 <p>Found a vulnerability? Email <a href="mailto:security@axiom-code.com">security@axiom-code.com</a> with the details and a way to reach you. We ask for a reasonable window (90 days) before public disclosure so we can fix, revoke affected certificates if needed, and publish an incident note. We commit to acknowledging within 2 business days and keeping you updated.</p>
 <h2>3. Scope</h2>
-<p>In scope: the API, the certificate checker, the CA issuance path, and this site. (The MCP server ships in our repository and is not hosted yet.) Out of scope: third-party services (Stripe, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
+<p>In scope: the API, the certificate checker, the CA issuance path, and this site. (The MCP server ships in our repository, and a hosted MCP endpoint is live at https://api.axiom-code.com/mcp/.) Out of scope: third-party services (Stripe, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
 <h2>4. What we won&rsquo;t do</h2>
 <p>We won&rsquo;t threaten researchers who follow this policy, and we won&rsquo;t ask law enforcement to chill good-faith research. If you&rsquo;re unsure whether something is in scope, ask first.</p>
 """,
