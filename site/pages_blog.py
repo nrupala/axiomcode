@@ -57,7 +57,7 @@ WELLKNOWN = {
     "service": "AxiomCode",
     "status": "live",
     "description": "Certification authority for software correctness. Machine-checked proofs, signed certificates.",
-    "note": "Live since 2026-11-09: the API at https://api.axiom-code.com is open (POST /verify, POST /check, GET /verify/jobs/{job_id}); the revocation list (GET /revoked) and CA public keys (GET /.well-known/axiomcode-keys.json) are public. The first 10 verification cases per API key are a free trial (no certificates). Credit packs are not yet on sale: billing is paused under the owner's readiness-arming rule, with the Stripe webhook and Payment Links deactivated until pack sales open. A hosted MCP endpoint is not live yet; the MCP server ships in the repository for local use.",
+    "note": "Live since 2026-11-09: the API at https://api.axiom-code.com is open (POST /verify, POST /check, GET /verify/jobs/{job_id}); the revocation list (GET /revoked) and CA public keys (GET /.well-known/axiomcode-keys.json) are public. The first 10 verification cases per API key are a free trial (no certificates). Credit packs are not yet on sale: billing is paused under the owner's readiness-arming rule, with the Stripe webhook and Payment Links deactivated until pack sales open. A hosted MCP endpoint is live at https://api.axiom-code.com/mcp/ (the same API key, the same queue, seven tools: verify, job_status, check_certificate, revoked, health, usage_report, pricing); the MCP server also ships in the repository for local use.",
     "homepage": SITE,
     "llms_txt": SITE + "/llms.txt",
     "docs": SITE + "/docs/api/",
@@ -96,8 +96,10 @@ trial runs on every new API key.
 - Check a certificate: POST /check with an API key, body {"certificate": {...}}.
 - Revocation list (public, no auth): GET /revoked
 - CA public keys (public, no auth): GET /.well-known/axiomcode-keys.json
-- MCP: a server ships in the AxiomCode repository (github.com/nrupala/axiomcode)
-  and runs locally against this API. A hosted MCP endpoint is NOT live yet.
+- MCP: a hosted endpoint is live at https://api.axiom-code.com/mcp/ (the same
+  API key, the same queue; tools: verify, job_status, check_certificate,
+  revoked, health, usage_report, pricing). A server also ships in the
+  AxiomCode repository (github.com/nrupala/axiomcode) for local use.
 
 ## Trial
 

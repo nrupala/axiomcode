@@ -23,8 +23,10 @@ trial runs on every new API key.
 - Check a certificate: POST /check with an API key, body {"certificate": {...}}.
 - Revocation list (public, no auth): GET /revoked
 - CA public keys (public, no auth): GET /.well-known/axiomcode-keys.json
-- MCP: a server ships in the AxiomCode repository (github.com/nrupala/axiomcode)
-  and runs locally against this API. A hosted MCP endpoint is NOT live yet.
+- MCP: a hosted endpoint is live at https://api.axiom-code.com/mcp/ (the same
+  API key, the same queue; tools: verify, job_status, check_certificate,
+  revoked, health, usage_report, pricing). A server also ships in the
+  AxiomCode repository (github.com/nrupala/axiomcode) for local use.
 
 ## Trial
 
