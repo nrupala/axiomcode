@@ -1,5 +1,5 @@
 product: axiomcode
-version: "0.3.0"
+version: "0.4.0"
 base_url: https://api.axiom-code.com
 types:
   - web
@@ -43,6 +43,18 @@ routes:
     auth: required
     expect_status: 401
     probe_body_json: "{}"
+  - path: /shell/turn
+    methods:
+      - POST
+    auth: required
+    expect_status: 401
+    probe_body_json: "{}"
+  - path: /shell/jobs/{job_id}
+    methods:
+      - GET
+    auth: required
+    expect_status: 401
+    probe_path: /shell/jobs/probe
   - path: /revoked
     methods:
       - GET
@@ -98,6 +110,13 @@ pathways:
     situation: an agent caller (an MCP client acting for a developer or an autonomous agent) presents an API key and calls the verification tools — submit a proof, poll a queued job, check a certificate, read the revocation list, usage and pricing; the trial and balance rules are PW-VERIFY's (the first 10 cases per key are a trial, verdicts never certificates)
     gateway: mcp_hosted.McpMount behind KeyAuthMiddleware — the MCP transport's only entry point; every tool calls the same verify_api callables the REST routes call (submit_verification, job_view, check_certificate_body), so admission, metering and revocation cannot drift between the legs
     validation: the API key is authenticated by KeyAuthMiddleware (through verify_api.authenticate_key, the single identity rule) before the MCP app runs; a missing, unknown or revoked key answers one identical 401 body; identity travels in a request-scoped ContextVar and tools take no identity parameter; DNS-rebinding protection is on, with a Host allowlist (loopback + api.axiom-code.com, extensible via AXIOMCODE_MCP_ALLOWED_HOSTS); sessions are stateless; admission is queue-shared with REST (eligibility before admission, durable FIFO when busy), and a job is readable only by the key that submitted it
+  - id: PW-SHELL
+    covers:
+      - /shell/turn
+      - /shell/jobs/{job_id}
+    situation: an authenticated key holder talks to the service through the website's Ask shell — phrasing what to verify, submitting code or a certificate, polling a queued job, and asking about usage, pricing and revocation — and is answered with code-rendered facts plus an optional explanation from the shell's model
+    gateway: verify_api.shell_turn / verify_api.shell_job over services/api/shell.py — the only path from a browser conversation to a service action; every action calls the same verify_api callables the REST routes and MCP tools call (submit_verification, job_view, check_certificate_body via="shell"), so admission, trial counting, metering and revocation cannot drift between legs
+    validation: API key authenticated by the same require_api_key dependency before any turn runs; the shell's model never issues, alters, softens or predicts a verdict — verdicts, account numbers, prices and revocation state enter a turn only as fact blocks rendered in code from API payloads, and the model's text is returned on a separate channel that nothing parses for facts; trial language is pinned by the renderer (a trial verdict renders as a trial verdict, never as a certificate); the key arrives by header only and is never stored, logged, echoed or placed in the model context; turns are rate-limited per key (the shell's own limiter, same 60/min shape) and actions additionally pass the shared REST limiter inside the shared callables; browser access is CORS-scoped to https://axiom-code.com on the browser-facing paths (/verify, /check, /revoked, /shell) by shell.BrowserCorsMiddleware — non-browser traffic is unchanged
   - id: PW-CHECKOUT
     covers: /billing/checkout
     situation: an authenticated key holder buys a credit pack; the checkout session is bound to the caller's key hash so the webhook can grant the right key
@@ -125,6 +144,10 @@ isolation:
     kind: critical-data
     tier: in-process-exception
     acceptance: "Wright (builder), 2026-11-09 — a queued job's submitted code is stored only until the job completes, then cleared from the store (the code hash and result are kept). Queued jobs are visible only to the submitting key."
+  - point: shell conversation and submitted code at the model lane
+    kind: critical-data
+    tier: in-process-exception
+    acceptance: "Wright (builder), 2026-11-11 — a shell turn's message, history and fact blocks are sent only to the model endpoint on the same host (loopback llama router, http://127.0.0.1:8830/v1 by default; the endpoint is env-configurable and no credential is configured for it). Nothing leaves the host; the model keeps no state between turns and cannot issue or alter verdicts (facts are rendered in code from API payloads, and the model's text is never parsed for facts). The caller's API key and its hash are never placed in the model context."
 # Notes for the gate (flip package, 2026-11-09):
 # - F-AX-8 disposition: /docs and /openapi.json on the API host stay
 #   PUBLIC by deliberate decision. They disclose the documented route
@@ -185,3 +208,25 @@ isolation:
 #   Hosting it would be a new gate declaration, not a config
 #   change. The coverage ledger's MCP out_of_scope unit refers to
 #   the standalone only; the hosted leg carries its own unit.
+# - Interactive shell package (0.4.0, 2026-11-11): PW-SHELL is a NEW
+#   pathway under Ruling 2's rule (a new face is its own gate) —
+#   declared here on the build branch (feat/interactive-shell);
+#   certification and deployment are the gate's, and nothing in this
+#   package is live until the gate certifies it. Version moves
+#   0.3.0 -> 0.4.0 (minor: a new declared face, no REST/MCP
+#   behaviour change).
+# - CORS finding + fix in the same package: the API shipped with NO
+#   CORS leg, so the site's own /verify and /check pages — cross-
+#   origin, preflighted fetches — were blocked by real browsers
+#   (live-probed 2026-11-11: OPTIONS /verify answered 405 with no
+#   Access-Control-Allow-Origin). shell.BrowserCorsMiddleware now
+#   answers CORS for https://axiom-code.com only, on the browser-
+#   facing paths only (/verify, /check, /revoked, /shell); route
+#   declarations are unchanged and non-browser clients see
+#   byte-identical behaviour. The gate is asked to note that the
+#   pre-fix pages could not complete a submission from a browser.
+# - The shell's model lane is box-local (loopback llama router,
+#   qwen2.5-coder-7b): no new credential exists for it, no
+#   conversation data leaves the host, and billing is untouched —
+#   the shell states the site's published pricing and that packs
+#   are not yet on sale; it sells nothing.

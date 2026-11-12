@@ -170,6 +170,49 @@ isn't — and this model is organised around it.
   identity), deployed nowhere, and it must never be deployed
   as-is; hosting it would be a new gate declaration.
 
+### T9 — The interactive shell (conversational layer)
+- The Ask shell (`services/api/shell.py`; routes `/shell/turn` and
+  `/shell/jobs/{job_id}`; site page `/ask/`) puts a language model in
+  front of the service for human callers. It is declared as its own
+  pathway (PW-SHELL in `gate.yaml`, gate package 0.4.0): a new face
+  is a distinct gate, even though every action behind it calls the
+  same `verify_api` callables as REST and MCP, so admission, trial
+  counting, metering and revocation cannot drift between legs.
+- The named threat is judgment corruption by conversation: a user —
+  or text injected through submitted code, a pasted certificate, or
+  a smuggled conversation turn — steering the model into misstating,
+  softening, or inventing a verdict. The control is structural, not
+  a prompt: verdicts, account numbers, prices and revocation state
+  enter a turn ONLY as fact blocks rendered in code from API
+  payloads (two registers built from the same values), the model's
+  text returns on a separate channel that nothing parses for facts,
+  and the page renders facts and explanation in separate regions.
+  History is sanitized in code (only user/assistant roles survive;
+  a smuggled 'system' turn is dropped). The model holds no tools and
+  no store access, and there is no action that re-judges a verdict:
+  resubmission is a new verification with its own verdict.
+- Trial semantics are pinned by the renderer, not the model: a
+  verdict body carrying a trial block or a null certificate renders
+  "no certificate was issued", and a certificate's serial and
+  validity dates enter text only from the payload.
+- The caller's key is authenticated by the same dependency as REST
+  before any turn runs; it is never stored, logged, echoed, or
+  placed in the model context (behaviour-tested, including a scan
+  of the state DB after turns). Conversation content goes only to
+  the model endpoint on the same host (loopback); the model is
+  stateless between turns.
+- Browser access rides the CORS posture of the 0.4.0 package: the
+  site's origin only, on the browser-facing paths only
+  (`/verify`, `/check`, `/revoked`, `/shell`). Before this package
+  the API had no CORS leg at all and the site's own pages were
+  blocked by browsers — the absence was the larger risk; the scoped
+  middleware is the control, and it changes no authentication rule.
+- Residual, stated plainly: the model's explanations can still be
+  clumsy or, within a true fact set, badly worded. The user-leg
+  walk (a first-time customer talking to the shell) is the control
+  for explanation quality; it is owed before this face is called
+  proven, and it cannot affect verdicts either way.
+
 ## Out of scope / not claimed
 
 - No protection is claimed against a compromised host OS (see T2).
