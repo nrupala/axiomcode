@@ -9,6 +9,7 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # import order is page registration order (drives sitemap.xml) - not alphabetical
 import pages_main  # noqa: F401, I001 (registration side effects)
+import pages_shell  # noqa: F401, I001 (registration side effects)
 import pages_docs  # noqa: F401, I001 (registration side effects)
 import pages_paperwork  # noqa: F401, I001 (registration side effects)
 import pages_blog
@@ -46,6 +47,10 @@ openapi = {
         },
         "/verify/jobs/{job_id}": {"get": {"summary": "Queued job position or result (submitting key only)"}},
         "/check": {"post": {"summary": "Validate a certificate JSON (API key)"}},
+        "/shell/turn": {
+            "post": {"summary": "Interactive shell turn: optional verify/check action plus conversation (API key)"}
+        },
+        "/shell/jobs/{job_id}": {"get": {"summary": "Shell polling read for a queued job (submitting key only)"}},
         "/revoked": {"get": {"summary": "Public revocation list (no auth)"}},
         "/.well-known/axiomcode-keys.json": {"get": {"summary": "CA public keys for offline validation (no auth)"}},
         "/health": {"get": {"summary": "Service health (no auth)"}},
