@@ -42,7 +42,7 @@ theorem add_comm_nat (a b : Nat) : a + b = b + a := by
 <tr><td><span class="badge b-fail">FAILED</span></td><td>The proof does not check. The transcript shows why.</td><td>No</td></tr>
 <tr><td><span class="badge b-warn">INCOMPLETE</span></td><td>Doesn&rsquo;t compile yet, or the target is vacuous. Fix and resubmit.</td><td>No</td></tr>
 </table>
-<p>Every verdict response carries its usage record &mdash; the exact compute time and what you were charged. Paid passes also carry the signed certificate.</p>
+<p>Every verdict response carries its usage record &mdash; the exact compute time and what you were charged. Paid verifications also carry the signed certificate, pass or fail &mdash; the certificate records the verdict; it does not improve it.</p>
 
 <h2 id="certificates">Certificates</h2>
 <p>A certificate is a signed JSON document. Fields are defined in the <a href="/paperwork/certificate-policy/">Certificate Policy</a>. Anyone can check a certificate&rsquo;s serial against the <a href="/check/">public revocation list</a>; full signature validation runs offline against the CA&rsquo;s published keys, or through the <a href="/check/">certificate checker</a> with an API key. Possible outcomes: <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, <span class="badge b-warn">EXPIRED</span>.</p>
@@ -77,7 +77,7 @@ page(
 <h2>REST endpoints</h2>
 <table class="spec">
 <tr><th>Method &amp; path</th><th>Auth</th><th>What it does</th></tr>
-<tr><td><code class="inline">POST /verify</code></td><td>API key</td><td>Verify a Lean artifact: <code class="inline">{"code": "&hellip;"}</code>. Returns the verdict, attempts, usage record, and &mdash; on a paid pass &mdash; the signed certificate. When every proof slot is busy, answers <code class="inline">202</code> with a queue position instead (see below). Answers <code class="inline">402</code> when the trial is exhausted and the key holds no credits &mdash; before any compute runs.</td></tr>
+<tr><td><code class="inline">POST /verify</code></td><td>API key</td><td>Verify a Lean artifact: <code class="inline">{"code": "&hellip;"}</code>. Returns the verdict, attempts, usage record, and &mdash; on a paid verification, pass or fail &mdash; the signed certificate recording that verdict. When every proof slot is busy, answers <code class="inline">202</code> with a queue position instead (see below). Answers <code class="inline">402</code> when the trial is exhausted and the key holds no credits &mdash; before any compute runs.</td></tr>
 <tr><td><code class="inline">GET /verify/jobs/{job_id}</code></td><td>API key</td><td>Your queued job&rsquo;s position, or its finished result. Only the submitting key can read a job &mdash; any other key gets <code class="inline">404</code>.</td></tr>
 <tr><td><code class="inline">POST /check</code></td><td>API key</td><td>Validate a certificate: <code class="inline">{"certificate": {&hellip;}}</code>. Recomputes the signature against the CA key and consults the revocation list.</td></tr>
 <tr><td><code class="inline">POST /shell/turn</code></td><td>API key</td><td>One interactive-shell turn for the <a href="/ask/">Ask page</a>: an optional action (<code class="inline">verify</code> / <code class="inline">check</code>) plus conversation. Answers with facts rendered in code from the service&rsquo;s own responses, and an optional explanation &mdash; verdicts are never the model&rsquo;s.</td></tr>

@@ -94,7 +94,7 @@ page(
 <p>A pass means one thing: the toolchain compiled your artifact and the proof checked. The full transcript ships with the verdict.</p>
 
 <h2>3. The certificate seals the evidence</h2>
-<p>On <span class="badge b-pass">PASSED</span>, the certification authority issues a signed certificate. The certificate credentials the code &mdash; our assessment that the artifact was built to its specification, as mechanically checked &mdash; and we hold no responsibility beyond this assessment. It contains:</p>
+<p>On <span class="badge b-pass">PASSED</span> &mdash; and on a FAILED paid verification too &mdash; the certification authority issues a signed certificate recording the verdict. The certificate credentials the code &mdash; our assessment that the artifact was built to its specification, as mechanically checked &mdash; and we hold no responsibility beyond this assessment. It contains:</p>
 <table class="spec">
 <tr><th>Field</th><th>Meaning</th></tr>
 <tr><td><code class="inline">artifact_sha256</code></td><td>Hash of exactly the code that was checked</td></tr>
@@ -182,7 +182,7 @@ page(
 <h3>Starter</h3><div class="price">$10</div><div class="per">1,000 credits, never expire</div>
 <ul>
 <li>Roughly 30&ndash;100 typical verifications</li>
-<li><strong>Signed certificates</strong> on every pass</li>
+<li><strong>Signed certificates</strong> on every paid verdict &mdash; pass or fail</li>
 <li>REST API + API key</li>
 <li>Certificate checker + revocation list</li>
 </ul>
@@ -192,7 +192,7 @@ page(
 <h3>Growth</h3><div class="price">$50</div><div class="per">5,000 credits, never expire</div>
 <ul>
 <li>Roughly 150&ndash;500 typical verifications</li>
-<li><strong>Signed certificates</strong> on every pass</li>
+<li><strong>Signed certificates</strong> on every paid verdict &mdash; pass or fail</li>
 <li>REST API access</li>
 <li>Per-verification usage records &amp; audit log</li>
 </ul>
@@ -202,7 +202,7 @@ page(
 <h3>Scale</h3><div class="price">$200</div><div class="per">20,000 credits, never expire</div>
 <ul>
 <li>Roughly 600&ndash;2,000 typical verifications</li>
-<li><strong>Signed certificates</strong> on every pass</li>
+<li><strong>Signed certificates</strong> on every paid verdict &mdash; pass or fail</li>
 <li>Everything in Growth</li>
 <li>The same fair FIFO queue as everyone &mdash; nobody jumps the line</li>
 </ul>
