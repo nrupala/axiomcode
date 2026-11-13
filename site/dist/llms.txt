@@ -6,16 +6,37 @@ AxiomCode verifies Lean 4 software specifications with a real toolchain and issu
 signed, revocable, independently verifiable certificates binding the artifact hash,
 verdict, toolchain, issuer, serial, and validity window.
 
-## Status: live (opened 2026-11-09)
+## Status (generated from the canonical status source)
 
-The service is open. The REST API below is live. Billing is paused: credit packs
-are not yet on sale, so certificates unlock when pack sales open; until then the
-trial runs on every new API key.
+Full status: https://axiom-code.com/status/ — machine-readable: https://axiom-code.com/status.json
+Changelog & service record: https://axiom-code.com/changelog/
+How the practice runs (gates, soak, certificates, error reporting): https://axiom-code.com/practice/
+
+- REST API: live / in_soak; public since 2026-11-09; graduation decision scheduled 2026-11-16 — https://api.axiom-code.com
+- Hosted MCP: live / in_soak; public since 2026-11-09; graduation decision scheduled 2026-11-16 — https://api.axiom-code.com/mcp/
+- Local MCP: live / live — https://github.com/nrupala/axiomcode
+- Web verifier: live / in_soak; public since 2026-11-09; graduation decision scheduled 2026-11-16 — https://axiom-code.com/verify/
+- Certificate checker: live / in_soak; public since 2026-11-09; graduation decision scheduled 2026-11-16 — https://axiom-code.com/check/
+- Ask shell: live / in_soak; public since 2026-11-11; graduation decision scheduled 2026-11-18 — https://axiom-code.com/ask/
+- Ask explanations: live / in_soak; public since 2026-11-11; graduation decision scheduled 2026-11-18 — https://axiom-code.com/ask/
+- Free trial: live / live; public since 2026-11-09 — https://axiom-code.com/pricing/
+- Billing / credit packs: paused / paused — https://axiom-code.com/pricing/
+- Paid certificates: paused / paused — https://axiom-code.com/pricing/
+- Smart-contract verification: unavailable / in_design — https://axiom-code.com/status/
+- Offline / air-gapped verifier: unavailable / not_built — https://axiom-code.com/status/
+- L3 proof-generating agent: unavailable / not_built — https://axiom-code.com/status/
+- Verified library (complete L2): unavailable / not_built — https://axiom-code.com/status/
+
+Availability and lifecycle are separate: a surface can be live and still in release-candidate soak. A scheduled graduation date is not a graduation — graduation is a recorded gate decision.
 
 ## For agents
 
 - API docs: https://axiom-code.com/docs/api/
 - Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json
+- Status (human): https://axiom-code.com/status/
+- Status (machine): https://axiom-code.com/status.json
+- Changelog & service record: https://axiom-code.com/changelog/
+- Practice (gates, soak, certificates, error reporting): https://axiom-code.com/practice/
 - REST base (live): https://api.axiom-code.com
 - Verify: POST /verify with an API key (X-Api-Key header), body {"code": "..."}.
   When every proof slot is busy the answer is 202 {"status":"queued","job_id":...,

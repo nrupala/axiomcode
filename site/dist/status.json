@@ -1,0 +1,319 @@
+{
+  "meta": {
+    "service": "AxiomCode",
+    "as_of": "2026-11-12",
+    "timezone": "America/Edmonton",
+    "source": "site/status_data.py",
+    "status_page": "https://axiom-code.com/status/"
+  },
+  "surfaces": [
+    {
+      "surface_id": "rest_api",
+      "name": "REST API",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "canonical_url": "https://api.axiom-code.com",
+      "summary": "The verification service: verify, certificate check, queued jobs, revocation list, CA keys, health.",
+      "evidence": [
+        {
+          "label": "Health",
+          "url": "https://api.axiom-code.com/health"
+        },
+        {
+          "label": "OpenAPI",
+          "url": "https://api.axiom-code.com/openapi.json"
+        }
+      ],
+      "known_limits": [
+        "In release-candidate soak as part of the 2026-11-09 public flip. Graduation is a recorded gate decision scheduled for 2026-11-16 \u2014 the date alone does not graduate it."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "hosted_mcp",
+      "name": "Hosted MCP",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "canonical_url": "https://api.axiom-code.com/mcp/",
+      "summary": "MCP endpoint for agents: same API key, same queue, seven tools (verify, job_status, check_certificate, revoked, health, usage_report, pricing).",
+      "evidence": [
+        {
+          "label": "MCP endpoint",
+          "url": "https://api.axiom-code.com/mcp/"
+        },
+        {
+          "label": "API documentation",
+          "url": "https://axiom-code.com/docs/api/"
+        }
+      ],
+      "known_limits": [
+        "In release-candidate soak with the public flip; graduation is a recorded gate decision scheduled for 2026-11-16."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "local_mcp",
+      "name": "Local MCP",
+      "availability": "live",
+      "lifecycle": "live",
+      "public_since": null,
+      "graduates_on": null,
+      "canonical_url": "https://github.com/nrupala/axiomcode",
+      "summary": "The MCP server also ships in the AxiomCode repository for local use, against the same API. Documented separately from the hosted endpoint.",
+      "evidence": [
+        {
+          "label": "Repository",
+          "url": "https://github.com/nrupala/axiomcode"
+        }
+      ],
+      "known_limits": [],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "web_verifier",
+      "name": "Web verifier",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "canonical_url": "https://axiom-code.com/verify/",
+      "summary": "Browser verification form on this site, backed by the live API.",
+      "evidence": [
+        {
+          "label": "Web verifier",
+          "url": "https://axiom-code.com/verify/"
+        }
+      ],
+      "known_limits": [
+        "Browser submission was broken at the public flip (finding F-AX-10: the API lacked the cross-origin leg for the site origin) and was repaired and re-verified on 2026-11-11."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "certificate_checker",
+      "name": "Certificate checker",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "canonical_url": "https://axiom-code.com/check/",
+      "summary": "Browser certificate checker; the revocation list and CA public keys are public, so certificates can also be validated offline.",
+      "evidence": [
+        {
+          "label": "Certificate checker",
+          "url": "https://axiom-code.com/check/"
+        },
+        {
+          "label": "Revocation list",
+          "url": "https://api.axiom-code.com/revoked"
+        },
+        {
+          "label": "CA public keys",
+          "url": "https://api.axiom-code.com/.well-known/axiomcode-keys.json"
+        }
+      ],
+      "known_limits": [
+        "Browser submission was broken at the public flip (finding F-AX-10) and was repaired and re-verified on 2026-11-11."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "ask_shell",
+      "name": "Ask shell",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-11",
+      "graduates_on": "2026-11-18",
+      "canonical_url": "https://axiom-code.com/ask/",
+      "summary": "Conversational access to the service. Ask renders facts from service responses and may add an explanation; it does not issue, change, soften, or predict verdicts.",
+      "evidence": [
+        {
+          "label": "Ask",
+          "url": "https://axiom-code.com/ask/"
+        }
+      ],
+      "known_limits": [
+        "In release-candidate soak; graduation is a recorded gate decision scheduled for 2026-11-18."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "ask_explanations",
+      "name": "Ask explanations",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-11",
+      "graduates_on": "2026-11-18",
+      "canonical_url": "https://axiom-code.com/ask/",
+      "summary": "The explanation step of the Ask shell, layered over service facts.",
+      "evidence": [
+        {
+          "label": "Ask",
+          "url": "https://axiom-code.com/ask/"
+        }
+      ],
+      "known_limits": [
+        "Degraded-first: the explanation step may time out under load. The service facts are still returned and the missing explanation is stated. Explanation latency is an open residual carried in the soak."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "trial",
+      "name": "Free trial",
+      "availability": "live",
+      "lifecycle": "live",
+      "public_since": "2026-11-09",
+      "graduates_on": null,
+      "canonical_url": "https://axiom-code.com/pricing/",
+      "summary": "The first 10 verification cases per API key are free: verdicts and usage records, never certificates.",
+      "evidence": [
+        {
+          "label": "Pricing",
+          "url": "https://axiom-code.com/pricing/"
+        }
+      ],
+      "known_limits": [],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "billing",
+      "name": "Billing / credit packs",
+      "availability": "paused",
+      "lifecycle": "paused",
+      "public_since": null,
+      "graduates_on": null,
+      "canonical_url": "https://axiom-code.com/pricing/",
+      "summary": "Credit packs are priced (US$10 / $50 / $200) but not on sale. The Stripe webhook and Payment Links are deactivated until pack sales are deliberately opened.",
+      "evidence": [
+        {
+          "label": "Pricing",
+          "url": "https://axiom-code.com/pricing/"
+        }
+      ],
+      "known_limits": [
+        "No purchase path is open. Checkout answers 501 while billing is paused."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "paid_certificates",
+      "name": "Paid certificates",
+      "availability": "paused",
+      "lifecycle": "paused",
+      "public_since": null,
+      "graduates_on": null,
+      "canonical_url": "https://axiom-code.com/pricing/",
+      "summary": "The rule is live in the service: a completed paid verification receives a signed certificate recording PASSED or FAILED. Certificates are not purchasable while billing is paused.",
+      "evidence": [
+        {
+          "label": "Certificate Policy",
+          "url": "https://axiom-code.com/paperwork/certificate-policy/"
+        },
+        {
+          "label": "Pricing",
+          "url": "https://axiom-code.com/pricing/"
+        }
+      ],
+      "known_limits": [
+        "Unlock when pack sales open; the trial never produces a certificate."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "smart_contract_verification",
+      "name": "Smart-contract verification",
+      "availability": "unavailable",
+      "lifecycle": "in_design",
+      "public_since": null,
+      "graduates_on": null,
+      "canonical_url": "https://axiom-code.com/status/",
+      "summary": "Design complete 2026-11-11 (Solidity/EVM first, ingest at Yul IR, fixed property packs). Increment 0 \u2014 the feasibility spike \u2014 was approved on 2026-11-12 and is running.",
+      "evidence": [
+        {
+          "label": "Status",
+          "url": "https://axiom-code.com/status/"
+        }
+      ],
+      "known_limits": [
+        "Not a current capability. Nothing on this site presents it as one."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "offline_verifier",
+      "name": "Offline / air-gapped verifier",
+      "availability": "unavailable",
+      "lifecycle": "not_built",
+      "public_since": null,
+      "graduates_on": null,
+      "canonical_url": "https://axiom-code.com/status/",
+      "summary": "Running the verification engine itself offline or air-gapped, for enterprise use. Approved in the build queue; not built.",
+      "evidence": [
+        {
+          "label": "Status",
+          "url": "https://axiom-code.com/status/"
+        }
+      ],
+      "known_limits": [
+        "Offline certificate validation IS available today (public CA keys and revocation list). Offline verification is a different capability and is not built."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "l3_agent",
+      "name": "L3 proof-generating agent",
+      "availability": "unavailable",
+      "lifecycle": "not_built",
+      "public_since": null,
+      "graduates_on": null,
+      "canonical_url": "https://axiom-code.com/status/",
+      "summary": "An agent that generates proofs for the kernel to judge. Approved in the build queue; not built. Ask explains and orchestrates existing service calls; it is not an L3 agent.",
+      "evidence": [
+        {
+          "label": "Status",
+          "url": "https://axiom-code.com/status/"
+        }
+      ],
+      "known_limits": [],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    },
+    {
+      "surface_id": "verified_library",
+      "name": "Verified library (complete L2)",
+      "availability": "unavailable",
+      "lifecycle": "not_built",
+      "public_since": null,
+      "graduates_on": null,
+      "canonical_url": "https://axiom-code.com/status/",
+      "summary": "A complete L2 verified library. Partial L2 work exists in the repository; the complete library is not built and no completeness claim is made.",
+      "evidence": [
+        {
+          "label": "Repository",
+          "url": "https://github.com/nrupala/axiomcode"
+        }
+      ],
+      "known_limits": [
+        "The verified library is incomplete."
+      ],
+      "owner": "AxiomCode service owner",
+      "last_verified_at": "2026-11-12"
+    }
+  ]
+}

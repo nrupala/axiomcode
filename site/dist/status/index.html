@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Status | AxiomCode</title>
+<meta name="description" content="AxiomCode service status: every surface&#x27;s availability and lifecycle — live, paused, in soak, in design, not built — generated from one canonical source.">
+<link rel="canonical" href="https://axiom-code.com/status/">
+<meta property="og:site_name" content="AxiomCode">
+<meta property="og:title" content="Status | AxiomCode">
+<meta property="og:description" content="AxiomCode service status: every surface&#x27;s availability and lifecycle — live, paused, in soak, in design, not built — generated from one canonical source.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://axiom-code.com/status/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Status | AxiomCode">
+<meta name="twitter:description" content="AxiomCode service status: every surface&#x27;s availability and lifecycle — live, paused, in soak, in design, not built — generated from one canonical source.">
+<style>
+:root{--ink:#101828;--mut:#475467;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
+--gold:#b98a2f;--goldsoft:#faf3e3;--green:#12805c;--greensoft:#e9f7f0;
+--red:#b42318;--redsoft:#fdeceb;--navy:#0c1f3f;--radius:10px;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;font-size:17px}
+a{color:#175cd3;text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.prose{max-width:72ch}
+/* header */
+.prelaunch{background:var(--goldsoft);border-bottom:1px solid var(--line);padding:10px 0;font-size:14.5px}
+.sitehead{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
+.sitehead .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink)}
+.brand:hover{text-decoration:none}
+.brand svg{width:30px;height:30px}
+.nav{display:flex;gap:22px;margin-left:auto;font-size:15px}
+.nav a{color:var(--mut)}.nav a:hover{color:var(--ink)}
+.cta{display:inline-block;background:var(--navy);color:#fff!important;padding:9px 18px;border-radius:8px;font-weight:600;font-size:15px}
+.cta:hover{background:#16294f;text-decoration:none}
+/* hero */
+.hero{background:linear-gradient(180deg,#0c1f3f 0%,#12294f 100%);color:#fff;padding:84px 0 72px}
+.hero h1{font-size:46px;line-height:1.15;margin:0 0 18px;letter-spacing:-.5px;max-width:16em}
+.hero p.lede{font-size:20px;color:#cbd5e1;max-width:34em;margin:0 0 28px}
+.hero .row{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-block;padding:13px 26px;border-radius:9px;font-weight:700;font-size:16px;border:1px solid transparent}
+.btn-gold{background:var(--gold);color:#1a1206!important}.btn-gold:hover{background:#c99a3f;text-decoration:none}
+.btn-ghost{border-color:#3b4a63;color:#fff!important}.btn-ghost:hover{border-color:#5b6b85;text-decoration:none}
+.trustline{margin-top:26px;font-size:14px;color:#93a1b8}
+/* sections */
+section.block{padding:64px 0}
+section.block h2{font-size:30px;margin:0 0 12px;letter-spacing:-.3px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:28px}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:26px;background:#fff}
+.card h3{margin:0 0 8px;font-size:19px}
+.card p{margin:0;color:var(--mut);font-size:15.5px}
+.card .num{display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;
+align-items:center;justify-content:center;font-weight:700;margin-bottom:12px}
+/* seal / cert demo */
+.sealbox{background:var(--wash);border:1px solid var(--line);border-radius:12px;padding:28px;margin-top:24px}
+pre.code{background:#0c1f3f;color:#d7e3f4;padding:20px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;font-family:var(--mono)}
+code.inline{font-family:var(--mono);background:var(--wash);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:.88em}
+/* verdict badges */
+.badge{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;font-size:14px}
+.b-pass{background:var(--greensoft);color:var(--green);border:1px solid #bfe6d2}
+.b-fail{background:var(--redsoft);color:var(--red);border:1px solid #f3c2bc}
+.b-warn{background:var(--goldsoft);color:#8a6414;border:1px solid #ecd9a8}
+/* pricing */
+.ptable{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-top:28px}
+.plan{border:1px solid var(--line);border-radius:12px;padding:28px;background:#fff;position:relative}
+.plan.hot{border:2px solid var(--gold);box-shadow:0 8px 30px rgba(185,138,47,.12)}
+.plan h3{margin:0 0 4px}.plan .price{font-size:34px;font-weight:800;margin:8px 0}
+.plan .per{color:var(--mut);font-size:14px}
+.plan ul{padding-left:20px;color:var(--mut);font-size:15px;margin:16px 0}
+.plan li{margin-bottom:8px}
+/* forms */
+textarea.codebox{width:100%;min-height:260px;font-family:var(--mono);font-size:14px;padding:16px;
+border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
+input[type=text],input[type=email]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px}
+label.fl{display:block;font-weight:600;margin:18px 0 6px}
+button.go{background:var(--navy);color:#fff;border:0;padding:13px 30px;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer}
+button.go:hover{background:#16294f}button.go:disabled{opacity:.55;cursor:wait}
+.result{margin-top:24px;border:1px solid var(--line);border-radius:10px;padding:22px;display:none}
+.result.show{display:block}
+/* footer */
+.sitefoot{background:#0c1f3f;color:#aeb9cc;padding:56px 0 32px;margin-top:40px;font-size:15px}
+.sitefoot a{color:#d7e0ee}.sitefoot .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:28px}
+.sitefoot h4{color:#fff;margin:0 0 12px;font-size:15px}
+.sitefoot ul{list-style:none;margin:0;padding:0}.sitefoot li{margin-bottom:8px}
+.fine{margin-top:36px;padding-top:20px;border-top:1px solid #22345a;font-size:13px;color:#7d8ba3}
+/* docs */
+.docnav{background:var(--wash);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:24px 0}
+table.spec{width:100%;border-collapse:collapse;font-size:15px;margin:20px 0}
+table.spec th,table.spec td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}
+table.spec th{background:var(--wash)}
+.note{border-left:4px solid var(--gold);background:var(--goldsoft);padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0;font-size:15.5px}
+.note.blue{border-color:#175cd3;background:#eff4ff}
+h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
+.sub{color:var(--mut);font-size:19px;margin:0 0 8px}
+.faq details{border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:10px}
+.faq summary{font-weight:700;cursor:pointer}
+@media(max-width:760px){.hero h1{font-size:32px}.nav{display:none}}
+</style>
+
+</head>
+<body>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
+<div class="sitehead"><div class="wrap">
+<a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
+<nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/ask/">Ask</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/status/">Status</a><a href="/changelog/">Changelog</a><a href="/practice/">Practice</a><a href="/paperwork/">Paperwork</a></nav>
+<a class="cta" href="/verify/">Try free</a>
+</div></div>
+<section class="block"><div class="wrap"><div class="prose">
+<h1 class="pt">Status</h1>
+<p class="sub">The current truth for every AxiomCode surface — including what is paused, in design, or not built.</p>
+<div class="note"><strong>Last verified 12 November 2026 (America/Edmonton).</strong>
+This page is generated from one canonical status source; the same source produces
+<a href="/status.json">status.json</a>, the status section of the
+<a href="/.well-known/axiomcode.json">machine-readable service record</a>, and the status
+section of <a href="/llms.txt">llms.txt</a>. CI drift checks fail the build when they disagree.
+Availability and lifecycle are separate facts: a surface can be <strong>live</strong> and still
+<strong>in soak</strong>.</div>
+
+<h2>Service health now</h2>
+<ul><li><strong>REST API</strong> — <a href="https://api.axiom-code.com/health">Health</a> · <a href="https://api.axiom-code.com/openapi.json">OpenAPI</a></li><li><strong>Hosted MCP</strong> — <a href="https://api.axiom-code.com/mcp/">MCP endpoint</a> · <a href="https://axiom-code.com/docs/api/">API documentation</a></li><li><strong>Local MCP</strong> — <a href="https://github.com/nrupala/axiomcode">Repository</a></li><li><strong>Web verifier</strong> — <a href="https://axiom-code.com/verify/">Web verifier</a></li><li><strong>Certificate checker</strong> — <a href="https://axiom-code.com/check/">Certificate checker</a> · <a href="https://api.axiom-code.com/revoked">Revocation list</a> · <a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">CA public keys</a></li><li><strong>Ask shell</strong> — <a href="https://axiom-code.com/ask/">Ask</a></li><li><strong>Ask explanations</strong> — <a href="https://axiom-code.com/ask/">Ask</a></li><li><strong>Free trial</strong> — <a href="https://axiom-code.com/pricing/">Pricing</a></li></ul>
+
+<h2>Lifecycle</h2>
+<table class="spec">
+<tr><th>Surface</th><th>Availability</th><th>Lifecycle</th><th>Public since</th><th>Scheduled</th><th>Evidence</th></tr>
+<tr><td><strong>REST API</strong><br><span style="color:var(--mut)">The verification service: verify, certificate check, queued jobs, revocation list, CA keys, health.</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-warn">In soak</span></td><td>9 November 2026</td><td>Graduation decision: 16 November 2026</td><td><a href="https://api.axiom-code.com/health">Health</a> · <a href="https://api.axiom-code.com/openapi.json">OpenAPI</a></td></tr><tr><td><strong>Hosted MCP</strong><br><span style="color:var(--mut)">MCP endpoint for agents: same API key, same queue, seven tools (verify, job_status, check_certificate, revoked, health, usage_report, pricing).</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-warn">In soak</span></td><td>9 November 2026</td><td>Graduation decision: 16 November 2026</td><td><a href="https://api.axiom-code.com/mcp/">MCP endpoint</a> · <a href="https://axiom-code.com/docs/api/">API documentation</a></td></tr><tr><td><strong>Local MCP</strong><br><span style="color:var(--mut)">The MCP server also ships in the AxiomCode repository for local use, against the same API. Documented separately from the hosted endpoint.</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-pass">Live</span></td><td>—</td><td>—</td><td><a href="https://github.com/nrupala/axiomcode">Repository</a></td></tr><tr><td><strong>Web verifier</strong><br><span style="color:var(--mut)">Browser verification form on this site, backed by the live API.</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-warn">In soak</span></td><td>9 November 2026</td><td>Graduation decision: 16 November 2026</td><td><a href="https://axiom-code.com/verify/">Web verifier</a></td></tr><tr><td><strong>Certificate checker</strong><br><span style="color:var(--mut)">Browser certificate checker; the revocation list and CA public keys are public, so certificates can also be validated offline.</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-warn">In soak</span></td><td>9 November 2026</td><td>Graduation decision: 16 November 2026</td><td><a href="https://axiom-code.com/check/">Certificate checker</a> · <a href="https://api.axiom-code.com/revoked">Revocation list</a> · <a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">CA public keys</a></td></tr><tr><td><strong>Ask shell</strong><br><span style="color:var(--mut)">Conversational access to the service. Ask renders facts from service responses and may add an explanation; it does not issue, change, soften, or predict verdicts.</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-warn">In soak</span></td><td>11 November 2026</td><td>Graduation decision: 18 November 2026</td><td><a href="https://axiom-code.com/ask/">Ask</a></td></tr><tr><td><strong>Ask explanations</strong><br><span style="color:var(--mut)">The explanation step of the Ask shell, layered over service facts.</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-warn">In soak</span></td><td>11 November 2026</td><td>Graduation decision: 18 November 2026</td><td><a href="https://axiom-code.com/ask/">Ask</a></td></tr><tr><td><strong>Free trial</strong><br><span style="color:var(--mut)">The first 10 verification cases per API key are free: verdicts and usage records, never certificates.</span></td><td><span class="badge b-pass">Live</span></td><td><span class="badge b-pass">Live</span></td><td>9 November 2026</td><td>—</td><td><a href="https://axiom-code.com/pricing/">Pricing</a></td></tr><tr><td><strong>Billing / credit packs</strong><br><span style="color:var(--mut)">Credit packs are priced (US$10 / $50 / $200) but not on sale. The Stripe webhook and Payment Links are deactivated until pack sales are deliberately opened.</span></td><td><span class="badge b-warn">Paused</span></td><td><span class="badge b-warn">Paused</span></td><td>—</td><td>—</td><td><a href="https://axiom-code.com/pricing/">Pricing</a></td></tr><tr><td><strong>Paid certificates</strong><br><span style="color:var(--mut)">The rule is live in the service: a completed paid verification receives a signed certificate recording PASSED or FAILED. Certificates are not purchasable while billing is paused.</span></td><td><span class="badge b-warn">Paused</span></td><td><span class="badge b-warn">Paused</span></td><td>—</td><td>—</td><td><a href="https://axiom-code.com/paperwork/certificate-policy/">Certificate Policy</a> · <a href="https://axiom-code.com/pricing/">Pricing</a></td></tr><tr><td><strong>Smart-contract verification</strong><br><span style="color:var(--mut)">Design complete 2026-11-11 (Solidity/EVM first, ingest at Yul IR, fixed property packs). Increment 0 — the feasibility spike — was approved on 2026-11-12 and is running.</span></td><td><span class="badge b-fail">Unavailable</span></td><td><span class="badge b-warn">In design</span></td><td>—</td><td>—</td><td><a href="https://axiom-code.com/status/">Status</a></td></tr><tr><td><strong>Offline / air-gapped verifier</strong><br><span style="color:var(--mut)">Running the verification engine itself offline or air-gapped, for enterprise use. Approved in the build queue; not built.</span></td><td><span class="badge b-fail">Unavailable</span></td><td><span class="badge b-fail">Not built</span></td><td>—</td><td>—</td><td><a href="https://axiom-code.com/status/">Status</a></td></tr><tr><td><strong>L3 proof-generating agent</strong><br><span style="color:var(--mut)">An agent that generates proofs for the kernel to judge. Approved in the build queue; not built. Ask explains and orchestrates existing service calls; it is not an L3 agent.</span></td><td><span class="badge b-fail">Unavailable</span></td><td><span class="badge b-fail">Not built</span></td><td>—</td><td>—</td><td><a href="https://axiom-code.com/status/">Status</a></td></tr><tr><td><strong>Verified library (complete L2)</strong><br><span style="color:var(--mut)">A complete L2 verified library. Partial L2 work exists in the repository; the complete library is not built and no completeness claim is made.</span></td><td><span class="badge b-fail">Unavailable</span></td><td><span class="badge b-fail">Not built</span></td><td>—</td><td>—</td><td><a href="https://github.com/nrupala/axiomcode">Repository</a></td></tr>
+</table>
+
+<h2>Scheduled transitions</h2>
+<ul><li><strong>REST API</strong> — graduation decision scheduled 16 November 2026. A scheduled date is a plan, not a result: graduation requires a recorded gate decision and a changelog entry.</li><li><strong>Hosted MCP</strong> — graduation decision scheduled 16 November 2026. A scheduled date is a plan, not a result: graduation requires a recorded gate decision and a changelog entry.</li><li><strong>Web verifier</strong> — graduation decision scheduled 16 November 2026. A scheduled date is a plan, not a result: graduation requires a recorded gate decision and a changelog entry.</li><li><strong>Certificate checker</strong> — graduation decision scheduled 16 November 2026. A scheduled date is a plan, not a result: graduation requires a recorded gate decision and a changelog entry.</li><li><strong>Ask shell</strong> — graduation decision scheduled 18 November 2026. A scheduled date is a plan, not a result: graduation requires a recorded gate decision and a changelog entry.</li><li><strong>Ask explanations</strong> — graduation decision scheduled 18 November 2026. A scheduled date is a plan, not a result: graduation requires a recorded gate decision and a changelog entry.</li></ul>
+
+<h2>Known limitations</h2>
+<ul><li><strong>REST API:</strong> In release-candidate soak as part of the 2026-11-09 public flip. Graduation is a recorded gate decision scheduled for 2026-11-16 — the date alone does not graduate it.</li><li><strong>Hosted MCP:</strong> In release-candidate soak with the public flip; graduation is a recorded gate decision scheduled for 2026-11-16.</li><li><strong>Web verifier:</strong> Browser submission was broken at the public flip (finding F-AX-10: the API lacked the cross-origin leg for the site origin) and was repaired and re-verified on 2026-11-11.</li><li><strong>Certificate checker:</strong> Browser submission was broken at the public flip (finding F-AX-10) and was repaired and re-verified on 2026-11-11.</li><li><strong>Ask shell:</strong> In release-candidate soak; graduation is a recorded gate decision scheduled for 2026-11-18.</li><li><strong>Ask explanations:</strong> Degraded-first: the explanation step may time out under load. The service facts are still returned and the missing explanation is stated. Explanation latency is an open residual carried in the soak.</li><li><strong>Billing / credit packs:</strong> No purchase path is open. Checkout answers 501 while billing is paused.</li><li><strong>Paid certificates:</strong> Unlock when pack sales open; the trial never produces a certificate.</li><li><strong>Smart-contract verification:</strong> Not a current capability. Nothing on this site presents it as one.</li><li><strong>Offline / air-gapped verifier:</strong> Offline certificate validation IS available today (public CA keys and revocation list). Offline verification is a different capability and is not built.</li><li><strong>Verified library (complete L2):</strong> The verified library is incomplete.</li></ul>
+
+<h2>Recent status changes</h2>
+<ul><li>12 November 2026 — <a href="/changelog/#2026-11-12-status-changelog-practice">Status page, changelog, and practice page — one canonical source</a></li><li>11 November 2026 — <a href="/changelog/#2026-11-11-f-ax-10">Finding F-AX-10: browser submission repaired</a></li><li>11 November 2026 — <a href="/changelog/#2026-11-11-ask-launch">Ask shell launched</a></li><li>9 November 2026 — <a href="/changelog/#2026-11-09-public-opening">Public opening and hosted MCP</a></li></ul>
+<p>Full record: <a href="/changelog/">Changelog &amp; service record</a>.</p>
+</div></div></section>
+<footer class="sitefoot"><div class="wrap">
+<div class="cols">
+<div><h4>Product</h4><ul>
+<li><a href="/how-it-works/">How it works</a></li>
+<li><a href="/pricing/">Pricing</a></li>
+<li><a href="/verify/">Try free</a></li>
+<li><a href="/ask/">Ask AxiomCode</a></li>
+<li><a href="/check/">Check a certificate</a></li>
+</ul></div>
+<div><h4>Developers &amp; agents</h4><ul>
+<li><a href="/docs/">Documentation</a></li>
+<li><a href="/docs/api/">REST &amp; MCP API</a></li>
+<li><a href="/status.json">Status JSON</a></li>
+<li><a href="/llms.txt">llms.txt</a></li>
+<li><a href="/.well-known/axiomcode.json">Machine-readable service info</a></li>
+</ul></div>
+<div><h4>Trust &amp; paperwork</h4><ul>
+<li><a href="/status/">Status</a></li>
+<li><a href="/changelog/">Changelog &amp; service record</a></li>
+<li><a href="/practice/">Practice</a></li>
+<li><a href="/paperwork/terms/">Terms of Service</a></li>
+<li><a href="/paperwork/privacy/">Privacy Policy</a></li>
+<li><a href="/paperwork/certificate-policy/">Certificate Policy &amp; CPS</a></li>
+<li><a href="/paperwork/refunds/">Refund Policy</a></li>
+<li><a href="/paperwork/sla/">Service Levels</a></li>
+</ul></div>
+<div><h4>Company</h4><ul>
+<li><a href="/blog/">Blog</a></li>
+<li><a href="/releases/">Release log (now Changelog)</a></li>
+<li><a href="/paperwork/security/">Security &amp; disclosure</a></li>
+<li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
+</ul></div>
+</div>
+<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
+</div></footer>
+</body>
+</html>

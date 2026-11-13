@@ -1,3 +1,4 @@
+import status_data
 from build import SITE, page
 
 # ---------- blog ----------
@@ -25,7 +26,7 @@ page(
 <div class="kicker">26 September 2026 &middot; Launch</div>
 <h1 class="pt">Don&rsquo;t trust our AI &mdash; verify our proof</h1>
 <p class="sub">Why we built a certification authority for software correctness.</p>
-<div class="note"><strong>Status note, 12 November 2026:</strong> this article was written before the public opening. AxiomCode opened on 9 November 2026. Hosted MCP is live; Ask is live and in soak until 18 November 2026; billing remains paused; smart-contract verification remains design only.</div>
+<div class="note"><strong>Status note, 12 November 2026:</strong> this article was written before the public opening (9 November 2026), and product facts in it have since changed. Current service status lives on the <a href="/status/">status page</a>; every change since the opening is recorded in the <a href="/changelog/">changelog</a>.</div>
 
 <p>AI writes code now. A lot of it. And the industry&rsquo;s answer to &ldquo;is it right?&rdquo; is still, essentially, vibes: code review (opinion), tests (samples), audits (expensive snapshots). All useful. None of them evidence.</p>
 
@@ -72,7 +73,15 @@ WELLKNOWN = {
     "contact": "hello@axiom-code.com",
 }
 
-LLMS_TXT = """# AxiomCode
+# Status section — generated from the canonical status source (status_data.py).
+WELLKNOWN["status_page"] = SITE + "/status/"
+WELLKNOWN["status_json"] = SITE + "/status.json"
+WELLKNOWN["changelog"] = SITE + "/changelog/"
+WELLKNOWN["practice"] = SITE + "/practice/"
+WELLKNOWN["status_as_of"] = status_data.STATUS_META["as_of"]
+WELLKNOWN["surfaces"] = status_data.wellknown_surfaces()
+
+_LLMS_HEAD = """# AxiomCode
 
 > The certification authority for software correctness. Don't trust our AI — verify our proof.
 
@@ -80,16 +89,16 @@ AxiomCode verifies Lean 4 software specifications with a real toolchain and issu
 signed, revocable, independently verifiable certificates binding the artifact hash,
 verdict, toolchain, issuer, serial, and validity window.
 
-## Status: live (opened 2026-11-09)
+"""
 
-The service is open. The REST API below is live. Billing is paused: credit packs
-are not yet on sale, so certificates unlock when pack sales open; until then the
-trial runs on every new API key.
-
-## For agents
+_LLMS_TAIL = """## For agents
 
 - API docs: https://axiom-code.com/docs/api/
 - Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json
+- Status (human): https://axiom-code.com/status/
+- Status (machine): https://axiom-code.com/status.json
+- Changelog & service record: https://axiom-code.com/changelog/
+- Practice (gates, soak, certificates, error reporting): https://axiom-code.com/practice/
 - REST base (live): https://api.axiom-code.com
 - Verify: POST /verify with an API key (X-Api-Key header), body {"code": "..."}.
   When every proof slot is busy the answer is 202 {"status":"queued","job_id":...,
@@ -126,26 +135,9 @@ is handled by public revocation — see the Certificate Policy.
 - Security & disclosure: https://axiom-code.com/paperwork/security/
 """
 
+# llms.txt = static head + generated status section + static tail.
+LLMS_TXT = _LLMS_HEAD + status_data.llms_status_section() + "\n" + _LLMS_TAIL
+
 # ---------- release log ----------
-page(
-    "/releases/",
-    "Release log",
-    "AxiomCode release log: what changed, when, and the current service status.",
-    """<section class="block"><div class="wrap"><div class="prose">
-<h1 class="pt">Release log</h1>
-<p class="sub">What changed, when &mdash; stated plainly.</p>
-<div class="note"><strong>Current status (12 November 2026):</strong> the public service and the hosted MCP are in release-candidate soak &mdash; graduation is judged 16 November 2026. The Ask shell is in soak &mdash; graduation is judged 18 November 2026. <strong>Billing remains paused:</strong> credit packs are not on sale. <strong>This log is incomplete:</strong> it does not yet separately record the 11 November 2026 Ask launch, the browser-submission repair (finding F-AX-10), the certificate-wording correction, or the referral-promotion removal. Those entries are being backfilled; until then, this note is the current record.</div>
-<h2>2026-11-09 &mdash; Public opening</h2>
-<p><strong>AxiomCode is open.</strong> The verification service at api.axiom-code.com is live and accepting submissions: <code class="inline">POST /verify</code> with an API key (the first 10 cases per key are a free trial &mdash; verdicts and usage records, no certificates), <code class="inline">POST /check</code>, and the public revocation list and CA keys. This site&rsquo;s pre-launch posture is retired, and every page now describes the API that actually ships.</p>
-<p>New with the opening: a <strong>durable FIFO verification queue</strong>. When every proof slot is busy, submissions answer <code class="inline">202</code> with a job id and a checkable position instead of competing for the engine &mdash; one queue, in arrival order, no priority lane. The flip package also lands the release-gate declaration for the service (<code class="inline">gate.yaml</code>, threat model, and coverage ledger in the repository).</p>
-<p><strong>Billing stays paused.</strong> Credit packs are not on sale yet: the Stripe webhook and Payment Links remain deactivated under our readiness-arming rule until pack sales are deliberately opened. Release gate: the production service passed its full gate on 2026-10-23 (PASS WITH FINDINGS); the flip package clears the gate&rsquo;s standing conditions F-AX-4 and F-AX-5.</p>
-<h2>2026-10-15 &mdash; Honest pre-launch presentation</h2>
-<p>The site now presents the service as it is: <strong>pre-launch</strong>. Credit packs are not yet on sale, the API is not yet live, and certificates are not yet being issued. Buy buttons and operating-service claims stay down until the launch wiring exists.</p>
-<p>Release gate: PASS WITH FINDINGS (2026-10-15) &mdash; pre-launch presentation is a release candidate since 2026-10-15, graduates 2026-10-22.</p>
-<h2>2026-09-27 &mdash; Certification loop verified end-to-end</h2>
-<p>On the real engine: submit a Lean 4 specification &rarr; verification &rarr; signed 90-day certificate &rarr; independent certificate check &rarr; revocation. The loop works; production hosting is the remaining launch step.</p>
-<h2>2026-09-26 &mdash; Engine and site</h2>
-<p>Verification engine test suite green; website and launch paperwork published.</p>
-</div></div></section>
-""",
-)
+# Moved to pages_status.py (P1): /releases/ is now an alias of /changelog/,
+# whose entries are migrated in changelog_data.py.
