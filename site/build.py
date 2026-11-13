@@ -18,6 +18,9 @@ NAV = [
     ("Ask", "/ask/"),
     ("Docs", "/docs/"),
     ("API", "/docs/api/"),
+    ("Status", "/status/"),
+    ("Changelog", "/changelog/"),
+    ("Practice", "/practice/"),
     ("Paperwork", "/paperwork/"),
 ]
 
@@ -164,10 +167,14 @@ FOOTER = """<footer class="sitefoot"><div class="wrap">
 <div><h4>Developers &amp; agents</h4><ul>
 <li><a href="/docs/">Documentation</a></li>
 <li><a href="/docs/api/">REST &amp; MCP API</a></li>
+<li><a href="/status.json">Status JSON</a></li>
 <li><a href="/llms.txt">llms.txt</a></li>
 <li><a href="/.well-known/axiomcode.json">Machine-readable service info</a></li>
 </ul></div>
 <div><h4>Trust &amp; paperwork</h4><ul>
+<li><a href="/status/">Status</a></li>
+<li><a href="/changelog/">Changelog &amp; service record</a></li>
+<li><a href="/practice/">Practice</a></li>
 <li><a href="/paperwork/terms/">Terms of Service</a></li>
 <li><a href="/paperwork/privacy/">Privacy Policy</a></li>
 <li><a href="/paperwork/certificate-policy/">Certificate Policy &amp; CPS</a></li>
@@ -176,7 +183,7 @@ FOOTER = """<footer class="sitefoot"><div class="wrap">
 </ul></div>
 <div><h4>Company</h4><ul>
 <li><a href="/blog/">Blog</a></li>
-<li><a href="/releases/">Release log</a></li>
+<li><a href="/releases/">Release log (now Changelog)</a></li>
 <li><a href="/paperwork/security/">Security &amp; disclosure</a></li>
 <li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
 </ul></div>

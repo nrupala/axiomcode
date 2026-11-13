@@ -8,11 +8,14 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 # import order is page registration order (drives sitemap.xml) - not alphabetical
+import changelog_data  # noqa: I001 (block order is registration order, not alphabetical)
 import pages_main  # noqa: F401, I001 (registration side effects)
 import pages_shell  # noqa: F401, I001 (registration side effects)
 import pages_docs  # noqa: F401, I001 (registration side effects)
 import pages_paperwork  # noqa: F401, I001 (registration side effects)
+import pages_status  # noqa: F401, I001 (registration side effects)
 import pages_blog
+import status_data
 from build import API_BASE, render_all
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
@@ -25,6 +28,15 @@ with open(os.path.join(wk, "axiomcode.json"), "w") as f:
     json.dump(pages_blog.WELLKNOWN, f, indent=2)
 with open(os.path.join(OUT, "llms.txt"), "w") as f:
     f.write(pages_blog.LLMS_TXT)
+
+# canonical status + changelog artefacts (generated from status_data.py /
+# changelog_data.py — the same sources the /status/ and /changelog/ pages use)
+with open(os.path.join(OUT, "status.json"), "w") as f:
+    json.dump(status_data.status_json(), f, indent=2)
+with open(os.path.join(OUT, "changelog.json"), "w") as f:
+    json.dump(changelog_data.changelog_json(), f, indent=2)
+with open(os.path.join(OUT, "changelog.rss.xml"), "w") as f:
+    f.write(changelog_data.changelog_rss())
 
 # OpenAPI summary for agents — mirrors the live API's route table.
 # The API's own live spec is served at https://api.axiom-code.com/openapi.json.
