@@ -181,7 +181,7 @@ pw_page(
 <h2>2. Responsible disclosure</h2>
 <p>Found a vulnerability? Email <a href="mailto:security@axiom-code.com">security@axiom-code.com</a> with the details and a way to reach you. We ask for a reasonable window (90 days) before public disclosure so we can fix, revoke affected certificates if needed, and publish an incident note. We commit to acknowledging within 2 business days and keeping you updated.</p>
 <h2>3. Scope</h2>
-<p>In scope: the API, the certificate checker, the CA issuance path, and this site. (The MCP server ships in our repository, and a hosted MCP endpoint is live at https://api.axiom-code.com/mcp/.) Out of scope: third-party services (Stripe, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
+<p>In scope: the REST API, the hosted MCP endpoint (https://api.axiom-code.com/mcp/), the web verifier, the certificate checker, the Ask shell, the CA issuance path, and this site. (An MCP server also ships in our repository for local use.) Out of scope: third-party services (Stripe, Cloudflare), social engineering, and physical attacks. Please don&rsquo;t disrupt the service or access other customers&rsquo; data while researching.</p>
 <h2>4. What we won&rsquo;t do</h2>
 <p>We won&rsquo;t threaten researchers who follow this policy, and we won&rsquo;t ask law enforcement to chill good-faith research. If you&rsquo;re unsure whether something is in scope, ask first.</p>
 """,
