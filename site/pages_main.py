@@ -89,7 +89,7 @@ page(
 <li><strong>Vacuous builds rejected.</strong> A target that compiles nothing is not a proof of anything.</li>
 <li><strong><code class="inline">sorry</code> and <code class="inline">admit</code> rejected.</strong> Placeholders are not proofs.</li>
 <li><strong>Broken proofs rejected.</strong> If the toolchain reports an error, the verdict is <span class="badge b-fail">FAILED</span>, with the log attached.</li>
-<li><strong>Unfinished work reported honestly.</strong> Something that doesn&rsquo;t compile yet gets <span class="badge b-warn">INCOMPLETE</span> &mdash; never a pass.</li>
+<li><strong>Unfinished work reported honestly.</strong> A non-compiling or vacuous attempt that completes the proof run returns <span class="badge b-fail">FAILED</span> &mdash; never a pass. A request that ends before a verdict &mdash; payment required, a timeout, or a concurrency refusal &mdash; is reported as an error, not as a verdict.</li>
 </ul>
 <p>A pass means one thing: the toolchain compiled your artifact and the proof checked. The full transcript ships with the verdict.</p>
 
@@ -132,6 +132,7 @@ PRODUCT_JSONLD = {
             "name": "Trial",
             "price": "0",
             "priceCurrency": "USD",
+            "availability": "https://schema.org/InStock",
             "description": "10 free verifications. Verdicts only, no certificates.",
         },
         {
@@ -139,21 +140,24 @@ PRODUCT_JSONLD = {
             "name": "Starter",
             "price": "10",
             "priceCurrency": "USD",
-            "description": "1,000 credits. Certificates included.",
+            "availability": "https://schema.org/OutOfStock",
+            "description": "1,000 credits. Certificates included. Not yet on sale: billing is paused.",
         },
         {
             "@type": "Offer",
             "name": "Growth",
             "price": "50",
             "priceCurrency": "USD",
-            "description": "5,000 credits. Certificates included.",
+            "availability": "https://schema.org/OutOfStock",
+            "description": "5,000 credits. Certificates included. Not yet on sale: billing is paused.",
         },
         {
             "@type": "Offer",
             "name": "Scale",
             "price": "200",
             "priceCurrency": "USD",
-            "description": "20,000 credits. Certificates included.",
+            "availability": "https://schema.org/OutOfStock",
+            "description": "20,000 credits. Certificates included. Not yet on sale: billing is paused.",
         },
     ],
 }
