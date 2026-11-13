@@ -16,5 +16,138 @@
     "certificates": false
   },
   "billing": "paused \u2014 credit packs not yet on sale",
-  "contact": "hello@axiom-code.com"
+  "contact": "hello@axiom-code.com",
+  "status_page": "https://axiom-code.com/status/",
+  "status_json": "https://axiom-code.com/status.json",
+  "changelog": "https://axiom-code.com/changelog/",
+  "practice": "https://axiom-code.com/practice/",
+  "status_as_of": "2026-11-12",
+  "surfaces": [
+    {
+      "id": "rest_api",
+      "name": "REST API",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "url": "https://api.axiom-code.com"
+    },
+    {
+      "id": "hosted_mcp",
+      "name": "Hosted MCP",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "url": "https://api.axiom-code.com/mcp/"
+    },
+    {
+      "id": "local_mcp",
+      "name": "Local MCP",
+      "availability": "live",
+      "lifecycle": "live",
+      "public_since": null,
+      "graduates_on": null,
+      "url": "https://github.com/nrupala/axiomcode"
+    },
+    {
+      "id": "web_verifier",
+      "name": "Web verifier",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "url": "https://axiom-code.com/verify/"
+    },
+    {
+      "id": "certificate_checker",
+      "name": "Certificate checker",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-09",
+      "graduates_on": "2026-11-16",
+      "url": "https://axiom-code.com/check/"
+    },
+    {
+      "id": "ask_shell",
+      "name": "Ask shell",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-11",
+      "graduates_on": "2026-11-18",
+      "url": "https://axiom-code.com/ask/"
+    },
+    {
+      "id": "ask_explanations",
+      "name": "Ask explanations",
+      "availability": "live",
+      "lifecycle": "in_soak",
+      "public_since": "2026-11-11",
+      "graduates_on": "2026-11-18",
+      "url": "https://axiom-code.com/ask/"
+    },
+    {
+      "id": "trial",
+      "name": "Free trial",
+      "availability": "live",
+      "lifecycle": "live",
+      "public_since": "2026-11-09",
+      "graduates_on": null,
+      "url": "https://axiom-code.com/pricing/"
+    },
+    {
+      "id": "billing",
+      "name": "Billing / credit packs",
+      "availability": "paused",
+      "lifecycle": "paused",
+      "public_since": null,
+      "graduates_on": null,
+      "url": "https://axiom-code.com/pricing/"
+    },
+    {
+      "id": "paid_certificates",
+      "name": "Paid certificates",
+      "availability": "paused",
+      "lifecycle": "paused",
+      "public_since": null,
+      "graduates_on": null,
+      "url": "https://axiom-code.com/pricing/"
+    },
+    {
+      "id": "smart_contract_verification",
+      "name": "Smart-contract verification",
+      "availability": "unavailable",
+      "lifecycle": "in_design",
+      "public_since": null,
+      "graduates_on": null,
+      "url": "https://axiom-code.com/status/"
+    },
+    {
+      "id": "offline_verifier",
+      "name": "Offline / air-gapped verifier",
+      "availability": "unavailable",
+      "lifecycle": "not_built",
+      "public_since": null,
+      "graduates_on": null,
+      "url": "https://axiom-code.com/status/"
+    },
+    {
+      "id": "l3_agent",
+      "name": "L3 proof-generating agent",
+      "availability": "unavailable",
+      "lifecycle": "not_built",
+      "public_since": null,
+      "graduates_on": null,
+      "url": "https://axiom-code.com/status/"
+    },
+    {
+      "id": "verified_library",
+      "name": "Verified library (complete L2)",
+      "availability": "unavailable",
+      "lifecycle": "not_built",
+      "public_since": null,
+      "graduates_on": null,
+      "url": "https://axiom-code.com/status/"
+    }
+  ]
 }

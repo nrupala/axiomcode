@@ -1,0 +1,30 @@
+name: Site drift checks
+
+# The site's status, changelog, pricing, and machine-readable renderings are
+# generated from canonical sources (site/status_data.py, site/changelog_data.py).
+# This workflow fails when a committed rendering disagrees with its source or
+# with a fresh rebuild — a launch, finding, fix, or graduation cannot ship
+# without its status transition and changelog entry in the same change.
+
+on:
+  pull_request:
+    paths:
+      - "site/**"
+      - ".github/workflows/site-drift.yml"
+  push:
+    branches: [main]
+    paths:
+      - "site/**"
+      - ".github/workflows/site-drift.yml"
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Drift checks (sources vs committed dist vs fresh rebuild)
+        run: python3 site/check_drift.py

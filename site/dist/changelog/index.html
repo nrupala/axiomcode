@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Changelog &amp; service record | AxiomCode</title>
+<meta name="description" content="The AxiomCode changelog and service record: launches, changes, findings, fixes, incidents, and graduations — append-only, no silent edits.">
+<link rel="canonical" href="https://axiom-code.com/changelog/">
+<meta property="og:site_name" content="AxiomCode">
+<meta property="og:title" content="Changelog &amp; service record | AxiomCode">
+<meta property="og:description" content="The AxiomCode changelog and service record: launches, changes, findings, fixes, incidents, and graduations — append-only, no silent edits.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://axiom-code.com/changelog/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Changelog &amp; service record | AxiomCode">
+<meta name="twitter:description" content="The AxiomCode changelog and service record: launches, changes, findings, fixes, incidents, and graduations — append-only, no silent edits.">
+<style>
+:root{--ink:#101828;--mut:#475467;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
+--gold:#b98a2f;--goldsoft:#faf3e3;--green:#12805c;--greensoft:#e9f7f0;
+--red:#b42318;--redsoft:#fdeceb;--navy:#0c1f3f;--radius:10px;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;font-size:17px}
+a{color:#175cd3;text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+.prose{max-width:72ch}
+/* header */
+.prelaunch{background:var(--goldsoft);border-bottom:1px solid var(--line);padding:10px 0;font-size:14.5px}
+.sitehead{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
+.sitehead .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink)}
+.brand:hover{text-decoration:none}
+.brand svg{width:30px;height:30px}
+.nav{display:flex;gap:22px;margin-left:auto;font-size:15px}
+.nav a{color:var(--mut)}.nav a:hover{color:var(--ink)}
+.cta{display:inline-block;background:var(--navy);color:#fff!important;padding:9px 18px;border-radius:8px;font-weight:600;font-size:15px}
+.cta:hover{background:#16294f;text-decoration:none}
+/* hero */
+.hero{background:linear-gradient(180deg,#0c1f3f 0%,#12294f 100%);color:#fff;padding:84px 0 72px}
+.hero h1{font-size:46px;line-height:1.15;margin:0 0 18px;letter-spacing:-.5px;max-width:16em}
+.hero p.lede{font-size:20px;color:#cbd5e1;max-width:34em;margin:0 0 28px}
+.hero .row{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-block;padding:13px 26px;border-radius:9px;font-weight:700;font-size:16px;border:1px solid transparent}
+.btn-gold{background:var(--gold);color:#1a1206!important}.btn-gold:hover{background:#c99a3f;text-decoration:none}
+.btn-ghost{border-color:#3b4a63;color:#fff!important}.btn-ghost:hover{border-color:#5b6b85;text-decoration:none}
+.trustline{margin-top:26px;font-size:14px;color:#93a1b8}
+/* sections */
+section.block{padding:64px 0}
+section.block h2{font-size:30px;margin:0 0 12px;letter-spacing:-.3px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:28px}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:26px;background:#fff}
+.card h3{margin:0 0 8px;font-size:19px}
+.card p{margin:0;color:var(--mut);font-size:15.5px}
+.card .num{display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;
+align-items:center;justify-content:center;font-weight:700;margin-bottom:12px}
+/* seal / cert demo */
+.sealbox{background:var(--wash);border:1px solid var(--line);border-radius:12px;padding:28px;margin-top:24px}
+pre.code{background:#0c1f3f;color:#d7e3f4;padding:20px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;font-family:var(--mono)}
+code.inline{font-family:var(--mono);background:var(--wash);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:.88em}
+/* verdict badges */
+.badge{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;font-size:14px}
+.b-pass{background:var(--greensoft);color:var(--green);border:1px solid #bfe6d2}
+.b-fail{background:var(--redsoft);color:var(--red);border:1px solid #f3c2bc}
+.b-warn{background:var(--goldsoft);color:#8a6414;border:1px solid #ecd9a8}
+/* pricing */
+.ptable{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-top:28px}
+.plan{border:1px solid var(--line);border-radius:12px;padding:28px;background:#fff;position:relative}
+.plan.hot{border:2px solid var(--gold);box-shadow:0 8px 30px rgba(185,138,47,.12)}
+.plan h3{margin:0 0 4px}.plan .price{font-size:34px;font-weight:800;margin:8px 0}
+.plan .per{color:var(--mut);font-size:14px}
+.plan ul{padding-left:20px;color:var(--mut);font-size:15px;margin:16px 0}
+.plan li{margin-bottom:8px}
+/* forms */
+textarea.codebox{width:100%;min-height:260px;font-family:var(--mono);font-size:14px;padding:16px;
+border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
+input[type=text],input[type=email]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px}
+label.fl{display:block;font-weight:600;margin:18px 0 6px}
+button.go{background:var(--navy);color:#fff;border:0;padding:13px 30px;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer}
+button.go:hover{background:#16294f}button.go:disabled{opacity:.55;cursor:wait}
+.result{margin-top:24px;border:1px solid var(--line);border-radius:10px;padding:22px;display:none}
+.result.show{display:block}
+/* footer */
+.sitefoot{background:#0c1f3f;color:#aeb9cc;padding:56px 0 32px;margin-top:40px;font-size:15px}
+.sitefoot a{color:#d7e0ee}.sitefoot .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:28px}
+.sitefoot h4{color:#fff;margin:0 0 12px;font-size:15px}
+.sitefoot ul{list-style:none;margin:0;padding:0}.sitefoot li{margin-bottom:8px}
+.fine{margin-top:36px;padding-top:20px;border-top:1px solid #22345a;font-size:13px;color:#7d8ba3}
+/* docs */
+.docnav{background:var(--wash);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:24px 0}
+table.spec{width:100%;border-collapse:collapse;font-size:15px;margin:20px 0}
+table.spec th,table.spec td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}
+table.spec th{background:var(--wash)}
+.note{border-left:4px solid var(--gold);background:var(--goldsoft);padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0;font-size:15.5px}
+.note.blue{border-color:#175cd3;background:#eff4ff}
+h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
+.sub{color:var(--mut);font-size:19px;margin:0 0 8px}
+.faq details{border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:10px}
+.faq summary{font-weight:700;cursor:pointer}
+@media(max-width:760px){.hero h1{font-size:32px}.nav{display:none}}
+</style>
+
+</head>
+<body>
+<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
+<div class="sitehead"><div class="wrap">
+<a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
+<nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/ask/">Ask</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/status/">Status</a><a href="/changelog/">Changelog</a><a href="/practice/">Practice</a><a href="/paperwork/">Paperwork</a></nav>
+<a class="cta" href="/verify/">Try free</a>
+</div></div>
+<section class="block"><div class="wrap"><div class="prose">
+<h1 class="pt">Changelog &amp; service record</h1>
+<p class="sub">What changed, when, and what it means for relying parties.</p>
+<div class="note">Entries are append-only. A correction to an entry is a new entry — the original
+remains readable. Scheduled transitions (for example, a graduation date) are listed on the
+<a href="/status/">status page</a> and are recorded here only when they happen. Machine-readable:
+<a href="/changelog.json">changelog.json</a> &middot; <a href="/changelog.rss.xml">RSS</a>.</div>
+<div class="card" id="2026-11-12-status-changelog-practice" style="margin-top:20px">
+<div class="kicker">12 November 2026 &middot; Added &middot; Website, Status, Changelog, Practice</div>
+<h3 style="margin-top:0">Status page, changelog, and practice page — one canonical source</h3>
+<p>The site now carries a <a href="/status/">status page</a> generated from a single canonical status source (also published as <a href="/status.json">status.json</a>), this changelog with JSON and RSS feeds, and a <a href="/practice/">practice page</a> describing how releases are gated, soaked, and graduated, what a certificate does and does not claim, and how to report an error. Status facts — availability, lifecycle, dates, endpoints — are no longer typed independently into separate pages: the status page, status.json, the machine-readable service record, and the llms.txt status section are generated from the same source, and CI drift checks fail the build when they disagree. The former release log at /releases/ is now an alias of this changelog, and its entries were migrated here unchanged.</p>
+<p><strong>Effect:</strong> Anyone — customer, auditor, or agent — can read the current state of every surface in one place, including what is paused, in soak, in design, or not built.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://axiom-code.com/status/">Status</a> · <a href="https://axiom-code.com/status.json">Status JSON</a> · <a href="https://axiom-code.com/practice/">Practice</a></p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> Live on the site; graduation of the surfaces it describes remains as recorded on /status/.</p>
+</div><div class="card" id="2026-11-12-p0-closure" style="margin-top:20px">
+<div class="kicker">12 November 2026 &middot; Documentation &middot; Docs, How It Works, Pricing, Security, Release log, Blog</div>
+<h3 style="margin-top:0">P0 closure: verdict taxonomy, pricing schema, security scope, status notes</h3>
+<p>The remaining P0 truth corrections landed. The verdict taxonomy is now stated the same way everywhere it appears: verdicts are boolean — PASSED or FAILED — and a request that ends before a verdict (payment required, timeout, concurrency/rate/size refusal, failed queued job) is a <strong>NO VERDICT</strong> error outcome, not a verdict; the retired INCOMPLETE wording is gone. The pricing JSON-LD now marks the credit packs <em>OutOfStock — not yet on sale</em>, matching the paused billing state the page already stated in prose. The Security page's in-scope list now names the hosted MCP endpoint, the web verifier, and the Ask shell. Until this changelog landed, the release log and the 2026-09-26 blog essay carried interim dated status notes; those notes are replaced by pointers to /status/ and this changelog. A 21-surface live evidence pack was filed with the change.</p>
+<p><strong>Effect:</strong> No known false claim remains on the site; every surface states the same taxonomy, the same billing state, and the same scope.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://axiom-code.com/docs/">Docs</a> · <a href="https://axiom-code.com/paperwork/security/">Security</a> · <a href="https://axiom-code.com/pricing/">Pricing</a></p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> Closed. Claim-by-claim evidence verification continues under the status source&#x27;s last-verified discipline.</p>
+</div><div class="card" id="2026-11-11-wording-corrections" style="margin-top:20px">
+<div class="kicker">11 November 2026 &middot; Documentation &middot; How It Works, Docs, Homepage, Terms, Security, llms.txt, .well-known</div>
+<h3 style="margin-top:0">Material wording corrections</h3>
+<p>Public wording was corrected where it contradicted the service. The hosted MCP endpoint is live, and every surface that said otherwise — How It Works, Terms §1, the Security page, llms.txt, and the machine-readable service record — now says so. The Docs verdict table was corrected: a completed paid verification that returns FAILED receives a signed certificate recording FAILED (the table previously said no certificate is issued). Homepage copy that implied smart-contract verification is a current capability was removed or rewritten: that capability is in design (see /status/).</p>
+<p><strong>Effect:</strong> Human pages, paperwork, and machine-readable mirrors state the same facts about MCP availability, FAILED certificates, and smart-contract scope.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://axiom-code.com/how-it-works/">How It Works</a> · <a href="https://axiom-code.com/docs/">Docs</a></p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> Closed; verified live the same day.</p>
+</div><div class="card" id="2026-11-11-referral-removal" style="margin-top:20px">
+<div class="kicker">11 November 2026 &middot; Removed &middot; Website</div>
+<h3 style="margin-top:0">Third-party signup promotion removed — ruled out fleet-wide</h3>
+<p>A third-party signup promotion found in product copy was removed the same day. The ruling is fleet-wide: no product carries a third-party signup promotion. A plain, unlinked credit line (&ldquo;Built with Muse by Meta&rdquo;) is not a promotion and remains.</p>
+<p><strong>Effect:</strong> No AxiomCode surface promotes a third-party signup.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://axiom-code.com/">Homepage</a></p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> Closed; verified live the same day (zero matches for the promotion on the audited pages).</p>
+</div><div class="card" id="2026-11-11-f-ax-10" style="margin-top:20px">
+<div class="kicker">11 November 2026 &middot; Finding &middot; Web verifier, Certificate checker, REST API</div>
+<h3 style="margin-top:0">Finding F-AX-10: browser submission repaired</h3>
+<p><strong>Finding / Fixed.</strong> The flipped web verifier and certificate checker could render but could not complete a browser submission, because the production API lacked the required cross-origin (CORS) leg for the site origin. The defect escaped the public flip and was found in post-deploy verification. The repair added the scoped browser path (preflight and allow-origin for the site origin on /verify, /check, and /shell/turn; foreign origins receive nothing) and was verified from the site origin after deployment. F-AX-10 is closed.</p>
+<p><strong>Effect:</strong> Browser submissions on /verify/ and /check/ complete end-to-end; API-key callers were never affected.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://github.com/nrupala/axiomcode/blob/main/gate.yaml">Gate declaration (gate.yaml)</a> · <a href="https://github.com/nrupala/axiomcode/blob/main/docs/THREAT-MODEL.md">Threat model</a> · <a href="https://axiom-code.com/paperwork/security/">Security</a></p><p style="margin-bottom:0"><strong>Refs:</strong> F-AX-10</p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> Closed 2026-11-11 on the gate&#x27;s post-deploy probes.</p>
+</div><div class="card" id="2026-11-11-ask-launch" style="margin-top:20px">
+<div class="kicker">11 November 2026 &middot; Added &middot; Ask shell, Ask explanations</div>
+<h3 style="margin-top:0">Ask shell launched</h3>
+<p><strong>Added / Status.</strong> Ask entered production at <a href="/ask/">axiom-code.com/ask/</a>. Ask renders facts from the verification service and may add an explanation; it does not issue, change, soften, or predict verdicts — the Lean kernel remains the only judge. The shell is degraded-first: if the explanation step times out, the service facts are still returned and the missing explanation is stated. Ask is in release-candidate soak; its graduation decision is scheduled for 2026-11-18, and explanation latency is a known residual carried in the soak.</p>
+<p><strong>Effect:</strong> Conversational access to verification facts is live, with the fact/judgment boundary stated on the surface itself.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://axiom-code.com/ask/">Ask</a></p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> In soak; graduation decision scheduled 2026-11-18.</p>
+</div><div class="card" id="2026-11-09-public-opening" style="margin-top:20px">
+<div class="kicker">9 November 2026 &middot; Added &middot; REST API, Hosted MCP, Web verifier, Certificate checker, Trial</div>
+<h3 style="margin-top:0">Public opening and hosted MCP</h3>
+<p><strong>Added / Status.</strong> AxiomCode opened the REST verification service at api.axiom-code.com: <code class="inline">POST /verify</code> with an API key, <code class="inline">POST /check</code>, queued-job status, and the public revocation list and CA keys. The hosted MCP endpoint also entered production at https://api.axiom-code.com/mcp/ with seven tools: verify, job_status, check_certificate, revoked, health, usage_report, and pricing. Trial keys receive 10 verification cases — verdicts and usage records, no certificates. New with the opening: a durable FIFO verification queue — when every proof slot is busy, submissions answer <code class="inline">202</code> with a job id and a checkable position instead of competing for the engine. The flip package also lands the release-gate declaration for the service (gate.yaml, threat model, and coverage ledger in the repository). <strong>Billing remains paused:</strong> credit packs are not on sale, and the Stripe webhook and Payment Links remain deactivated until pack sales are deliberately opened. The public service and hosted MCP are in release-candidate soak; their graduation decision is scheduled for 2026-11-16.</p>
+<p><strong>Effect:</strong> The service is open to humans, applications, and agents; certificates unlock when pack sales open.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://api.axiom-code.com/health">API health</a> · <a href="https://api.axiom-code.com/mcp/">MCP endpoint</a> · <a href="https://github.com/nrupala/axiomcode/blob/main/gate.yaml">Gate declaration (gate.yaml)</a></p><p style="margin-bottom:0"><strong>Refs:</strong> F-AX-4, F-AX-5</p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> In soak; graduation decision scheduled 2026-11-16. (Migrated from the former release log, with the hosted-MCP record completed from the launch record.)</p>
+</div><div class="card" id="2026-10-15-honest-prelaunch" style="margin-top:20px">
+<div class="kicker">15 October 2026 &middot; Changed &middot; Website</div>
+<h3 style="margin-top:0">Honest pre-launch presentation</h3>
+<p>The site now presents the service as it is: <strong>pre-launch</strong>. Credit packs are not yet on sale, the API is not yet live, and certificates are not yet being issued. Buy buttons and operating-service claims stay down until the launch wiring exists. Release gate: PASS WITH FINDINGS (2026-10-15) — pre-launch presentation is a release candidate since 2026-10-15, graduates 2026-10-22.</p>
+<p><strong>Effect:</strong> Historical entry, migrated unchanged from the former release log. Superseded by the 2026-11-09 public opening.</p>
+
+<p style="margin-bottom:0"><strong>Disposition:</strong> Historical.</p>
+</div><div class="card" id="2026-09-27-certification-loop" style="margin-top:20px">
+<div class="kicker">27 September 2026 &middot; Added &middot; REST API</div>
+<h3 style="margin-top:0">Certification loop verified end-to-end</h3>
+<p>On the real engine: submit a Lean 4 specification → verification → signed 90-day certificate → independent certificate check → revocation. The loop works; production hosting is the remaining launch step.</p>
+<p><strong>Effect:</strong> Historical entry, migrated unchanged from the former release log.</p>
+
+<p style="margin-bottom:0"><strong>Disposition:</strong> Historical.</p>
+</div><div class="card" id="2026-09-26-engine-and-site" style="margin-top:20px">
+<div class="kicker">26 September 2026 &middot; Added &middot; Website</div>
+<h3 style="margin-top:0">Engine and site</h3>
+<p>Verification engine test suite green; website and launch paperwork published.</p>
+<p><strong>Effect:</strong> Historical entry, migrated unchanged from the former release log.</p>
+
+<p style="margin-bottom:0"><strong>Disposition:</strong> Historical.</p>
+</div>
+</div></div></section>
+<footer class="sitefoot"><div class="wrap">
+<div class="cols">
+<div><h4>Product</h4><ul>
+<li><a href="/how-it-works/">How it works</a></li>
+<li><a href="/pricing/">Pricing</a></li>
+<li><a href="/verify/">Try free</a></li>
+<li><a href="/ask/">Ask AxiomCode</a></li>
+<li><a href="/check/">Check a certificate</a></li>
+</ul></div>
+<div><h4>Developers &amp; agents</h4><ul>
+<li><a href="/docs/">Documentation</a></li>
+<li><a href="/docs/api/">REST &amp; MCP API</a></li>
+<li><a href="/status.json">Status JSON</a></li>
+<li><a href="/llms.txt">llms.txt</a></li>
+<li><a href="/.well-known/axiomcode.json">Machine-readable service info</a></li>
+</ul></div>
+<div><h4>Trust &amp; paperwork</h4><ul>
+<li><a href="/status/">Status</a></li>
+<li><a href="/changelog/">Changelog &amp; service record</a></li>
+<li><a href="/practice/">Practice</a></li>
+<li><a href="/paperwork/terms/">Terms of Service</a></li>
+<li><a href="/paperwork/privacy/">Privacy Policy</a></li>
+<li><a href="/paperwork/certificate-policy/">Certificate Policy &amp; CPS</a></li>
+<li><a href="/paperwork/refunds/">Refund Policy</a></li>
+<li><a href="/paperwork/sla/">Service Levels</a></li>
+</ul></div>
+<div><h4>Company</h4><ul>
+<li><a href="/blog/">Blog</a></li>
+<li><a href="/releases/">Release log (now Changelog)</a></li>
+<li><a href="/paperwork/security/">Security &amp; disclosure</a></li>
+<li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
+</ul></div>
+</div>
+<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
+</div></footer>
+</body>
+</html>
