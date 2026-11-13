@@ -25,6 +25,7 @@ page(
 <div class="kicker">26 September 2026 &middot; Launch</div>
 <h1 class="pt">Don&rsquo;t trust our AI &mdash; verify our proof</h1>
 <p class="sub">Why we built a certification authority for software correctness.</p>
+<div class="note"><strong>Status note, 12 November 2026:</strong> this article was written before the public opening. AxiomCode opened on 9 November 2026. Hosted MCP is live; Ask is live and in soak until 18 November 2026; billing remains paused; smart-contract verification remains design only.</div>
 
 <p>AI writes code now. A lot of it. And the industry&rsquo;s answer to &ldquo;is it right?&rdquo; is still, essentially, vibes: code review (opinion), tests (samples), audits (expensive snapshots). All useful. None of them evidence.</p>
 
@@ -133,6 +134,7 @@ page(
     """<section class="block"><div class="wrap"><div class="prose">
 <h1 class="pt">Release log</h1>
 <p class="sub">What changed, when &mdash; stated plainly.</p>
+<div class="note"><strong>Current status (12 November 2026):</strong> the public service and the hosted MCP are in release-candidate soak &mdash; graduation is judged 16 November 2026. The Ask shell is in soak &mdash; graduation is judged 18 November 2026. <strong>Billing remains paused:</strong> credit packs are not on sale. <strong>This log is incomplete:</strong> it does not yet separately record the 11 November 2026 Ask launch, the browser-submission repair (finding F-AX-10), the certificate-wording correction, or the referral-promotion removal. Those entries are being backfilled; until then, this note is the current record.</div>
 <h2>2026-11-09 &mdash; Public opening</h2>
 <p><strong>AxiomCode is open.</strong> The verification service at api.axiom-code.com is live and accepting submissions: <code class="inline">POST /verify</code> with an API key (the first 10 cases per key are a free trial &mdash; verdicts and usage records, no certificates), <code class="inline">POST /check</code>, and the public revocation list and CA keys. This site&rsquo;s pre-launch posture is retired, and every page now describes the API that actually ships.</p>
 <p>New with the opening: a <strong>durable FIFO verification queue</strong>. When every proof slot is busy, submissions answer <code class="inline">202</code> with a job id and a checkable position instead of competing for the engine &mdash; one queue, in arrival order, no priority lane. The flip package also lands the release-gate declaration for the service (<code class="inline">gate.yaml</code>, threat model, and coverage ledger in the repository).</p>

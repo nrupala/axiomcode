@@ -23,9 +23,9 @@ page(
 </ul>
 <h3>What gets rejected</h3>
 <ul>
-<li><code class="inline">sorry</code> and <code class="inline">admit</code> &mdash; placeholders are not proofs. The engine refuses them and tells you exactly where.</li>
-<li>Targets that build nothing (vacuous builds).</li>
-<li>Anything that doesn&rsquo;t compile: you get <span class="badge b-warn">INCOMPLETE</span> with the compiler log, not a pass.</li>
+<li><code class="inline">sorry</code> and <code class="inline">admit</code> &mdash; placeholders are not proofs. The verdict is <span class="badge b-fail">FAILED</span>, and the transcript tells you exactly where.</li>
+<li>Targets that build nothing (vacuous builds) &mdash; <span class="badge b-fail">FAILED</span>.</li>
+<li>Anything that doesn&rsquo;t compile: you get <span class="badge b-fail">FAILED</span> with the compiler log, not a pass.</li>
 </ul>
 <div class="note blue"><strong>Customer responsibility:</strong> the certificate binds the artifact you submitted. It does not certify that your specification captures your intent, or that the deployed system matches the artifact. Writing a faithful spec is your job; checking the proof is ours.</div>
 
@@ -39,8 +39,8 @@ theorem add_comm_nat (a b : Nat) : a + b = b + a := by
 <table class="spec">
 <tr><th>Verdict</th><th>Meaning</th><th>Certificate?</th></tr>
 <tr><td><span class="badge b-pass">PASSED</span></td><td>The toolchain compiled the artifact and the proof checked.</td><td>Yes (paid only)</td></tr>
-<tr><td><span class="badge b-fail">FAILED</span></td><td>The proof does not check. The transcript shows why.</td><td>Yes (paid only) &mdash; records the failure</td></tr>
-<tr><td><span class="badge b-warn">INCOMPLETE</span></td><td>Doesn&rsquo;t compile yet, or the target is vacuous. Fix and resubmit.</td><td>No</td></tr>
+<tr><td><span class="badge b-fail">FAILED</span></td><td>The proof does not check: a broken proof, <code class="inline">sorry</code>/<code class="inline">admit</code>, a failed axiom audit, or an attempt that doesn&rsquo;t compile or builds nothing. The transcript shows why.</td><td>Yes (paid only) &mdash; records the failure</td></tr>
+<tr><td><span class="badge b-warn">NO VERDICT</span></td><td>The request ended before a verdict: payment required (trial used up and no credit balance), the proof ran past its time limit, or a concurrency, rate, or size refusal. This is an error outcome, not a verdict.</td><td>No</td></tr>
 </table>
 <p>Every verdict response carries its usage record &mdash; the exact compute time and what you were charged. Paid verifications also carry the signed certificate, pass or fail &mdash; the certificate records the verdict; it does not improve it.</p>
 
