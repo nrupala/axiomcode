@@ -203,6 +203,7 @@ def check_p2_surfaces():
     contact = read_dist(os.path.join("contact", "index.html"))
     check("2351485 ALBERTA INC." in about, "/about/ names the owning entity")
     check("2351485 ALBERTA INC." in contact, "/contact/ names the owning entity")
+    check("info@aimlds.org" in contact, "/contact/ publishes the operator address info@aimlds.org")
     home = read_dist("index.html")
     check('id="hgo"' in home and "add_comm_nat" in home, "home loop is the interactive own-key form")
     check('href="/about/"' in home and 'href="/contact/"' in home, "footer links About + Contact")
