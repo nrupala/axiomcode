@@ -24,6 +24,50 @@ _REPO = "https://github.com/nrupala/axiomcode"
 
 ENTRIES = [
     {
+        "id": "2026-11-14-verification-reports-chain-anchored",
+        "date": "2026-11-14",
+        "title": "Two verification reports added — the trace-ledger chain, proved, and its anchoring, proved",
+        "category": "Added",
+        "surfaces": ["Website", "Verification reports"],
+        "body": (
+            '<p>The <a href="/verifications/">verification reports</a> register gains two reports, '
+            "completing the chain law the first report named as a separate step. The "
+            '<a href="/verifications/harness-trace-chain/">chain immutability report</a>: proved in '
+            "Lean 4 that an entry whose content no longer matches its stored hash, or a broken link, "
+            "fails verification at exactly the first failing entry, and that a pass means every check "
+            "holds along the whole chain — with its boundary stated on the report itself (detection "
+            "within a ledger as presented; a wholesale rewrite, honestly re-chained, would pass the "
+            "chain alone; the hash function itself is not proved, and the step from altered content "
+            "to a differing recomputation carries a named no-collision assumption). The "
+            '<a href="/verifications/harness-trace-chain-anchored/">anchored chain report</a>: the '
+            "harness&rsquo;s answer to that boundary — anchor records of the chain head, held in "
+            "custody outside the ledger — proved to detect a rewritten anchored prefix, to refuse "
+            "new anchors over a changed prefix, never to pass an unanchored ledger, and to state "
+            "the un-anchored tail exactly, with its own boundary stated on the report (detection is "
+            "proved given an authentic anchor record; that the custody copies sit outside the "
+            "ledger writer&rsquo;s reach is an assumption about the world, not a theorem; one "
+            "component hypothesis remains named and unproved; no signing is claimed). The "
+            "gatekeeper report&rsquo;s boundary note is updated to point at both reports; its own "
+            "proof and boundary are unchanged.</p>"
+        ),
+        "effect": "Anyone can now read the harness's ledger proofs as one chain of reports — "
+        "gatekeeper, chain, anchored chain — each stating exactly what it established and where "
+        "it stops.",
+        "evidence": [
+            {"label": "Verification reports", "url": "https://axiom-code.com/verifications/"},
+            {
+                "label": "Chain immutability report",
+                "url": "https://axiom-code.com/verifications/harness-trace-chain/",
+            },
+            {
+                "label": "Anchored chain report",
+                "url": "https://axiom-code.com/verifications/harness-trace-chain-anchored/",
+            },
+        ],
+        "refs": [],
+        "disposition": "Live on the site; the register grows by completed records only.",
+    },
+    {
         "id": "2026-11-14-verification-reports",
         "date": "2026-11-14",
         "title": "Verification reports published — our own products, proven and bounded in public",
