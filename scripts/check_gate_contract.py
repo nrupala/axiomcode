@@ -94,26 +94,16 @@ def main() -> int:
     for pw in gate.get("pathways") or []:
         covers = pw.get("covers")
         paths = covers if isinstance(covers, list) else [covers]
-        external = [
-            p for p in paths if isinstance(p, str) and p.startswith("https://")
-        ]
+        external = [p for p in paths if isinstance(p, str) and p.startswith("https://")]
         if external:
             # Off-host pathway (0.5.0): the surface is an external
             # URL, not a route on base_url's host. All-external or
             # malformed is a failure; it covers no declared route.
             if len(external) != len(paths):
-                fail(
-                    f"pathway {pw.get('id')} mixes route paths and "
-                    "external URLs in covers"
-                )
+                fail(f"pathway {pw.get('id')} mixes route paths and external URLs in covers")
             for p in external:
-                if not re.fullmatch(
-                    r"https://[A-Za-z0-9.-]+(?::\d+)?(?:/\S*)?", p
-                ):
-                    fail(
-                        f"pathway {pw.get('id')} has a malformed "
-                        f"external covers URL: {p}"
-                    )
+                if not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::\d+)?(?:/\S*)?", p):
+                    fail(f"pathway {pw.get('id')} has a malformed external covers URL: {p}")
             continue
         for p in paths:
             covered.add(p)
