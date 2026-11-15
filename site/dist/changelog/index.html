@@ -192,7 +192,14 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 remains readable. Scheduled transitions (for example, a graduation date) are listed on the
 <a href="/status/">status page</a> and are recorded here only when they happen. Machine-readable:
 <a href="/changelog.json">changelog.json</a> &middot; <a href="/changelog.rss.xml">RSS</a>.</div>
-<div class="card" id="2026-11-14-p2-redesign-docs" style="margin-top:20px">
+<div class="card" id="2026-11-14-verification-reports" style="margin-top:20px">
+<div class="kicker">14 November 2026 &middot; Added &middot; Website, Verification reports</div>
+<h3 style="margin-top:0">Verification reports published — our own products, proven and bounded in public</h3>
+<p>AxiomCode&rsquo;s trust case is proof by our own products: every product we build is verified — through the release gate, and for deterministic cores by Lean 4 proof — and the reports are now published in a dedicated <a href="/verifications/">verification reports</a> register. Every report states what was proven and what was not proven, in plain words; a report without the second statement does not appear. The register is generated from a canonical source, and CI drift checks fail when any rendering disagrees with it. The first report is our own agent harness&rsquo;s trace-ledger gatekeeper: proved in Lean 4 to refuse blank or unregistered origins by name, to leave the ledger untouched on refusal, and to refuse everything when its registry is empty — with its boundary stated on the report itself (registration is membership, not signing; the proof covers a model of the code, not the running program; the hash chain&rsquo;s own law is a separate step, in progress and not claimed). Further reports are added as their records complete; work in progress is not pre-published.</p>
+<p><strong>Effect:</strong> Anyone can read exactly what our verification of our own products established — and where each proof stops.</p>
+<p style="margin-bottom:0"><strong>Evidence:</strong> <a href="https://axiom-code.com/verifications/">Verification reports</a> · <a href="https://axiom-code.com/verifications/harness-trace-gatekeeper/">First report: trace-ledger gatekeeper</a></p>
+<p style="margin-bottom:0"><strong>Disposition:</strong> Live on the site; the register grows by completed records only.</p>
+</div><div class="card" id="2026-11-14-p2-redesign-docs" style="margin-top:20px">
 <div class="kicker">14 November 2026 &middot; Changed &middot; Website, Documentation, Home, Status, About, Contact</div>
 <h3 style="margin-top:0">Website redesign (P2) and the AppDocStudio documentation rebuild</h3>
 <p>The website was redesigned and the documentation rebuilt to the house documentation standard. The home page now carries an interactive artefact loop that runs the real trial on the visitor&rsquo;s own API key (no shared demo key exists), with availability and lifecycle chips generated from the canonical status source. The <a href="/status/">status page</a> presents all fourteen surfaces in one table. The <a href="/docs/">documentation</a> is now Di&aacute;taxis-first — tutorials, guides, reference, explanation — with seven role packs (Guest, Users, Developers, Maintainers, Regulators, Admins, Ops); the Maintainers pack is published as an evidence-on-request boundary, its structure public and its internals not. Every docs page carries its audience, type, version, last-verified date, source artefact, and a Markdown mirror. New <a href="/about/">About</a> and <a href="/contact/">Contact</a> pages replace the placeholder routes that previously returned the home page. The REST API reference now names the live OpenAPI document as the contract of record. No service behaviour changed: this entry records presentation and documentation only, and the graduations scheduled for 16 and 18 November remain pending gate decisions.</p>
@@ -293,6 +300,7 @@ remains readable. Scheduled transitions (for example, a graduation date) are lis
 <li><a href="/status/">Status</a></li>
 <li><a href="/changelog/">Changelog &amp; service record</a></li>
 <li><a href="/practice/">Practice</a></li>
+<li><a href="/verifications/">Verification reports</a></li>
 <li><a href="/paperwork/certificate-policy/">Certificate Policy</a></li>
 <li><a href="/paperwork/security/">Security</a></li>
 <li><a href="/paperwork/privacy/">Privacy</a></li>

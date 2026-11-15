@@ -18,8 +18,10 @@ import pages_docs  # noqa: F401, I001 (registration side effects)
 import pages_company  # noqa: F401, I001 (registration side effects)
 import pages_paperwork  # noqa: F401, I001 (registration side effects)
 import pages_status  # noqa: F401, I001 (registration side effects)
+import pages_verifications  # noqa: F401, I001 (registration side effects)
 import pages_blog
 import status_data
+import verifications_data
 from build import API_BASE, PAGES, SITE, render_all
 
 OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "dist")
@@ -39,6 +41,8 @@ with open(os.path.join(OUT, "status.json"), "w") as f:
     json.dump(status_data.status_json(), f, indent=2)
 with open(os.path.join(OUT, "changelog.json"), "w") as f:
     json.dump(changelog_data.changelog_json(), f, indent=2)
+with open(os.path.join(OUT, "verifications.json"), "w") as f:
+    json.dump(verifications_data.verifications_json(), f, indent=2)
 with open(os.path.join(OUT, "changelog.rss.xml"), "w") as f:
     f.write(changelog_data.changelog_rss())
 
