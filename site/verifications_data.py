@@ -870,6 +870,192 @@ REPORTS = [
             "the proof, as in the earlier reports.",
         ],
     },
+    {
+        "report_id": "harness-resident-boundary",
+        "subject": "Agent harness — resident boundary",
+        "date": "2026-11-15",
+        "kind": "lean_proof",
+        "verdict": "proven",
+        "summary": (
+            "Our agent harness includes a resident service that is granted exactly one "
+            "directory: it walks that directory, builds an index of what it finds, and "
+            "answers searches and lookups from the index alone. Proved in Lean 4: a file "
+            "is indexed only when its resolved real path lies inside the granted "
+            "directory, no examined component of it is credential-shaped, and admitting "
+            "it keeps the index within the grant's size cap; no symlink whose target "
+            "leaves the grant is ever followed or indexed; a grant that is absent, "
+            "malformed, or incomplete admits nothing at all; and every write an "
+            "indexing run makes lands in the service's own state directory."
+        ),
+        "method": (
+            "Lean 4 formal proof (toolchain v4.22.0), checked by the Lean kernel. The "
+            "proof compiles with no placeholder steps (no sorry, no admit) and depends "
+            "on no axioms beyond Lean's core three; of its seventy-three stated "
+            "results, thirty-one depend on no axioms at all, and none depends on the "
+            "axiom of choice. The subject of the proof is the resident service's "
+            "boundary decisions, its indexing walk, and its read surface, modelled step "
+            "for step from the code as built — including one branch of the code that "
+            "can never fire, transcribed as written. This proof needed no named "
+            "assumptions: no hash is compared anywhere in it, so there is nothing for "
+            "a collision-style assumption to attach to. One provenance note this "
+            "register keeps: the proof's first complete draft failed to compile on "
+            "three points — a reserved word used as a name, and two small results the "
+            "draft assumed which the core library does not carry — and was repaired "
+            "without changing any statement, the missing results proved from what the "
+            "core library does provide, before the final clean compile."
+        ),
+        "context": (
+            "The claim this report examines ran: the resident service refuses "
+            "everything outside its grant. Checked against the code, the sentence is "
+            "true of resolved paths and false of named paths. Every admission decision "
+            "turns on where a path resolves to — a file whose real location is outside "
+            "the grant is never indexed. But a path named outside the grant whose "
+            "target resolves inside it is admitted on its resolved path, and the "
+            "boundary list below carries that finding in full: the code contains a "
+            "refusal written for exactly that case which can never fire, and the "
+            "service's own documentation states the rule the code does not keep. This "
+            "is the fifth and last law of the harness proof round; the gatekeeper, "
+            "chain, anchored-chain, quarantine, and supervisor-fence reports are the "
+            "earlier entries in this register, and the resident service's own run "
+            "events are mirrored into the trace ledger those reports cover."
+        ),
+        "proven": [
+            "Admission is exact, in both directions. A candidate is admitted exactly "
+            "when its resolved real path lies inside the granted directory, no "
+            "examined component of it is credential-shaped, and — where a regular file "
+            "is required — it is one. The tests run in the code's order: containment "
+            "first, judged on the resolved path; then the credential test, over the "
+            "path's components inside the grant together with the named path's final "
+            "component when it differs; then the file-kind test. A credential-shaped "
+            "path outside the grant is refused as outside: the boundary does not name "
+            "what it will not look at.",
+            "The credential exclusion is a computation, not an intention. Names are "
+            "matched case-insensitively against the exclusion set — credential stores, "
+            "environment files, files with credential, secret, or password in the "
+            "name, private keys and key containers — and a refusal names the pattern "
+            "that caught the file. Planted names resolve exactly as the code resolves "
+            "them: an environment file, a credential-store directory in any casing, a "
+            "private-key file, and a passwords file are each shapes; an ordinary "
+            "document, a note, and a binary are not.",
+            "No escaping symlink is followed or indexed. An index entry exists only "
+            "at a resolved path inside the grant, so a link whose target lies outside "
+            "is never indexed under its own name or any other. A directory whose "
+            "resolved path lies outside is never kept for traversal. And a symlink "
+            "directory is never traversed at all: refused as an escape when its target "
+            "leaves the grant, recorded as not traversed when its target stays inside "
+            "— its contents are indexed at their real place, or not at all.",
+            "A grant that fails any check is no grant, and no grant admits nothing. A "
+            "grant exists exactly when the record is well-formed, a path is present, "
+            "the grant is attributed to a named granter, the size cap is a positive "
+            "whole number, and the path resolves to a directory that exists — each "
+            "defect, an unattributed grant and a misshapen cap among them, defeats the "
+            "grant on its own. With no grant loaded, a run admits nothing, records "
+            "nothing, and writes nothing: every entry point stops before any admission "
+            "decision exists.",
+            "The size cap is enforced whole. Admitted files are charged at their full "
+            "size, and the running total is exactly the admitted files' total and "
+            "never exceeds the cap. The file whose admission would cross the cap is "
+            "refused whole — never partially admitted — the walk stops there, nothing "
+            "further is admitted or recorded, and the index is marked partial.",
+            "Writes are confined to the service's own state directory. Across any "
+            "indexing run, the complete set of writes is five files — the index, its "
+            "temporary sibling, the run report, the refusals log, and the service's "
+            "own event record — each a direct child of the run's state directory, a "
+            "placement the code checks before the walk begins. The read surface "
+            "refuses writes outright: its write, delete, and update operations exist "
+            "only to be refused, by name, every time.",
+            "The read surface answers only from the index. A search returns index "
+            "entries and nothing else: for any test of matching, its results are part "
+            "of the index, never a fresh read of a source file. A lookup returns one "
+            "index entry's recorded path and recorded extract; there is no other "
+            "source of content on the surface. And because a refused file was never "
+            "indexed, its content appears in no answer the surface gives.",
+            "The harness's own test cases are theorems. A path outside the grant is "
+            "refused by name; an escaping symlink is refused and never indexed; a "
+            "credential-shaped file is refused with the pattern that caught it named; "
+            "the cap stops the walk and marks the index partial; a search finds a "
+            "planted phrase in an admitted file and returns nothing of a refused "
+            "file's content; and across a full run in the standard arrangement — the "
+            "state directory outside the granted tree — no write lands inside the "
+            "grant.",
+        ],
+        "not_proven": [
+            "'No writes inside the grant' is proved only in the standard arrangement, "
+            "and is not claimed unconditionally. What holds without conditions is "
+            "confinement: every write lands in the run's own state directory. The code "
+            "expressly supports placing that state directory inside the granted tree; "
+            "in that arrangement the run's writes are inside the grant — inside the "
+            "service's own store, a subtree the walk always excludes from indexing. "
+            "Only when neither the state directory nor the grant contains the other "
+            "does no write land inside the granted tree, and this report claims the "
+            "strong form only there.",
+            "A lookup's boundary refusal fires only when a grant is passed. The "
+            "lookup takes its grant optionally: with one, the boundary check runs "
+            "first and a refusal is the whole answer, before the index is consulted; "
+            "without one, the lookup is a pure search of the index by the path as "
+            "given, and no boundary check runs at all. The unconditional form — every "
+            "path outside the grant, or credential-shaped, refused by name before any "
+            "lookup — is not the code, and is not claimed.",
+            "One of the code's named refusals can never fire. The code carries a "
+            "branch that refuses a path named outside the grant whose target resolves "
+            "inside it — the refusal it names OUTSIDE-GRANT — with the reason written "
+            "beside it: the named path is what was asked for, and it was not granted. "
+            "The branch is unreachable: the containment test that guards it already "
+            "counts a path as inside whenever its resolved path is inside, so the "
+            "branch's condition is always false, and such a path is admitted on its "
+            "resolved path. This is proved of the model, and was re-checked against "
+            "the running service: the outside-named link into the grant is allowed, "
+            "while a plainly outside path is refused and a link named inside that "
+            "resolves outside is refused as an escape. The service's own documentation "
+            "states the opposite rule — that a path outside that merely resolves "
+            "inside is refused, because the named path is what must be granted. No fix "
+            "is claimed in this report: whether the code or the documentation changes "
+            "is a separate decision, and any fix will be proved in its turn, as the "
+            "quarantine fix was.",
+            "Path resolution is taken as given. The proof judges the paths the system "
+            "reports: a candidate's named path and its resolved real path, a link's "
+            "resolved target. What resolution itself returns — how links are "
+            "followed, how a path is normalized — is the filesystem's answer, "
+            "accepted as an input to every decision. The judgement is also of the tree "
+            "at one instant: a path swapped between the boundary check and the read, "
+            "or a tree changing while it is walked, is outside the proof.",
+            "The boundary judges paths, not files. Two names for one file are two "
+            "candidates: a name inside the grant whose other name lies outside is "
+            "admitted on its inside path, because its resolved path is inside — no "
+            "result here concerns a file's identity. A filesystem mounted inside the "
+            "granted tree is inside by path; the boundary never tests where one "
+            "filesystem ends and another begins. And containment compares name "
+            "components exactly, so on a filesystem that treats differently-cased "
+            "names as the same, spellings the proof judges different can name one "
+            "directory. The running code shares each of these properties; the proof "
+            "states them rather than repairing them.",
+            "The exclusion matches names, never content. A credential kept under an "
+            "innocent name is admitted, because the boundary judges what a file is "
+            "called and where it resolves — by the code's design, which the proof "
+            "preserves rather than improves. Nothing here establishes that an admitted "
+            "file is harmless: only that its path is inside the grant, its name is "
+            "not credential-shaped, and its size fits the cap.",
+            "Four of the harness's own test cases are named, not claimed. That the "
+            "index's stored hashes and extracts faithfully match the files is not "
+            "proved: the model's entries carry no hash, and a stored extract is "
+            "trusted, not judged. That a later run reuses exactly the unchanged "
+            "entries is not proved: the model is the fresh run — though every "
+            "admission check runs before any reuse in the code, so reuse changes no "
+            "admission outcome. The mirroring of a run's events into the harness's "
+            "trace ledger is the subject of the gatekeeper and chain reports, not "
+            "this one. And that the service has no network surface is a fact read "
+            "from its code and checked by search, not a theorem: the model has no "
+            "notion of a network to state it over.",
+            "The proof is about a model of the code, not the running code itself. "
+            "The model mirrors the service's boundary, walk, and read surface "
+            "decision for decision, in the code's own order — including the branch "
+            "that can never fire, transcribed as written — and the correspondence is "
+            "documented and reviewed, but it is not itself machine-checked. A proof "
+            "of the model is not a proof of the running program. The service's error "
+            "exits — a malformed stored index, a write failing part-way — are facts "
+            "read from the code, not theorems; the model's surfaces never fail.",
+        ],
+    },
 ]
 
 

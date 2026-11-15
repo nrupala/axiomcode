@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agent harness — resident boundary | AxiomCode</title>
+<meta name="description" content="Verification report — Agent harness — resident boundary. What was proven, and what was not proven, in plain words.">
+<link rel="canonical" href="https://axiom-code.com/verifications/harness-resident-boundary/">
+<meta property="og:site_name" content="AxiomCode">
+<meta property="og:title" content="Agent harness — resident boundary | AxiomCode">
+<meta property="og:description" content="Verification report — Agent harness — resident boundary. What was proven, and what was not proven, in plain words.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://axiom-code.com/verifications/harness-resident-boundary/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Agent harness — resident boundary | AxiomCode">
+<meta name="twitter:description" content="Verification report — Agent harness — resident boundary. What was proven, and what was not proven, in plain words.">
+<style>
+:root{--ink:#101828;--mut:#475467;--faint:#667085;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
+--wash2:#f2f4f7;--gold:#b98a2f;--goldsoft:#faf3e3;--goldink:#8a6414;
+--green:#12805c;--greensoft:#e9f7f0;--greenline:#bfe6d2;
+--red:#b42318;--redsoft:#fdeceb;--redline:#f3c2bc;
+--navy:#0c1f3f;--navy2:#12294f;--blue:#175cd3;--radius:12px;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;font-size:17px}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
+.prose{max-width:72ch}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:4px}
+.skip{position:absolute;left:-9999px;top:0;background:var(--navy);color:#fff;padding:10px 16px;z-index:99}
+.skip:focus{left:8px;top:8px}
+/* header */
+.sitehead{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
+.sitehead .wrap{display:flex;align-items:center;gap:26px;min-height:64px;flex-wrap:wrap;padding-top:6px;padding-bottom:6px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink)}
+.brand:hover{text-decoration:none}
+.brand svg{width:30px;height:30px}
+.nav{display:flex;gap:20px;margin-left:auto;font-size:15px;flex-wrap:wrap}
+.nav a{color:var(--mut)}.nav a:hover{color:var(--ink)}
+.nav a[aria-current]{color:var(--ink);font-weight:700;border-bottom:2px solid var(--gold)}
+.cta{display:inline-block;background:var(--navy);color:#fff!important;padding:9px 18px;border-radius:8px;font-weight:600;font-size:15px}
+.cta:hover{background:var(--navy2);text-decoration:none}
+/* chips: availability and lifecycle are ALWAYS separate, text-first */
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:700;border:1px solid var(--line);background:var(--wash);color:var(--mut);white-space:nowrap}
+.chip.av-live{background:var(--greensoft);color:var(--green);border-color:var(--greenline)}
+.chip.av-paused,.chip.av-unavail{background:var(--wash2);color:var(--mut)}
+.chip.lc-soak{background:var(--goldsoft);color:var(--goldink);border-color:#ecd9a8}
+.chip.lc-live{background:var(--greensoft);color:var(--green);border-color:var(--greenline)}
+.chip.lc-paused{background:var(--wash2);color:var(--mut)}
+.chip.lc-design{background:#eef4ff;color:var(--blue);border-color:#c7d7fe}
+.chip.lc-notbuilt{background:var(--wash2);color:var(--faint)}
+.chip.scope{background:#fff;color:var(--goldink);border-color:#ecd9a8}
+/* hero */
+.hero{background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:72px 0 64px}
+.hero h1{font-size:44px;line-height:1.14;margin:0 0 16px;letter-spacing:-.5px;max-width:15em}
+.hero p.lede{font-size:20px;color:#cbd5e1;max-width:36em;margin:0 0 14px}
+.hero .scope-line{font-size:15px;color:#93a1b8;max-width:40em;margin:0 0 26px}
+.hero .row{display:flex;gap:14px;flex-wrap:wrap}
+.btn{display:inline-block;padding:13px 26px;border-radius:9px;font-weight:700;font-size:16px;border:1px solid transparent}
+.btn-gold{background:var(--gold);color:#1a1206!important}.btn-gold:hover{background:#c99a3f;text-decoration:none}
+.btn-ghost{border-color:#3b4a63;color:#fff!important}.btn-ghost:hover{border-color:#5b6b85;text-decoration:none}
+.statusline{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;color:#93a1b8}
+.trustline{margin-top:26px;font-size:14px;color:#93a1b8}
+/* sections */
+section.block{padding:60px 0}
+section.block.alt{background:var(--wash)}
+section.block h2{font-size:29px;margin:0 0 10px;letter-spacing:-.3px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:26px}
+.card{border:1px solid var(--line);border-radius:var(--radius);padding:26px;background:#fff}
+.card h3{margin:0 0 8px;font-size:19px}
+.card p{margin:0;color:var(--mut);font-size:15.5px}
+.card .num{display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;
+align-items:center;justify-content:center;font-weight:700;margin-bottom:12px}
+.card .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.card .go{margin-top:auto;padding-top:10px;font-weight:600;font-size:15px}
+.cardflex{display:flex;flex-direction:column;gap:8px}
+/* seal / cert demo */
+.sealbox{background:var(--wash);border:1px solid var(--line);border-radius:12px;padding:28px;margin-top:24px}
+pre.code{background:var(--navy);color:#d7e3f4;padding:20px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;font-family:var(--mono)}
+code.inline{font-family:var(--mono);background:var(--wash);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:.88em}
+/* verdict badges */
+.badge{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;font-size:14px}
+.b-pass{background:var(--greensoft);color:var(--green);border:1px solid var(--greenline)}
+.b-fail{background:var(--redsoft);color:var(--red);border:1px solid var(--redline)}
+.b-warn{background:var(--goldsoft);color:var(--goldink);border:1px solid #ecd9a8}
+/* artefact loop (interactive on home) */
+.loop{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:stretch;margin-top:26px}
+@media(max-width:860px){.loop{grid-template-columns:1fr}.loop .arrow{transform:rotate(90deg);justify-self:center}}
+.loop .pane{border:1px solid var(--line);border-radius:var(--radius);background:#fff;overflow:hidden}
+.loop .pane h3{margin:0;padding:14px 20px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--line);background:var(--wash)}
+.loop .pane .body{padding:18px 20px}
+.loop pre.code{border-radius:0}
+.arrow{align-self:center;font-size:26px;color:var(--gold);font-weight:700}
+.kv{font-size:14.5px;margin:0}
+.kv dt{color:var(--faint);font-size:12.5px;text-transform:uppercase;letter-spacing:.8px;margin-top:12px}
+.kv dd{margin:2px 0 0;font-family:var(--mono);font-size:14px;word-break:break-all}
+.kv dd.plain{font-family:var(--sans)}
+/* tables */
+table.spec,table.tax,table.status{width:100%;border-collapse:collapse;font-size:15px;margin:20px 0;background:#fff}
+table.spec th,table.spec td,table.tax th,table.tax td,table.status th,table.status td{border:1px solid var(--line);padding:11px 14px;text-align:left;vertical-align:top}
+table.spec th,table.tax th,table.status th{background:var(--wash)}
+table.tax th,table.status th{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
+table.status td .chips{display:flex;gap:6px;flex-wrap:wrap}
+table.status td small{color:var(--faint);display:block;margin-top:4px}
+.tablewrap{overflow-x:auto}
+/* pricing */
+.ptable{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:26px}
+.plan{border:1px solid var(--line);border-radius:12px;padding:26px;background:#fff;position:relative}
+.plan.hot{border:2px solid var(--gold);box-shadow:0 8px 30px rgba(185,138,47,.12)}
+.plan h3{margin:0 0 4px;font-size:17px}.plan .price{font-size:32px;font-weight:800;margin:6px 0 2px}
+.plan .per{color:var(--mut);font-size:14px}
+.plan ul{padding-left:20px;color:var(--mut);font-size:15px;margin:14px 0 0}
+.plan li{margin-bottom:7px}
+.plan .buy{margin-top:16px;display:inline-block;padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--wash2);color:var(--faint);font-weight:700;font-size:14.5px;cursor:not-allowed}
+.plan .buy.live{background:var(--navy);color:#fff;border-color:var(--navy);cursor:pointer}
+/* forms */
+textarea.codebox{width:100%;min-height:260px;font-family:var(--mono);font-size:14px;padding:16px;
+border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
+textarea.plainbox{width:100%;min-height:150px;font-family:var(--sans);font-size:16px;padding:14px;
+border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
+input[type=text],input[type=email],input[type=password],select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:#fff}
+label.fl{display:block;font-weight:600;margin:18px 0 6px}
+button.go{background:var(--navy);color:#fff;border:0;padding:13px 30px;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer}
+button.go:hover{background:var(--navy2)}button.go:disabled{opacity:.55;cursor:wait}
+.result{margin-top:24px;border:1px solid var(--line);border-radius:10px;padding:22px;display:none}
+.result.show{display:block}
+.hp{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden}
+/* honesty furniture */
+.honest{border:1px solid #ecd9a8;background:var(--goldsoft);border-radius:var(--radius);padding:22px 26px;margin-top:26px}
+.honest h3{margin:0 0 8px;font-size:17px}
+.honest p{margin:0 0 8px;color:#5b4a17;font-size:15.5px}
+.honest p:last-child{margin-bottom:0}
+/* page head (status / docs / company) */
+.pagehead{padding:52px 0 8px}
+.pagehead h1{font-size:36px;margin:0 0 10px;letter-spacing:-.4px}
+.pagehead p{color:var(--mut);max-width:44em;margin:0}
+.asof{font-size:14px;color:var(--faint);margin-top:12px}
+/* docs layout */
+.docslayout{display:grid;grid-template-columns:250px 1fr;gap:36px;padding:44px 0 60px}
+@media(max-width:860px){.docslayout{grid-template-columns:1fr}}
+.sidenav{font-size:15px}
+.sidenav h4{margin:22px 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:1px;color:var(--faint)}
+.sidenav h4:first-child{margin-top:0}
+.sidenav ul{list-style:none;margin:0;padding:0}
+.sidenav li{margin:3px 0}
+.sidenav a{color:var(--mut)}
+.sidenav a[aria-current]{color:var(--ink);font-weight:700}
+.docmeta{border:1px solid var(--line);border-radius:10px;background:var(--wash);padding:14px 18px;font-size:14px;color:var(--mut);display:flex;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+.docmeta b{color:var(--ink)}
+.quad{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:22px}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:22px}
+.role{border:1px solid var(--line);border-radius:10px;padding:18px;background:#fff}
+.role h3{margin:0 0 4px;font-size:16px}
+.role p{margin:0;color:var(--mut);font-size:14px}
+.steps{counter-reset:step;margin-top:20px}
+.step{border-left:3px solid var(--gold);padding:2px 0 6px 20px;margin-bottom:22px}
+.step h3{margin:0 0 6px;font-size:18px}
+.step p{color:var(--mut);margin:0 0 10px;max-width:65ch}
+/* footer */
+footer{border-top:1px solid var(--line);background:var(--wash);padding:44px 0 36px;font-size:14.5px;color:var(--mut);margin-top:40px}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:26px}
+footer h4{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--ink)}
+footer ul{list-style:none;margin:0;padding:0}
+footer li{margin:5px 0}
+footer a{color:var(--mut)}
+.legal{margin-top:30px;border-top:1px solid var(--line);padding-top:18px;font-size:13.5px;color:var(--faint)}
+/* misc page furniture */
+.docnav{background:var(--wash);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:24px 0}
+.note{border-left:4px solid var(--gold);background:var(--goldsoft);padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0;font-size:15.5px}
+h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
+.sub{color:var(--mut);font-size:19px;margin:0 0 8px}
+.faq details{border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:10px}
+.faq summary{font-weight:700;cursor:pointer}
+@media(max-width:760px){.hero h1{font-size:32px}.nav{display:none}}
+</style>
+
+</head>
+<body>
+<a class="skip" href="#main">Skip to content</a>
+<div class="sitehead"><div class="wrap">
+<a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
+<nav class="nav" aria-label="Primary"><a href="/how-it-works/">Product</a><a href="/verify/">Try it</a><a href="/docs/">Docs</a><a href="/#try">Examples</a><a href="/status/">Status</a><a href="/changelog/">Changelog</a><a href="/practice/">Practice</a><a href="/pricing/">Pricing</a></nav>
+<a class="cta" href="/verify/">Verify an artefact</a>
+</div></div>
+<main id="main">
+<section class="pagehead"><div class="wrap">
+<p class="kicker">15 November 2026 &middot; Lean 4 proof</p>
+<h1>Agent harness — resident boundary</h1>
+<p>Our agent harness includes a resident service that is granted exactly one directory: it walks that directory, builds an index of what it finds, and answers searches and lookups from the index alone. Proved in Lean 4: a file is indexed only when its resolved real path lies inside the granted directory, no examined component of it is credential-shaped, and admitting it keeps the index within the grant&#x27;s size cap; no symlink whose target leaves the grant is ever followed or indexed; a grant that is absent, malformed, or incomplete admits nothing at all; and every write an indexing run makes lands in the service&#x27;s own state directory.</p>
+<p style="margin-top:14px"><span class="badge b-pass">Proven</span> <span class="chip scope">Lean 4 proof</span></p>
+</div></section>
+
+<section class="block" style="padding-top:26px"><div class="wrap"><div class="prose">
+<h2>What was proven</h2>
+<ul><li>Admission is exact, in both directions. A candidate is admitted exactly when its resolved real path lies inside the granted directory, no examined component of it is credential-shaped, and — where a regular file is required — it is one. The tests run in the code&#x27;s order: containment first, judged on the resolved path; then the credential test, over the path&#x27;s components inside the grant together with the named path&#x27;s final component when it differs; then the file-kind test. A credential-shaped path outside the grant is refused as outside: the boundary does not name what it will not look at.</li><li>The credential exclusion is a computation, not an intention. Names are matched case-insensitively against the exclusion set — credential stores, environment files, files with credential, secret, or password in the name, private keys and key containers — and a refusal names the pattern that caught the file. Planted names resolve exactly as the code resolves them: an environment file, a credential-store directory in any casing, a private-key file, and a passwords file are each shapes; an ordinary document, a note, and a binary are not.</li><li>No escaping symlink is followed or indexed. An index entry exists only at a resolved path inside the grant, so a link whose target lies outside is never indexed under its own name or any other. A directory whose resolved path lies outside is never kept for traversal. And a symlink directory is never traversed at all: refused as an escape when its target leaves the grant, recorded as not traversed when its target stays inside — its contents are indexed at their real place, or not at all.</li><li>A grant that fails any check is no grant, and no grant admits nothing. A grant exists exactly when the record is well-formed, a path is present, the grant is attributed to a named granter, the size cap is a positive whole number, and the path resolves to a directory that exists — each defect, an unattributed grant and a misshapen cap among them, defeats the grant on its own. With no grant loaded, a run admits nothing, records nothing, and writes nothing: every entry point stops before any admission decision exists.</li><li>The size cap is enforced whole. Admitted files are charged at their full size, and the running total is exactly the admitted files&#x27; total and never exceeds the cap. The file whose admission would cross the cap is refused whole — never partially admitted — the walk stops there, nothing further is admitted or recorded, and the index is marked partial.</li><li>Writes are confined to the service&#x27;s own state directory. Across any indexing run, the complete set of writes is five files — the index, its temporary sibling, the run report, the refusals log, and the service&#x27;s own event record — each a direct child of the run&#x27;s state directory, a placement the code checks before the walk begins. The read surface refuses writes outright: its write, delete, and update operations exist only to be refused, by name, every time.</li><li>The read surface answers only from the index. A search returns index entries and nothing else: for any test of matching, its results are part of the index, never a fresh read of a source file. A lookup returns one index entry&#x27;s recorded path and recorded extract; there is no other source of content on the surface. And because a refused file was never indexed, its content appears in no answer the surface gives.</li><li>The harness&#x27;s own test cases are theorems. A path outside the grant is refused by name; an escaping symlink is refused and never indexed; a credential-shaped file is refused with the pattern that caught it named; the cap stops the walk and marks the index partial; a search finds a planted phrase in an admitted file and returns nothing of a refused file&#x27;s content; and across a full run in the standard arrangement — the state directory outside the granted tree — no write lands inside the grant.</li></ul>
+
+<h2 style="margin-top:44px">What was not proven</h2>
+<ul><li>&#x27;No writes inside the grant&#x27; is proved only in the standard arrangement, and is not claimed unconditionally. What holds without conditions is confinement: every write lands in the run&#x27;s own state directory. The code expressly supports placing that state directory inside the granted tree; in that arrangement the run&#x27;s writes are inside the grant — inside the service&#x27;s own store, a subtree the walk always excludes from indexing. Only when neither the state directory nor the grant contains the other does no write land inside the granted tree, and this report claims the strong form only there.</li><li>A lookup&#x27;s boundary refusal fires only when a grant is passed. The lookup takes its grant optionally: with one, the boundary check runs first and a refusal is the whole answer, before the index is consulted; without one, the lookup is a pure search of the index by the path as given, and no boundary check runs at all. The unconditional form — every path outside the grant, or credential-shaped, refused by name before any lookup — is not the code, and is not claimed.</li><li>One of the code&#x27;s named refusals can never fire. The code carries a branch that refuses a path named outside the grant whose target resolves inside it — the refusal it names OUTSIDE-GRANT — with the reason written beside it: the named path is what was asked for, and it was not granted. The branch is unreachable: the containment test that guards it already counts a path as inside whenever its resolved path is inside, so the branch&#x27;s condition is always false, and such a path is admitted on its resolved path. This is proved of the model, and was re-checked against the running service: the outside-named link into the grant is allowed, while a plainly outside path is refused and a link named inside that resolves outside is refused as an escape. The service&#x27;s own documentation states the opposite rule — that a path outside that merely resolves inside is refused, because the named path is what must be granted. No fix is claimed in this report: whether the code or the documentation changes is a separate decision, and any fix will be proved in its turn, as the quarantine fix was.</li><li>Path resolution is taken as given. The proof judges the paths the system reports: a candidate&#x27;s named path and its resolved real path, a link&#x27;s resolved target. What resolution itself returns — how links are followed, how a path is normalized — is the filesystem&#x27;s answer, accepted as an input to every decision. The judgement is also of the tree at one instant: a path swapped between the boundary check and the read, or a tree changing while it is walked, is outside the proof.</li><li>The boundary judges paths, not files. Two names for one file are two candidates: a name inside the grant whose other name lies outside is admitted on its inside path, because its resolved path is inside — no result here concerns a file&#x27;s identity. A filesystem mounted inside the granted tree is inside by path; the boundary never tests where one filesystem ends and another begins. And containment compares name components exactly, so on a filesystem that treats differently-cased names as the same, spellings the proof judges different can name one directory. The running code shares each of these properties; the proof states them rather than repairing them.</li><li>The exclusion matches names, never content. A credential kept under an innocent name is admitted, because the boundary judges what a file is called and where it resolves — by the code&#x27;s design, which the proof preserves rather than improves. Nothing here establishes that an admitted file is harmless: only that its path is inside the grant, its name is not credential-shaped, and its size fits the cap.</li><li>Four of the harness&#x27;s own test cases are named, not claimed. That the index&#x27;s stored hashes and extracts faithfully match the files is not proved: the model&#x27;s entries carry no hash, and a stored extract is trusted, not judged. That a later run reuses exactly the unchanged entries is not proved: the model is the fresh run — though every admission check runs before any reuse in the code, so reuse changes no admission outcome. The mirroring of a run&#x27;s events into the harness&#x27;s trace ledger is the subject of the gatekeeper and chain reports, not this one. And that the service has no network surface is a fact read from its code and checked by search, not a theorem: the model has no notion of a network to state it over.</li><li>The proof is about a model of the code, not the running code itself. The model mirrors the service&#x27;s boundary, walk, and read surface decision for decision, in the code&#x27;s own order — including the branch that can never fire, transcribed as written — and the correspondence is documented and reviewed, but it is not itself machine-checked. A proof of the model is not a proof of the running program. The service&#x27;s error exits — a malformed stored index, a write failing part-way — are facts read from the code, not theorems; the model&#x27;s surfaces never fail.</li></ul>
+
+<h2 style="margin-top:44px">How it was verified</h2>
+<p>Lean 4 formal proof (toolchain v4.22.0), checked by the Lean kernel. The proof compiles with no placeholder steps (no sorry, no admit) and depends on no axioms beyond Lean&#x27;s core three; of its seventy-three stated results, thirty-one depend on no axioms at all, and none depends on the axiom of choice. The subject of the proof is the resident service&#x27;s boundary decisions, its indexing walk, and its read surface, modelled step for step from the code as built — including one branch of the code that can never fire, transcribed as written. This proof needed no named assumptions: no hash is compared anywhere in it, so there is nothing for a collision-style assumption to attach to. One provenance note this register keeps: the proof&#x27;s first complete draft failed to compile on three points — a reserved word used as a name, and two small results the draft assumed which the core library does not carry — and was repaired without changing any statement, the missing results proved from what the core library does provide, before the final clean compile.</p>
+<h2 style="margin-top:44px">How this report came to be</h2>
+<p>The claim this report examines ran: the resident service refuses everything outside its grant. Checked against the code, the sentence is true of resolved paths and false of named paths. Every admission decision turns on where a path resolves to — a file whose real location is outside the grant is never indexed. But a path named outside the grant whose target resolves inside it is admitted on its resolved path, and the boundary list below carries that finding in full: the code contains a refusal written for exactly that case which can never fire, and the service&#x27;s own documentation states the rule the code does not keep. This is the fifth and last law of the harness proof round; the gatekeeper, chain, anchored-chain, quarantine, and supervisor-fence reports are the earlier entries in this register, and the resident service&#x27;s own run events are mirrored into the trace ledger those reports cover.</p>
+
+<p style="margin-top:44px"><a href="/verifications/">&larr; All verification reports</a> &middot; <a href="/practice/">How the practice runs</a></p>
+</div></div></section>
+</main>
+<footer><div class="wrap">
+<div class="cols">
+<div><h4>Product</h4><ul>
+<li><a href="/how-it-works/">How it works</a></li>
+<li><a href="/verify/">Verify</a></li>
+<li><a href="/check/">Check a certificate</a></li>
+<li><a href="/ask/">Ask AxiomCode</a></li>
+<li><a href="/pricing/">Pricing</a></li>
+</ul></div>
+<div><h4>Developers</h4><ul>
+<li><a href="/docs/">Documentation</a></li>
+<li><a href="/docs/api/">REST API</a></li>
+<li><a href="/docs/mcp/">Hosted MCP</a></li>
+<li><a href="/docs/mcp/#local-mcp">Local MCP</a></li>
+<li><a href="https://api.axiom-code.com/openapi.json">OpenAPI (live)</a></li>
+<li><a href="/llms.txt">llms.txt</a></li>
+</ul></div>
+<div><h4>Trust</h4><ul>
+<li><a href="/status/">Status</a></li>
+<li><a href="/changelog/">Changelog &amp; service record</a></li>
+<li><a href="/practice/">Practice</a></li>
+<li><a href="/verifications/">Verification reports</a></li>
+<li><a href="/paperwork/certificate-policy/">Certificate Policy</a></li>
+<li><a href="/paperwork/security/">Security</a></li>
+<li><a href="/paperwork/privacy/">Privacy</a></li>
+<li><a href="/paperwork/terms/">Terms</a></li>
+<li><a href="/paperwork/refunds/">Refunds</a></li>
+<li><a href="/paperwork/sla/">Service Levels</a></li>
+</ul></div>
+<div><h4>Company</h4><ul>
+<li><a href="/about/">About</a></li>
+<li><a href="/contact/">Contact</a></li>
+<li><a href="/blog/">Blog</a></li>
+</ul></div>
+<div><h4>Machine-readable</h4><ul>
+<li><a href="/status.json">Status JSON</a></li>
+<li><a href="/changelog.json">Changelog JSON</a></li>
+<li><a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">CA keys</a></li>
+<li><a href="https://api.axiom-code.com/revoked">Revocation list</a></li>
+<li><a href="/.well-known/axiomcode.json">Service record</a></li>
+<li><a href="/sitemap.xml">Sitemap</a></li>
+</ul></div>
+</div>
+<div class="legal">AxiomCode is a service of <strong>2351485 ALBERTA INC.</strong> (Alberta, Canada). Certificates are valid 90 days and revocable; the production CA key ID is <code>c731a5036812339d</code>. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
+</div></footer>
+</body>
+</html>

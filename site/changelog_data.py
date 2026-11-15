@@ -24,6 +24,52 @@ _REPO = "https://github.com/nrupala/axiomcode"
 
 ENTRIES = [
     {
+        "id": "2026-11-15-verification-reports-resident-boundary",
+        "date": "2026-11-15",
+        "title": "Verification report added — the resident boundary, proved",
+        "category": "Added",
+        "surfaces": ["Website", "Verification reports"],
+        "body": (
+            '<p>The <a href="/verifications/">verification reports</a> register gains the '
+            "resident boundary report — the fifth and last law of the harness proof "
+            'round. The <a href="/verifications/harness-resident-boundary/">resident '
+            "boundary report</a>: proved in Lean 4 that a file is indexed only when "
+            "its resolved real path lies inside the one granted directory, no examined "
+            "component of it is credential-shaped, and admitting it keeps the index "
+            "within the grant&rsquo;s size cap — the file that would cross the cap "
+            "refused whole, the walk stopped, the index marked partial; that no "
+            "symlink whose target leaves the grant is ever followed or indexed, and a "
+            "symlink directory is never traversed at all; that a grant exists only "
+            "when every check on it passes, and with no grant nothing is admitted, "
+            "recorded, or written; that every write of a run lands in the "
+            "service&rsquo;s own state directory, and the read surface answers only "
+            "from the index, refusing every write by name — with its boundary stated "
+            "on the report itself (the &lsquo;no writes inside the grant&rsquo; form "
+            "holds only when the state directory and the grant do not nest, an "
+            "arrangement the code expressly supports; a lookup&rsquo;s boundary "
+            "refusal fires only when a grant is passed to it; and one of the "
+            "code&rsquo;s named refusals — for a path named outside the grant that "
+            "resolves inside it — is proved unreachable as written, the path admitted "
+            "on its resolved path, where the service&rsquo;s own documentation states "
+            "the opposite rule; no fix is claimed, and any fix will be "
+            "re-proved).</p>"
+        ),
+        "effect": "Anyone can now read how the harness's resident service is proved "
+        "to stay inside its one granted directory — and where that proof's boundary "
+        "lies, including the one place the code and its own documentation disagree. "
+        "With this report, the register carries all five laws of the harness proof "
+        "round.",
+        "evidence": [
+            {"label": "Verification reports", "url": "https://axiom-code.com/verifications/"},
+            {
+                "label": "Resident boundary report",
+                "url": "https://axiom-code.com/verifications/harness-resident-boundary/",
+            },
+        ],
+        "refs": [],
+        "disposition": "Live on the site; the register grows by completed records only.",
+    },
+    {
         "id": "2026-11-15-verification-reports-supervisor-fence",
         "date": "2026-11-15",
         "title": "Verification report added — the run supervisor fence, proved",
