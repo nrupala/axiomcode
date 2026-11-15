@@ -11,6 +11,10 @@ dependency-light and fast.
   are generated from it; never type a status fact into a page directly.
 - `changelog_data.py` — the canonical changelog source (append-only, no silent
   edits), rendered to `/changelog/`, `changelog.json`, and `changelog.rss.xml`.
+- `verifications_data.py` — the canonical verification-reports source, rendered
+  to `/verifications/`, one page per report, and `verifications.json`. Every
+  entry states what was proven and what was not proven; an entry without a
+  `not_proven` field does not render, and the drift checks fail on it.
 - `check_drift.py` — fails when any rendering disagrees with the canonical sources
   or with a fresh rebuild; runs in CI (`.github/workflows/site-drift.yml`) and can
   be run locally before pushing site changes.

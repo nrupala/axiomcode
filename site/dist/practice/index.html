@@ -199,7 +199,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <p>A release that passes the gate enters production as a release candidate and <strong>soaks</strong>: it serves real traffic while its evidence is watched. &ldquo;In soak&rdquo; on the <a href="/status/">status page</a> means exactly that — live, but not yet graduated. A residual is a known, named imperfection carried openly in the soak (for example, Ask's explanation latency). A date alone never graduates a release: graduation is a recorded gate decision, entered in the <a href="/changelog/">changelog</a> when it happens. Current soaks and their scheduled decision dates are on the <a href="/status/">status page</a>.</p>
 
 <h2>4. Independent assurance — and its limits</h2>
-<p>Stated plainly: the release-gate probes behind our releases are <strong>first-party assurance evidence</strong> — an internal gate, run independently of the build lanes, but not an outside audit. <strong>No external firm has audited or validated this product end-to-end, and no external third-party audit has been performed.</strong> Gemini's recorded role (2026-11-09) was market and strategy assessment, never technical certification. DeepSeek has not checked the production service. What you can verify yourself: the <a href="https://github.com/nrupala/axiomcode/blob/main/gate.yaml">gate declaration</a>, the <a href="https://github.com/nrupala/axiomcode/blob/main/docs/THREAT-MODEL.md">threat model</a>, the public revocation list, and every certificate — each is independently checkable against the published CA keys.</p>
+<p>Stated plainly: the release-gate probes behind our releases are <strong>first-party assurance evidence</strong> — an internal gate, run independently of the build lanes, but not an outside audit. <strong>No external firm has audited or validated this product end-to-end, and no external third-party audit has been performed.</strong> Gemini's recorded role (2026-11-09) was market and strategy assessment, never technical certification. DeepSeek has not checked the production service. What you can verify yourself: the <a href="https://github.com/nrupala/axiomcode/blob/main/gate.yaml">gate declaration</a>, the <a href="https://github.com/nrupala/axiomcode/blob/main/docs/THREAT-MODEL.md">threat model</a>, the public revocation list, and every certificate — each is independently checkable against the published CA keys. Our trust case is proof by our own products: the verification reports on our own products — each stating what was proven and what was not proven — are published in the <a href="/verifications/">verification reports</a> register.</p>
 
 <h2>5. Certificate lifecycle</h2>
 <p>Certificates are issued on completed paid verifications, are valid for <strong>90 days</strong>, and bind the artefact hash, verdict, toolchain, issuer, serial, and validity window under the CA's signature. Renewal is <strong>re-verification</strong>: submit again and a fresh certificate is issued on the new result. A certificate is revoked when its verdict can no longer be stood behind — for example a toolchain defect that invalidates it — and revocation is public: the serial goes on the <a href="https://api.axiom-code.com/revoked">public revocation list</a>, an incident note is published in the <a href="/changelog/">changelog</a>, and affected artefacts are re-verified at our expense. Check any certificate at <a href="/check/">/check/</a> or offline against the <a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">CA public keys</a>.</p>
@@ -231,6 +231,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <tr><td><a href="/status.json">Status JSON</a></td><td>Current availability and lifecycle of every surface</td></tr>
 <tr><td><a href="https://api.axiom-code.com/revoked">Revocation list</a> · <a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">CA keys</a></td><td>Public, independently checkable CA state</td></tr>
 <tr><td><a href="/changelog.json">Changelog JSON</a> · <a href="/changelog.rss.xml">RSS</a></td><td>The append-only service record, machine-readable</td></tr>
+<tr><td><a href="/verifications/">Verification reports</a> · <a href="/verifications.json">JSON</a></td><td>What our verification of our own products proved — and what it did not</td></tr>
 </table>
 </div></div></section>
 </main>
@@ -255,6 +256,7 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 <li><a href="/status/">Status</a></li>
 <li><a href="/changelog/">Changelog &amp; service record</a></li>
 <li><a href="/practice/">Practice</a></li>
+<li><a href="/verifications/">Verification reports</a></li>
 <li><a href="/paperwork/certificate-policy/">Certificate Policy</a></li>
 <li><a href="/paperwork/security/">Security</a></li>
 <li><a href="/paperwork/privacy/">Privacy</a></li>
