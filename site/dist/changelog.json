@@ -6,6 +6,30 @@
   "rss": "https://axiom-code.com/changelog.rss.xml",
   "entries": [
     {
+      "id": "2026-11-14-verification-reports",
+      "date": "2026-11-14",
+      "title": "Verification reports published \u2014 our own products, proven and bounded in public",
+      "category": "Added",
+      "surfaces": [
+        "Website",
+        "Verification reports"
+      ],
+      "body": "<p>AxiomCode&rsquo;s trust case is proof by our own products: every product we build is verified \u2014 through the release gate, and for deterministic cores by Lean 4 proof \u2014 and the reports are now published in a dedicated <a href=\"/verifications/\">verification reports</a> register. Every report states what was proven and what was not proven, in plain words; a report without the second statement does not appear. The register is generated from a canonical source, and CI drift checks fail when any rendering disagrees with it. The first report is our own agent harness&rsquo;s trace-ledger gatekeeper: proved in Lean 4 to refuse blank or unregistered origins by name, to leave the ledger untouched on refusal, and to refuse everything when its registry is empty \u2014 with its boundary stated on the report itself (registration is membership, not signing; the proof covers a model of the code, not the running program; the hash chain&rsquo;s own law is a separate step, in progress and not claimed). Further reports are added as their records complete; work in progress is not pre-published.</p>",
+      "effect": "Anyone can read exactly what our verification of our own products established \u2014 and where each proof stops.",
+      "evidence": [
+        {
+          "label": "Verification reports",
+          "url": "https://axiom-code.com/verifications/"
+        },
+        {
+          "label": "First report: trace-ledger gatekeeper",
+          "url": "https://axiom-code.com/verifications/harness-trace-gatekeeper/"
+        }
+      ],
+      "refs": [],
+      "disposition": "Live on the site; the register grows by completed records only."
+    },
+    {
       "id": "2026-11-14-p2-redesign-docs",
       "date": "2026-11-14",
       "title": "Website redesign (P2) and the AppDocStudio documentation rebuild",

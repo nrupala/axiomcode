@@ -22,6 +22,12 @@ Checks:
      evidence-on-request boundary; About/Contact name the owning entity;
      the home loop is the interactive own-key form; no Memo B claim words
      (insurance / SLA / guarantee) appear in new-surface copy.
+  8. Verification reports: every source entry is renderable — above all,
+     its `not_proven` field is present and non-empty (a report without a
+     boundary does not render); the index renders every entry; each
+     report page carries its proven and not-proven statements verbatim;
+     verifications.json equals the canonical source; the sitemap lists
+     the register and every report page.
 """
 
 import json
@@ -39,6 +45,7 @@ sys.path.insert(0, SITE_DIR)
 
 import changelog_data  # noqa: E402
 import status_data  # noqa: E402
+import verifications_data  # noqa: E402
 
 FAILURES: list[str] = []
 
@@ -209,6 +216,10 @@ def check_p2_surfaces():
     check('href="/about/"' in home and 'href="/contact/"' in home, "footer links About + Contact")
     # Memo B claim lint over the new surfaces' copy (link targets excluded).
     lint_paths = ["index.html", os.path.join("about", "index.html"), os.path.join("contact", "index.html")]
+    for root, _dirs, files in os.walk(os.path.join(DIST, "verifications")):
+        for fn in files:
+            if fn == "index.html":
+                lint_paths.append(os.path.relpath(os.path.join(root, fn), DIST))
     for root, _dirs, files in os.walk(os.path.join(DIST, "docs")):
         for fn in files:
             if fn == "index.html":
@@ -218,6 +229,52 @@ def check_p2_surfaces():
         for word in ("insurance", "guarantee"):
             check(word not in text, f"no Memo B claim word '{word}' in {rel}")
         check(not re.search(r"\bsla\b", text), f"no Memo B claim word 'sla' in {rel}")
+
+
+def check_verifications():
+    import html as _html
+
+    rids = set()
+    for r in verifications_data.REPORTS:
+        rid = r.get("report_id", "?")
+        check(rid not in rids, f"verification report id unique: {rid}")
+        rids.add(rid)
+        check(r.get("kind") in verifications_data.KIND_LABELS, f"{rid} kind in vocabulary")
+        check(r.get("verdict") in verifications_data.VERDICT_LABELS, f"{rid} verdict in vocabulary")
+        check(bool(r.get("subject")), f"{rid} names a subject")
+        check(bool(r.get("summary")), f"{rid} has a summary")
+        check(bool(r.get("method")), f"{rid} states its method")
+        proven = r.get("proven") or []
+        check(bool(proven) and all(p.strip() for p in proven), f"{rid} states what was proven")
+        not_proven = r.get("not_proven")
+        check(
+            bool(not_proven) and all(p.strip() for p in not_proven),
+            f"{rid} states what was NOT proven (an entry without this field does not render)",
+        )
+        check(verifications_data.renderable(r), f"{rid} is renderable")
+    vj = json.loads(read_dist("verifications.json"))
+    check(vj["reports"] == verifications_data.REPORTS, "verifications.json == canonical source")
+    check(vj["meta"]["as_of"] == verifications_data.REPORTS_META["as_of"], "verifications.json as_of == source")
+    index_html = read_dist(os.path.join("verifications", "index.html"))
+    check("What was not proven" in index_html, "/verifications/ states the two-part discipline")
+    sm = read_dist("sitemap.xml")
+    check("<loc>https://axiom-code.com/verifications/</loc>" in sm, "sitemap lists /verifications/")
+    for r in verifications_data.REPORTS:
+        rid = r["report_id"]
+        check(r["subject"] in index_html, f"/verifications/ renders entry {rid}")
+        check(
+            f"<loc>https://axiom-code.com/verifications/{rid}/</loc>" in sm,
+            f"sitemap lists /verifications/{rid}/",
+        )
+        page_html = read_dist(os.path.join("verifications", rid, "index.html"))
+        check("What was proven" in page_html, f"/verifications/{rid}/ carries the proven section")
+        check("What was not proven" in page_html, f"/verifications/{rid}/ carries the not-proven section")
+        for p in r["proven"]:
+            check(_html.escape(p) in page_html, f"/verifications/{rid}/ renders proven item verbatim")
+        for p in r["not_proven"]:
+            check(_html.escape(p) in page_html, f"/verifications/{rid}/ renders not-proven item verbatim")
+    status_html = read_dist(os.path.join("status", "index.html"))
+    check('href="/verifications/"' in status_html, "footer links Verification reports")
 
 
 def main():
@@ -231,6 +288,7 @@ def main():
     check_pricing_agreement()
     check_sitemap()
     check_p2_surfaces()
+    check_verifications()
     if FAILURES:
         print(f"\nDRIFT: {len(FAILURES)} check(s) failed")
         return 1

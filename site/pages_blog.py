@@ -81,6 +81,8 @@ WELLKNOWN["status_page"] = SITE + "/status/"
 WELLKNOWN["status_json"] = SITE + "/status.json"
 WELLKNOWN["changelog"] = SITE + "/changelog/"
 WELLKNOWN["practice"] = SITE + "/practice/"
+WELLKNOWN["verifications"] = SITE + "/verifications/"
+WELLKNOWN["verifications_json"] = SITE + "/verifications.json"
 WELLKNOWN["status_as_of"] = status_data.STATUS_META["as_of"]
 WELLKNOWN["surfaces"] = status_data.wellknown_surfaces()
 
@@ -119,6 +121,7 @@ Diátaxis-structured, with role packs. Home: https://axiom-code.com/docs/
 - Status (machine): https://axiom-code.com/status.json
 - Changelog & service record: https://axiom-code.com/changelog/
 - Practice (gates, soak, certificates, error reporting): https://axiom-code.com/practice/
+- Verification reports (our own products: what was proven — and what was not): https://axiom-code.com/verifications/
 - REST base (live): https://api.axiom-code.com
 - Verify: POST /verify with an API key (X-Api-Key header), body {"code": "..."}.
   When every proof slot is busy the answer is 202 {"status":"queued","job_id":...,

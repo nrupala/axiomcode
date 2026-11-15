@@ -1,0 +1,36 @@
+{
+  "meta": {
+    "service": "AxiomCode",
+    "as_of": "2026-11-14",
+    "timezone": "America/Edmonton",
+    "source": "site/verifications_data.py",
+    "index_page": "https://axiom-code.com/verifications/"
+  },
+  "reports": [
+    {
+      "report_id": "harness-trace-gatekeeper",
+      "subject": "Agent harness \u2014 trace-ledger gatekeeper",
+      "date": "2026-11-14",
+      "kind": "lean_proof",
+      "verdict": "proven",
+      "summary": "The gatekeeper that decides what may be appended to our agent harness's trace ledger must refuse any entry whose stated origin is blank or unregistered for its lane \u2014 and a refusal must leave the ledger untouched. Proved in Lean 4 against the strengthened code, including the fail-closed case: an empty or unreadable registry refuses everything.",
+      "method": "Lean 4 formal proof (toolchain v4.22.0), checked by the Lean kernel. The proof compiles with no placeholder steps (no sorry, no admit) and depends on no axioms beyond Lean's core three. The subject of the proof is the gatekeeper's append-path decision logic, modelled step for step from the code as built.",
+      "context": "This law was first proved on 2026-11-14 in a weaker form: an entry needed only a non-blank origin. Comparing the claim against the code showed the weaker form was all the code enforced, so the code was strengthened first \u2014 origins must now be registered per lane, fail-closed \u2014 and the stronger law was then proved against the strengthened code. Both proofs stand; this report states the current, stronger law.",
+      "proven": [
+        "A blank origin is refused, by name. An entry whose stated origin (its provenance) is empty or all whitespace is turned away, and the refusal carries the reason.",
+        "An unregistered origin is refused, by name. An entry whose stated origin is not on the registered list for its lane is turned away with a refusal that names the origin and the lane. Registration for a different lane does not count.",
+        "Acceptance means a registered origin. Every entry the gatekeeper accepts carries an origin string that is registered for its lane \u2014 and therefore non-blank.",
+        "A refusal leaves the ledger untouched. When the gatekeeper refuses, no append happens: the ledger's state after the refusal is exactly what it was before.",
+        "An empty or unreadable registry refuses everything. If the registered-origin list is empty \u2014 or cannot be loaded at all \u2014 every candidate entry is refused. The gate fails closed."
+      ],
+      "not_proven": [
+        "Membership is not signing. The proof establishes that an accepted entry's origin string is on the registered list. It does not establish that the named origin actually wrote the entry: there is no signature anywhere in this append path, no key, and no check that would catch a caller simply claiming a registered string.",
+        "The proof is about a model of the code, not the running code itself. The model mirrors the gatekeeper's decision logic step for step, and the correspondence is documented and reviewed \u2014 but it is not itself machine-checked. A proof of the model is not a proof of the running program.",
+        "Writing and storage sit outside the proof. The 'ledger untouched' result covers refusals, where nothing is written. A failure during the write itself \u2014 for example a storage error part-way through an append \u2014 could leave a partial record; neither the code nor the proof rules that out.",
+        "Concurrency sits outside the proof. The gatekeeper takes no lock; two writers appending at the same moment are not covered by these theorems.",
+        "The module's own path is what is covered. The ledger is a file, and the proof covers appends that go through the gatekeeper. It cannot prevent other code from writing to the file directly: 'appends only through the gatekeeper' is a property of the module's own paths, not a boundary the proof enforces.",
+        "The hash chain is a separate law, not claimed here. That a later edit to a recorded entry is detected by the chain is a different property, whose proof step is in progress. The chain is hash-linked; it is not signed."
+      ]
+    }
+  ]
+}

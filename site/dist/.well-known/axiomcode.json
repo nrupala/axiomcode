@@ -24,6 +24,8 @@
   "status_json": "https://axiom-code.com/status.json",
   "changelog": "https://axiom-code.com/changelog/",
   "practice": "https://axiom-code.com/practice/",
+  "verifications": "https://axiom-code.com/verifications/",
+  "verifications_json": "https://axiom-code.com/verifications.json",
   "status_as_of": "2026-11-14",
   "surfaces": [
     {
