@@ -222,7 +222,9 @@ REPORTS = [
             "uses the verdict — marking a broken ledger quarantined, deciding which "
             "entries count as verified, answering trusted-only queries — is separate "
             "code, not modelled here. The index also keeps its own separate hash chain "
-            "over its rows; that chain is not proved by this report.",
+            "over its rows; that chain is not proved by this report. That property has "
+            "its own published reports in this register: the index quarantine proof, "
+            "and the fixed-code index quarantine proof.",
             "Concurrency sits outside the proof. Verification runs over a loaded "
             "snapshot; entries appended while a verification runs, or two writers "
             "racing to append, are not covered by these theorems.",
@@ -521,6 +523,173 @@ REPORTS = [
             "of what supersedes an entry is modelled as naming its target, where "
             "the code asks only that a target be present — the one divergence, an "
             "empty-string target, cannot arise for real entry identities.",
+        ],
+    },
+    {
+        "report_id": "harness-trace-quarantine-fixed",
+        "subject": "Agent harness — trace-ledger index quarantine, fixed code",
+        "date": "2026-11-15",
+        "kind": "lean_proof",
+        "verdict": "proven",
+        "summary": (
+            "When our agent harness builds its federated index over the trace "
+            "ledgers, every ledger's chain is verified and each entry is marked "
+            "verified or quarantined. The quarantine report in this register "
+            "proved that law against the index code as first built — and found "
+            "the one case where its status rule marked an entry verified "
+            "without the chain walk having checked it. The code was then "
+            "fixed: status is now assigned by each entry's position, and a "
+            "query over a broken index chain is refused outright. This report "
+            "is the re-proof against the fixed code, in Lean 4: every entry "
+            "at or after the first chain failure is quarantined, whatever its "
+            "recorded sequence number claims; the verified rows are exactly "
+            "the entries the chain walk checked; and a broken index chain "
+            "makes the query refuse and serve no rows, in every query mode."
+        ),
+        "method": (
+            "Lean 4 formal proof (toolchain v4.22.0), checked by the Lean "
+            "kernel. The proof composes the earlier quarantine proof in this "
+            "register: its model is imported unmodified, the clauses the fix "
+            "did not touch are carried over from it, and what the fix changed "
+            "— the status rule and the query's refusal — is proved new. It "
+            "compiles with no placeholder steps (no sorry, no admit) and "
+            "depends on no axioms beyond Lean's core three; eight of its "
+            "twenty-nine stated results depend on no axioms at all, including "
+            "the refusal itself, which is pure control flow over the "
+            "detection verdict. The subject is the fixed index build's "
+            "decision logic — how each entry's chain status is assigned by "
+            "position, what the build counts as trusted, and what a query "
+            "does when the index's own chain is broken — modelled step for "
+            "step from the fixed code."
+        ),
+        "context": (
+            "The quarantine report in this register is this law's first "
+            "proof. It proved the law in the form the code then had — status "
+            "read off each entry's recorded sequence number — and stated the "
+            "case that form exposed: an entry past a chain break whose "
+            "recorded sequence number was duplicated or regressed could be "
+            "marked verified without being checked. The ruling that followed "
+            "was to fix the code first and then re-prove. The index now "
+            "assigns status by position, and refuses to answer at all when "
+            "its own chain is broken; this report is that re-proof. For the "
+            "code as it now stands, it supersedes the earlier report's "
+            "characterization of the status rule. The earlier report is not "
+            "edited by this one: it stands as the accurate record of the law "
+            "as proved against the code as it then stood — and its proof is "
+            "what found the case this fix closed."
+        ),
+        "proven": [
+            "Nothing at or after the break is marked verified — by position, "
+            "unconditionally. When a ledger's chain fails, every entry at the "
+            "first failing position and every entry after it is marked "
+            "quarantined, whatever its recorded sequence number says. The status "
+            "rule reads the entry's position and the verified depth only; the "
+            "recorded sequence number is copied into the row as data and never "
+            "consulted. This is the quarantine law in its originally stated "
+            "form — the form the first proof could not establish against the "
+            "code as first built.",
+            "The verified rows are exactly the chain-checked prefix. Every entry "
+            "up to the verified-through point passes every check the walk "
+            "applies — sequence, identity, link, hash recomputation, and the "
+            "ordering counters — against the state built from the entries before "
+            "it, and is marked verified. The split sits exactly at the first "
+            "failure, never earlier and never later; on a full pass the whole "
+            "ledger is verified.",
+            "The build's trusted-row count is the verified depth. The count is "
+            "taken over the built rows' marks, and the marks are verified exactly "
+            "at the positions up to the verified-through point — so the number "
+            "the build reports as trusted is exactly the number of entries the "
+            "chain walk checked, no more and no fewer.",
+            "A broken index chain makes the query refuse. Before any query is "
+            "answered, the index's own hash chain is checked; on a break, the "
+            "query path refuses, by name, and serves no rows at all — in every "
+            "query mode, because the check comes first and does not inspect the "
+            "query's filters. Detection itself is as the earlier reports proved "
+            "it: a break is the first failing row, named at its position.",
+            "An intact index chain means the query answers normally. When the "
+            "index's own chain verifies, the query returns exactly the rows its "
+            "filters admit — no more, no fewer — and a trusted-only query over "
+            "the built rows still returns no quarantined row, for every form of "
+            "the query's other conditions.",
+            "Resolution still never deletes. Every entry of every cleanly loaded "
+            "ledger appears as exactly one row in the index. Marking an entry as "
+            "superseded or tombstoned changes only that row's currency flag and "
+            "records what superseded it; the row remains, the ledger itself is "
+            "never modified by the index, and the two marks stay independent: "
+            "an entry can be verified and no longer current at once.",
+            "The harness's own test cases are theorems, in their fixed-code "
+            "forms. The case the first proof found — a ledger broken at its "
+            "second entry, a later entry's recorded sequence number regressed "
+            "to 1: that entry is now quarantined by its position, the "
+            "trusted-row count is exactly one, and a trusted-only query over "
+            "that ledger can return only the first entry's row; the same "
+            "theorem also evaluates the old rule over the same ledger and gets "
+            "'verified', so the difference the fix makes is itself "
+            "kernel-checked. One index row altered after the build: every query "
+            "is refused. An untouched index: queries answer normally. And the "
+            "earlier cases carry over — the rewritten second entry splits its "
+            "ledger at one verified row; the tombstoned entry stays present, "
+            "marked no longer current, and still verified; and when every "
+            "ledger in a build verifies, every row any query returns is "
+            "verified.",
+        ],
+        "not_proven": [
+            "This report supersedes the earlier characterization — for the "
+            "current code only. The quarantine report in this register "
+            "characterized the status rule as it then stood; that rule no "
+            "longer exists in the code, so for the code as it now stands that "
+            "characterization is superseded by this one. Nothing in the earlier "
+            "report is edited or withdrawn: it remains the accurate record of "
+            "the law as proved against the code as it then stood.",
+            "The query path has a second refusal, and it is not modelled. If "
+            "the index file cannot be loaded or parsed at all, the query path "
+            "also refuses — with an error, before any chain check — and serves "
+            "no rows. That leg exists in the code, but this proof begins at "
+            "the loaded rows, as the earlier proofs did; loading and parsing "
+            "are outside the model, so the load-error refusal is a fact read "
+            "from the code, not a theorem.",
+            "SHA-256 itself is not proved. As in the chain report, the hash "
+            "function is modelled as an abstract function, and the results "
+            "that read 'altered content is detected' — for a ledger entry, "
+            "and for a row of the index — rest on a named assumption: that "
+            "the altered and original contents do not hash to the same value. "
+            "Collision resistance is a standard, believed property of "
+            "SHA-256; in this proof it enters only as that named assumption, "
+            "discharged by nothing here.",
+            "A consistently rewritten index is, to this law, an intact one. "
+            "The refusal fires on a broken chain. An index file rewritten in "
+            "full — every link and hash recomputed consistently — is not a "
+            "break to the check, and no result here claims otherwise; that "
+            "is the same boundary the chain report states for ledgers. What "
+            "speaks to wholesale rewrites is the anchoring mechanism, a "
+            "separate report in this register.",
+            "The query path's final recheck is proved vacuous. After a "
+            "trusted-only query answers, the code re-checks the returned rows "
+            "and would fail the query if any were not verified. That recheck "
+            "can never fire on the query's own output: the query's "
+            "verified-only condition already admits only verified rows, so "
+            "the recheck removes nothing and changes nothing. It is a dead "
+            "leg in the code — present, and proved to have no effect.",
+            "Quarantine is still re-derived on every build; it is not a "
+            "state. The fix changed how status is assigned, not when: each "
+            "build re-verifies every ledger and re-derives every status from "
+            "the files as they then stand, so a repaired ledger is verified "
+            "at the next build simply because it now verifies. And a ledger "
+            "that fails to load at all still contributes no rows, exactly as "
+            "the earlier report stated.",
+            "The refusal is proved as a decision, not as text. What is "
+            "proved is that no rows are served when the index's own chain "
+            "breaks. The refusal's exact wording and its exit code are the "
+            "program's surface — read from the code and exercised by the "
+            "harness's own tests, not theorem content.",
+            "The proof is about a model of the code, not the running code "
+            "itself. The model mirrors the fixed build's decisions and the "
+            "query path's decisions step for step, and the correspondence is "
+            "documented and reviewed — but it is not itself machine-checked. "
+            "A proof of the model is not a proof of the running program. "
+            "Reading and writing the files, and anything that changes while "
+            "a build or a query runs — concurrency included — sit outside "
+            "the proof, as in the earlier reports.",
         ],
     },
 ]

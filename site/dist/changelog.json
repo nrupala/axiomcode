@@ -6,6 +6,30 @@
   "rss": "https://axiom-code.com/changelog.rss.xml",
   "entries": [
     {
+      "id": "2026-11-15-verification-reports-quarantine-fixed",
+      "date": "2026-11-15",
+      "title": "Verification report added \u2014 the index quarantine, re-proved against the fixed code",
+      "category": "Added",
+      "surfaces": [
+        "Website",
+        "Verification reports"
+      ],
+      "body": "<p>The <a href=\"/verifications/\">verification reports</a> register gains the fixed-code quarantine report \u2014 the re-proof the quarantine report&rsquo;s own boundary called for. The <a href=\"/verifications/harness-trace-quarantine-fixed/\">fixed-code index quarantine report</a>: proved in Lean 4, against the index code as fixed, that every entry at or after a ledger chain&rsquo;s first failure is quarantined by position, whatever its recorded sequence number claims; that the verified rows are exactly the entries the chain walk checked, and the build&rsquo;s trusted-row count exactly that depth; that a broken index chain now makes the query refuse and serve no rows, in every query mode, where the code as first built warned and served anyway; and that on an intact index the query answers with exactly the rows its filters admit \u2014 with its boundary stated on the report itself (the query path&rsquo;s load-error refusal is read from the code but not modelled; the detection results carry the same named no-collision assumption as the chain reports; a consistently rewritten index is, to this law, an intact one; and the query path&rsquo;s final recheck is proved vacuous). For the code as it now stands, this report supersedes the earlier quarantine report&rsquo;s characterization of the status rule; that report is unchanged and stands as the record of the law as proved against the code as it then stood. The chain report&rsquo;s boundary note on what the verdict feeds now also points to the two quarantine reports as that property&rsquo;s own published records.</p>",
+      "effect": "Anyone can now read the harness's index law in its strong form \u2014 quarantine by position, unconditional \u2014 alongside the record of the weaker form it replaced and the case that forced the fix.",
+      "evidence": [
+        {
+          "label": "Verification reports",
+          "url": "https://axiom-code.com/verifications/"
+        },
+        {
+          "label": "Fixed-code index quarantine report",
+          "url": "https://axiom-code.com/verifications/harness-trace-quarantine-fixed/"
+        }
+      ],
+      "refs": [],
+      "disposition": "Live on the site; the register grows by completed records only."
+    },
+    {
       "id": "2026-11-15-verification-reports-quarantine",
       "date": "2026-11-15",
       "title": "Verification report added \u2014 the trace-ledger index quarantine, proved",
