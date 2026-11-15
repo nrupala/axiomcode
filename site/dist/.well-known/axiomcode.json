@@ -5,7 +5,10 @@
   "note": "Live since 2026-11-09: the API at https://api.axiom-code.com is open (POST /verify, POST /check, GET /verify/jobs/{job_id}); the revocation list (GET /revoked) and CA public keys (GET /.well-known/axiomcode-keys.json) are public. The first 10 verification cases per API key are a free trial (no certificates). Credit packs are not yet on sale: billing is paused under the owner's readiness-arming rule, with the Stripe webhook and Payment Links deactivated until pack sales open. A hosted MCP endpoint is live at https://api.axiom-code.com/mcp/ (the same API key, the same queue, seven tools: verify, job_status, check_certificate, revoked, health, usage_report, pricing); the MCP server also ships in the repository for local use.",
   "homepage": "https://axiom-code.com",
   "llms_txt": "https://axiom-code.com/llms.txt",
-  "docs": "https://axiom-code.com/docs/api/",
+  "docs": "https://axiom-code.com/docs/",
+  "api_docs": "https://axiom-code.com/docs/api/",
+  "about": "https://axiom-code.com/about/",
+  "contact_page": "https://axiom-code.com/contact/",
   "api_base": "https://api.axiom-code.com",
   "revocation_list": "https://api.axiom-code.com/revoked",
   "ca_public_keys": "https://api.axiom-code.com/.well-known/axiomcode-keys.json",
@@ -21,7 +24,7 @@
   "status_json": "https://axiom-code.com/status.json",
   "changelog": "https://axiom-code.com/changelog/",
   "practice": "https://axiom-code.com/practice/",
-  "status_as_of": "2026-11-12",
+  "status_as_of": "2026-11-14",
   "surfaces": [
     {
       "id": "rest_api",

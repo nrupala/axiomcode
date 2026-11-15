@@ -1,4 +1,124 @@
-from build import HERO_LINE, SITE, TAGLINE, page
+import datetime
+
+import status_data
+from build import HERO_LINE, SITE, page
+
+_AV_CLASS = {"live": "av-live", "paused": "av-paused", "unavailable": "av-unavail"}
+_LC_CLASS = {
+    "live": "lc-live",
+    "paused": "lc-paused",
+    "in_soak": "lc-soak",
+    "in_design": "lc-design",
+    "not_built": "lc-notbuilt",
+}
+
+
+def _surf(sid):
+    return next(s for s in status_data.SURFACES if s["surface_id"] == sid)
+
+
+def _chips(key):
+    """Availability + lifecycle chips for a surface, from the canonical source."""
+    s = _surf(key)
+    av = status_data.AVAILABILITY_LABELS[s["availability"]]
+    lc = status_data.LIFECYCLE_LABELS[s["lifecycle"]]
+    return (
+        f'<span class="chip {_AV_CLASS[s["availability"]]}">{av}</span> '
+        f'<span class="chip {_LC_CLASS[s["lifecycle"]]}">{lc}</span>'
+    )
+
+
+def _grad_line(key):
+    s = _surf(key)
+    d = s.get("graduates_on")
+    if not d:
+        return ""
+    when = datetime.date.fromisoformat(d).strftime("%d %B %Y")
+    return f' Gate graduation judged {when}, per <a href="/practice/">practice</a>.'
+
+
+def _statusline():
+    rest = _surf("rest_api")
+    billing = _surf("billing")
+    return (
+        '<div class="statusline"><span>Service state</span>'
+        f'<span class="chip {_AV_CLASS[rest["availability"]]}">REST API · '
+        f"{status_data.AVAILABILITY_LABELS[rest['availability']]}</span>"
+        f'<span class="chip {_LC_CLASS[rest["lifecycle"]]}">'
+        f"{status_data.LIFECYCLE_LABELS[rest['lifecycle']]}</span>"
+        f'<span class="chip {_AV_CLASS[billing["availability"]]}">Billing · '
+        f"{status_data.AVAILABILITY_LABELS[billing['availability']]}</span>"
+        "<span>Credit packs not yet on sale · API keys by email: "
+        '<a href="mailto:hello@axiom-code.com" style="color:#cbd5e1">hello@axiom-code.com</a></span></div>'
+    )
+
+
+def _offer_cards():
+    """Pricing strip rendered from the canonical offers (the pricing JSON-LD)."""
+    cards = []
+    for offer in PRODUCT_JSONLD["offers"]:
+        name = offer["name"]
+        first = offer["description"].split(".")[0]
+        if offer["price"] == "0":
+            cards.append(
+                f"""<div class="plan"><h3>{name}</h3><div class="price">Free</div>
+<div class="per">{first}</div>
+<ul><li>Real verdicts and usage records</li><li>Full artefact loop, REST or MCP</li>
+<li><strong>No certificate</strong> — the trial proves the engine, not your artefact</li></ul>
+<a class="buy live" href="/verify/" style="cursor:pointer">Run the trial</a></div>"""
+            )
+        else:
+            cards.append(
+                f"""<div class="plan"><h3>{name}</h3><div class="price">${float(offer["price"]):,.0f}</div>
+<div class="per">{first} · metered at 0.9 credits/sec</div>
+<ul><li>Signed certificates on paid verifications</li><li>Same engine, same queue as the trial</li></ul>
+<span class="buy">Not yet on sale</span></div>"""
+            )
+    return "\n".join(cards)
+
+
+PRODUCT_JSONLD = {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    "name": "AxiomCode verification credits",
+    "description": "Credits for machine-checked software verification with signed certificates. 1 credit = US$0.01.",
+    "brand": {"@type": "Brand", "name": "AxiomCode"},
+    "offers": [
+        {
+            "@type": "Offer",
+            "name": "Trial",
+            "price": "0",
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/InStock",
+            "description": "10 free verifications. Verdicts only, no certificates.",
+        },
+        {
+            "@type": "Offer",
+            "name": "Starter",
+            "price": "10",
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/OutOfStock",
+            "description": "1,000 credits. Certificates included. Not yet on sale: billing is paused.",
+        },
+        {
+            "@type": "Offer",
+            "name": "Growth",
+            "price": "50",
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/OutOfStock",
+            "description": "5,000 credits. Certificates included. Not yet on sale: billing is paused.",
+        },
+        {
+            "@type": "Offer",
+            "name": "Scale",
+            "price": "200",
+            "priceCurrency": "USD",
+            "availability": "https://schema.org/OutOfStock",
+            "description": "20,000 credits. Certificates included. Not yet on sale: billing is paused.",
+        },
+    ],
+}
+
 
 # ---------- landing ----------
 ORG_JSONLD = {
@@ -12,64 +132,180 @@ ORG_JSONLD = {
 
 page(
     "/",
-    "Software correctness, certified",
-    "AxiomCode is the certification authority for software correctness. Submit a specification, get a machine-checked proof and a signed certificate anyone can verify.",
-    f"""<div class="hero"><div class="wrap">
-<h1>{HERO_LINE}</h1>
-<p class="lede">{TAGLINE} Submit your specification. Our engine compiles it, checks the proof mechanically, and issues a signed certificate &mdash; binding your code hash, the verification result, and our identity &mdash; that anyone can re-check without trusting us.</p>
-<div class="row">
-<a class="btn btn-gold" href="/verify/">Verify something free</a>
-<a class="btn btn-ghost" href="/how-it-works/">How it works</a>
+    "Certification Authority for Software Correctness",
+    "AxiomCode verifies Lean 4 artefacts with a real toolchain and issues signed, revocable certificates. REST API and hosted MCP live; the trial is free — verdicts yes, certificates no.",
+    f"""<section class="hero"><div class="wrap">
+<div class="kicker">Certification authority for software correctness</div>
+<h1>Verification as evidence, not verification as opinion.</h1>
+<p class="lede">AxiomCode checks Lean 4 artefacts with a real toolchain — the Lean kernel is the only judge — and issues signed, revocable certificates that bind the artefact hash, the verdict, and the toolchain. {HERO_LINE}</p>
+<p class="scope-line">Scope, stated at the point of claim: Lean 4 artefacts only, today. A PASSED verdict means the artefact&rsquo;s proofs checked under the stated toolchain — not that the software does what you intended. <a href="/docs/explanation/what-it-does-not-prove/" style="color:#cbd5e1">What verification does not prove</a>.</p>
+<div class="row"><a class="btn btn-gold" href="/verify/">Run your first verification</a>
+<a class="btn btn-ghost" href="/docs/">Read the docs</a></div>
+{_statusline()}
+<div class="trustline">Certificates bind artefact hash &middot; verdict &middot; toolchain &middot; issuer &middot; serial &middot; 90-day validity — independently checkable, publicly revocable.</div>
+</div></section>
+
+<section class="block alt"><div class="wrap">
+<div class="kicker">One engine, three doors</div>
+<h2>Same verdicts, same queue, same trial</h2>
+<p style="color:var(--mut);max-width:44em">Every door reaches the same verification engine and the same certificate authority. Availability and lifecycle are stated separately on every surface — a surface can be live to use and still in its post-release soak.</p>
+<div class="cards">
+<div class="card cardflex"><div class="chips">{_chips("rest_api")}</div>
+<h3>REST API</h3>
+<p><code class="inline">POST /verify</code> with your API key; long runs queue and are polled at <code class="inline">GET /verify/jobs/{{id}}</code>.{_grad_line("rest_api")}</p>
+<p class="go"><a href="/docs/api/">API reference &rarr;</a></p></div>
+<div class="card cardflex"><div class="chips">{_chips("hosted_mcp")}</div>
+<h3>Hosted MCP</h3>
+<p>Seven tools at <code class="inline">/mcp/</code> for agent clients — same key, same queue, same trial semantics as REST.{_grad_line("hosted_mcp")}</p>
+<p class="go"><a href="/docs/mcp/">MCP tools &rarr;</a></p></div>
+<div class="card cardflex"><div class="chips">{_chips("ask_shell")}</div>
+<h3>Ask AxiomCode</h3>
+<p>A shell that orchestrates the same verify calls and explains the result. The facts are rendered in code; the model explains and never judges.{_grad_line("ask_shell")}</p>
+<p class="go"><a href="/ask/">Open Ask &rarr;</a></p></div>
 </div>
-<p class="trustline">10 free trial verifications &middot; no certificate until you pay &middot; certificates valid 90 days, revocable, publicly checkable</p>
+</div></section>
+
+"""
+    + """<section class="block" id="try"><div class="wrap">
+<div class="kicker">Try it — live</div>
+<h2>One loop: artefact in, evidence out</h2>
+<p style="color:var(--mut);max-width:46em">This is the real service, not a recording. Paste <strong>your own API key</strong> and run the starter artefact, or replace it with your own Lean 4. The first 10 cases on a key are the trial: real verdicts and usage records, no certificate.</p>
+<div class="loop">
+<div class="pane"><h3>1 · Artefact in</h3><div class="body">
+<label class="fl" for="hkey" style="margin-top:0">Your API key</label>
+<input type="password" id="hkey" placeholder="axk_&hellip;" autocomplete="off">
+<label class="fl" for="hcode">Lean 4 artefact</label>
+<textarea class="codebox" id="hcode" style="min-height:140px" spellcheck="false">theorem add_comm_nat (a b : Nat) : a + b = b + a := Nat.add_comm a b</textarea>
+<div style="margin-top:16px"><button class="go" id="hgo" type="button">Verify it &rarr;</button></div>
+<p style="font-size:13.5px;color:var(--faint);margin:12px 0 0">Your key goes only to <code class="inline">api.axiom-code.com</code>, over HTTPS; this page never stores it. No key yet? <a href="mailto:hello@axiom-code.com?subject=API%20key%20request">Request one by email</a> — keys are free. Prefer the dedicated page? The same loop runs at <a href="/verify/">/verify/</a>.</p>
 </div></div>
-
-<section class="block"><div class="wrap"><div class="prose">
-<div class="kicker">The problem</div>
-<h2>AI writes code. Nobody can prove it&rsquo;s right.</h2>
-<p>Code review is opinion. Tests are samples. Audits are expensive snapshots. When software has to be <em>right</em> &mdash; money movement, access control, safety logic &mdash; &ldquo;looks good to me&rdquo; is not evidence. AxiomCode sells <strong>verification-as-evidence</strong>: a mechanical proof, checked by a real toolchain, sealed into a certificate you can hand to a regulator, a customer, or a counterparty.</p>
+<div class="arrow" aria-hidden="true">&rarr;</div>
+<div class="pane"><h3>2 · Evidence out</h3><div class="body" id="hresult" aria-live="polite">
+<p style="color:var(--mut);margin:0">The verdict appears here — <strong>PASSED</strong> or <strong>FAILED</strong>, decided by the Lean kernel, with the artefact hash and the usage record. A run that ends before a verdict (payment required, timeout, refusal, failed queued job) is a <strong>NO VERDICT</strong> error outcome, never a verdict. On the trial, no certificate is attached — by design.</p>
+</div></div>
 </div>
-<div class="cards">
-<div class="card"><span class="num">1</span><h3>Submit</h3><p>Send a Lean 4 specification through the web UI or the REST API &mdash; the way your agent already talks to tools.</p></div>
-<div class="card"><span class="num">2</span><h3>We check it mechanically</h3><p>The engine compiles your spec with the real Lean toolchain and checks the proof. Vacuous builds, <code class="inline">sorry</code>, <code class="inline">admit</code>, and broken proofs are rejected &mdash; loudly.</p></div>
-<div class="card"><span class="num">3</span><h3>You get a certificate</h3><p>A signed certificate binding your artifact hash, the verdict, the toolchain, the issuer, and a validity window. Anyone can re-verify it without trusting us.</p></div>
+<p style="color:var(--mut);font-size:15px;margin-top:18px">Driving an agent instead? The same call is one POST over <a href="/docs/api/">REST</a>, or seven tools over <a href="/docs/mcp/">hosted MCP</a>. First time here: the <a href="/docs/start/first-verification/">first-verification tutorial</a> walks the whole loop.</p>
+</div></section>
+<script>
+const HAPI='https://api.axiom-code.com';
+const h$ = id => document.getElementById(id);
+function hesc(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function hkv(k,v,plain){return '<dt>'+k+'</dt><dd'+(plain?' class="plain"':'')+'>'+v+'</dd>';}
+function hShow(j){
+  const ok = j.verified === true;
+  let h = '<span class="badge '+(ok?'b-pass':'b-fail')+'">'+(ok?'PASSED':'FAILED')+'</span>';
+  h += '<dl class="kv">';
+  if (j.artifact_hash) h += hkv('Artefact (SHA-256)', hesc(j.artifact_hash));
+  if (Array.isArray(j.attempts) && j.attempts.length){
+    let secs=0, cred=0, seen=false;
+    j.attempts.forEach(a=>{ if(typeof a.elapsed_seconds==='number'){secs+=a.elapsed_seconds;seen=true;} if(typeof a.credits_charged==='number'){cred+=a.credits_charged;} });
+    if (seen) h += hkv('Engine time', secs.toFixed(2)+' s');
+    h += hkv('Credits charged', String(Math.round(cred*100)/100));
+  }
+  if (j.trial) h += hkv('Trial', 'case '+j.trial.used+' of '+j.trial.limit+' — no certificate on the trial', true);
+  if (j.job_id) h += hkv('Job', hesc(j.job_id));
+  h += '</dl>';
+  if (j.certificate){
+    h += '<p style="margin:14px 0 6px"><strong>Signed certificate issued.</strong> Check it independently at <a href="/check/">/check/</a>.</p><pre class="code">'+hesc(JSON.stringify(j.certificate,null,2))+'</pre>';
+  } else if (j.trial){
+    h += '<p style="margin:14px 0 0;color:var(--mut)">Trial verdict — real verdict, real usage record, <strong>no certificate</strong>. Certificates are issued on paid verifications; packs are <a href="/pricing/">not yet on sale</a>.</p>';
+  }
+  h$('hresult').innerHTML = h;
+}
+function hErr(msg){ h$('hresult').innerHTML = '<span class="badge b-fail">NO VERDICT</span><p style="margin:12px 0 0">'+msg+'</p>'; }
+async function hPoll(jobId, key){
+  for (let i=0;i<40;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    const r = await fetch(HAPI+'/verify/jobs/'+encodeURIComponent(jobId), {headers:{'X-Api-Key':key}});
+    const j = await r.json().catch(()=>({}));
+    if (r.status===200){ hShow(j); return; }
+    if (r.status!==202){ hErr('The queued job ended without a verdict ('+r.status+'). Nothing was certified.'); return; }
+    h$('hresult').innerHTML = '<span class="badge b-warn">QUEUED</span><p style="margin:12px 0 0">Still queued — position '+(j.position!=null?j.position:'…')+'. Polling every 3 seconds.</p>';
+  }
+  hErr('Still queued after two minutes. Poll <code class="inline">GET /verify/jobs/'+hesc(jobId)+'</code> with your key for the result.');
+}
+h$('hgo').addEventListener('click', async () => {
+  const key = h$('hkey').value.trim(), code = h$('hcode').value;
+  if (!key){ hErr('Paste your API key first — keys are free, by email: <a href="mailto:hello@axiom-code.com?subject=API%20key%20request">hello@axiom-code.com</a>. This loop runs on your own key; there is no shared demo key.'); return; }
+  if (!code.trim()){ hErr('The artefact is empty — paste a Lean 4 artefact, or restore the starter example.'); return; }
+  const btn = h$('hgo'); btn.disabled = true; btn.textContent = 'Verifying…';
+  h$('hresult').innerHTML = '<p style="color:var(--mut);margin:0">Running the real toolchain…</p>';
+  try {
+    const r = await fetch(HAPI+'/verify', {method:'POST', headers:{'Content-Type':'application/json','X-Api-Key':key}, body: JSON.stringify({code})});
+    const j = await r.json().catch(()=>({}));
+    if (r.status===200){ hShow(j); }
+    else if (r.status===202 && j.job_id){ h$('hresult').innerHTML = '<span class="badge b-warn">QUEUED</span><p style="margin:12px 0 0">Every proof slot is busy — job '+hesc(j.job_id)+' queued at position '+(j.position!=null?j.position:'…')+'. Polling…</p>'; hPoll(j.job_id, key); }
+    else if (r.status===401){ hErr('That API key was not accepted (401). Check the key, or request a new one by email.'); }
+    else if (r.status===402){ hErr('Payment required (402): this key is out of trial cases and has no credit balance. Packs are not yet on sale — see <a href="/pricing/">pricing</a>.'); }
+    else if (r.status===413){ hErr('Artefact too large (413): the limit is 256 KB.'); }
+    else if (r.status===429){ hErr('Rate limited (429): slow down and retry shortly.'); }
+    else if (r.status===504){ hErr('The run timed out (504) — a NO VERDICT outcome: nothing was certified and trial cases are not consumed by timeouts.'); }
+    else { hErr('The service answered '+r.status+' — a NO VERDICT outcome. Nothing was certified.'); }
+  } catch(e){ hErr('Could not reach the API. Check your connection and retry — a NO VERDICT outcome; nothing was certified.'); }
+  btn.disabled = false; btn.textContent = 'Verify it →';
+});
+</script>
+
+"""
+    + f"""<section class="block alt"><div class="wrap">
+<div class="kicker">The seal</div>
+<h2>What a certificate binds</h2>
+<p style="color:var(--mut);max-width:44em">A certificate is a signed record, not a badge image. Anyone can check it — paste it into the <a href="/check/">public checker</a> and the signature, the validity window, and the revocation state are verified in your browser against our published CA keys.</p>
+<div class="sealbox">
+<pre class="code">{{
+  "artifact_hash": "sha256:9f2c…e41a",
+  "verified": true,
+  "toolchain": "lean4-4.9.1 / axiomcode-0.3.0",
+  "issuer": "AxiomCode CA",
+  "serial": "AC-2026-000417",
+  "issued": "2026-09-26", "expires": "2026-12-25",
+  "signature": "ed25519:…"
+}}</pre>
+<div class="note" style="margin-bottom:0"><strong>Read the fields, not the logo.</strong> The hash binds the exact bytes that were checked; the toolchain names what checked them; the serial is how a certificate is revoked if the toolchain is ever found wrong. A certificate without these fields is a picture, not evidence.</div>
 </div>
 </div></section>
 
-<section class="block" style="background:var(--wash)"><div class="wrap"><div class="prose">
-<div class="kicker">The guarantee</div>
-<h2>Our honesty is structural, not promised.</h2>
-<p>A certificate authority lives or dies on one thing: never saying &ldquo;verified&rdquo; when it isn&rsquo;t. So we built the incentives into the system:</p>
-</div>
-<div class="cards">
-<div class="card"><h3>Mis-issuance is the existential risk</h3><p>Every certificate carries a serial number, issuer identity, and validity window. If our toolchain is ever wrong, we revoke &mdash; publicly, through a published revocation list. Like TLS, but for correctness.</p></div>
-<div class="card"><h3>Expiry drives re-verification</h3><p>Certificates last 90 days. Software changes; proofs should be re-run. Renewal is the business model, the same way TLS renewal is.</p></div>
-<div class="card"><h3>You don&rsquo;t have to trust us</h3><p>The certificate binds the artifact hash and the proof transcript. Re-run the check yourself with the published toolchain. &ldquo;Don&rsquo;t trust our AI &mdash; verify our proof&rdquo; isn&rsquo;t a slogan; it&rsquo;s the architecture.</p></div>
-</div>
+<section class="block"><div class="wrap">
+<div class="kicker">Verdicts</div>
+<h2>Two verdicts — and one non-verdict</h2>
+<p style="color:var(--mut);max-width:44em">Verdicts are boolean. Anything that ends a run before a verdict exists is an error outcome with its own name, so a refusal can never be mistaken for a result.</p>
+<div class="tablewrap"><table class="tax">
+<tr><th style="width:16%">Outcome</th><th style="width:38%">What it means</th><th>Certificate?</th></tr>
+<tr><td><span class="badge b-pass">PASSED</span></td><td>The artefact compiled and every proof checked under the stated toolchain.</td><td>Yes — on paid verifications. Trial runs return the verdict and usage record only.</td></tr>
+<tr><td><span class="badge b-fail">FAILED</span></td><td>The artefact was checked and did not pass: a proof failed, or the artefact was rejected by the engine&rsquo;s rules.</td><td>Yes — on paid verifications. A FAILED certificate is evidence too: it records that the check ran and what it found.</td></tr>
+<tr><td><span class="badge b-warn">NO VERDICT</span></td><td>No verdict exists: payment required (402), engine timeout (504), concurrency, rate, or size refusal, or a queued job that failed. The run ended before a verdict.</td><td>Never. Nothing was decided, so nothing is certified.</td></tr>
+</table></div>
+<p style="color:var(--mut);font-size:15px">The full taxonomy — every status code and what it does to your balance — is in the <a href="/docs/reference/verdicts-and-errors/">verdicts &amp; errors reference</a>.</p>
 </div></section>
 
-<section class="block"><div class="wrap"><div class="prose">
-<div class="kicker">Who it&rsquo;s for</div>
-<h2>Whoever has to <em>prove</em> it&rsquo;s correct.</h2>
-<p>The buyer isn&rsquo;t whoever writes the code. It&rsquo;s whoever must demonstrate correctness to a third party:</p>
-<ul>
-<li><strong>Regulated software teams</strong> &mdash; hand a certificate to the auditor instead of a test report.</li>
-<li><strong>Fintech</strong> &mdash; money-movement and access-control logic expressed as Lean 4 specifications, with a machine-checked proof attached.</li>
-<li><strong>AI agent builders</strong> &mdash; agents that ship code can now ship the proof too. Call the API from your agent and attach the certificate to the code.</li>
-<li><strong>Procurement &amp; contracts</strong> &mdash; &ldquo;certified correct&rdquo; as a deliverable, checkable by the buyer.</li>
-</ul>
-<p><a class="cta" href="/pricing/">See pricing</a></p>
-</div></div></section>
+<section class="block alt"><div class="wrap">
+<div class="kicker">Pricing</div>
+<h2>Defined — and paused</h2>
+<p style="color:var(--mut);max-width:44em">Metered at 0.9 credits per second of engine compute; 1 credit = $0.01. Credit packs are priced and published, and <strong>not yet on sale</strong>: billing stays paused until the service&rsquo;s pre-billing conditions close. The trial needs no card and no pack.</p>
+<div class="ptable">
+{_offer_cards()}
+</div>
+<p style="margin-top:18px"><a href="/pricing/">Full pricing — metering, refunds, and what a timeout costs &rarr;</a></p>
+</div></section>
 
-<section class="block" style="background:var(--wash)"><div class="wrap"><div class="prose">
-<div class="kicker">Honest scope</div>
-<h2>What we certify today &mdash; and what we don&rsquo;t.</h2>
-<p>Today the engine verifies <strong>Lean 4 specifications</strong>. The certificate credentials the code: it is our assessment that the submitted artifact was built to its specification, as mechanically checked &mdash; recorded as the artifact hash, the toolchain version, and the verdict. <strong>We hold no responsibility beyond this assessment.</strong> We do not claim your whole system is correct, your spec matches your intent, or your deployment matches the artifact. Read the <a href="/paperwork/certificate-policy/">Certificate Policy</a> for the precise meaning of every field.</p>
-<div class="note">Verification is evidence, not opinion. The evidence is bounded, and we publish the bounds.</div>
+"""
+    + """<section class="block"><div class="wrap"><div class="prose" style="max-width:76ch">
+<div class="kicker">Questions</div>
+<h2>Asked often</h2>
+<div class="faq">
+<details><summary>What exactly does a PASSED verdict claim?</summary><p>That the submitted artefact compiled under the stated Lean toolchain and its proofs checked — the kernel accepted them. It does not claim the specification says what you meant, that the deployed system matches the artefact, or anything about code that was not submitted. The bounds are stated on every certificate and in <a href="/docs/explanation/what-verification-proves/">what verification proves</a>.</p></details>
+<details><summary>Why does the trial withhold the certificate?</summary><p>Because the certificate is the product: our signature staked on a verdict, with the revocation and record-keeping duties that follow. Trial runs give you the verdict and the usage record so you can judge the engine; the signature is issued inside a paid relationship.</p></details>
+<details><summary>Can I check a certificate without an account?</summary><p>Yes. The <a href="/check/">checker</a> verifies the signature in your browser against the published CA keys, and the <a href="https://api.axiom-code.com/revoked">revocation list</a> is public. Checking never requires trust in this website.</p></details>
+<details><summary>Which languages are supported?</summary><p>Lean 4, today. Smart-contract verification is in design and the offline verifier is not built — both are labelled as such on the <a href="/status/">status page</a>, not implied here.</p></details>
+</div>
+<div class="honest"><h3>Stated plainly</h3>
+<p><strong>No external third-party audit of AxiomCode has been performed.</strong> The assurance case rests on the release gate, the soak, and the public record — read the <a href="/practice/">practice page</a> for exactly what that does and does not cover.</p>
+<p>Found an error on this site or in the service? Report it on <a href="https://github.com/nrupala/axiomcode/issues">GitHub Issues</a> — user-initiated only; this site carries no telemetry and attaches nothing you did not choose to send.</p></div>
 </div></div></section>
 """,
     ORG_JSONLD,
 )
+
 
 # ---------- how it works ----------
 page(
@@ -120,48 +356,6 @@ page(
 )
 
 # ---------- pricing ----------
-PRODUCT_JSONLD = {
-    "@context": "https://schema.org",
-    "@type": "Product",
-    "name": "AxiomCode verification credits",
-    "description": "Credits for machine-checked software verification with signed certificates. 1 credit = US$0.01.",
-    "brand": {"@type": "Brand", "name": "AxiomCode"},
-    "offers": [
-        {
-            "@type": "Offer",
-            "name": "Trial",
-            "price": "0",
-            "priceCurrency": "USD",
-            "availability": "https://schema.org/InStock",
-            "description": "10 free verifications. Verdicts only, no certificates.",
-        },
-        {
-            "@type": "Offer",
-            "name": "Starter",
-            "price": "10",
-            "priceCurrency": "USD",
-            "availability": "https://schema.org/OutOfStock",
-            "description": "1,000 credits. Certificates included. Not yet on sale: billing is paused.",
-        },
-        {
-            "@type": "Offer",
-            "name": "Growth",
-            "price": "50",
-            "priceCurrency": "USD",
-            "availability": "https://schema.org/OutOfStock",
-            "description": "5,000 credits. Certificates included. Not yet on sale: billing is paused.",
-        },
-        {
-            "@type": "Offer",
-            "name": "Scale",
-            "price": "200",
-            "priceCurrency": "USD",
-            "availability": "https://schema.org/OutOfStock",
-            "description": "20,000 credits. Certificates included. Not yet on sale: billing is paused.",
-        },
-    ],
-}
-
 page(
     "/pricing/",
     "Pricing",

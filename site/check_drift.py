@@ -17,6 +17,11 @@ Checks:
      home banner's sale wording agrees with it too.
   6. /status/ renders every surface with its lifecycle label; the sitemap
      lists the status, changelog, and practice pages.
+  7. P2 surfaces: sitemap lists the new pages; every docs page has a
+     Markdown mirror and a meta block; the Maintainers pack states its
+     evidence-on-request boundary; About/Contact name the owning entity;
+     the home loop is the interactive own-key form; no Memo B claim words
+     (insurance / SLA / guarantee) appear in new-surface copy.
 """
 
 import json
@@ -163,6 +168,57 @@ def check_sitemap():
         check(f"<loc>https://axiom-code.com{path}</loc>" in sm, f"sitemap lists {path}")
 
 
+def check_p2_surfaces():
+    sm = read_dist("sitemap.xml")
+    for path in (
+        "/about/",
+        "/contact/",
+        "/docs/",
+        "/docs/api/",
+        "/docs/mcp/",
+        "/docs/start/first-verification/",
+        "/docs/guides/use-the-queue/",
+        "/docs/reference/verdicts-and-errors/",
+        "/docs/explanation/what-verification-proves/",
+        "/docs/roles/guest/",
+        "/docs/roles/maintainers/",
+        "/docs/roles/regulators/",
+        "/docs/roles/admins/",
+        "/docs/roles/ops/",
+    ):
+        check(f"<loc>https://axiom-code.com{path}</loc>" in sm, f"sitemap lists {path}")
+    docs_home = read_dist(os.path.join("docs", "index.html"))
+    check("Last verified" in docs_home, "/docs/ carries the meta block")
+    import pages_docs_pack
+
+    for path in pages_docs_pack.DOCMETA:
+        md_rel = os.path.join(path.lstrip("/"), "index.md")
+        check(os.path.exists(os.path.join(DIST, md_rel)), f"markdown mirror exists: {path}")
+        if os.path.exists(os.path.join(DIST, md_rel)):
+            md = read_dist(md_rel)
+            check("Last verified" in md and "Canonical:" in md, f"mirror carries front matter: {path}")
+    maint = read_dist(os.path.join("docs", "roles", "maintainers", "index.html"))
+    check("evidence on request" in maint.lower(), "maintainers pack states its boundary")
+    about = read_dist(os.path.join("about", "index.html"))
+    contact = read_dist(os.path.join("contact", "index.html"))
+    check("2351485 ALBERTA INC." in about, "/about/ names the owning entity")
+    check("2351485 ALBERTA INC." in contact, "/contact/ names the owning entity")
+    home = read_dist("index.html")
+    check('id="hgo"' in home and "add_comm_nat" in home, "home loop is the interactive own-key form")
+    check('href="/about/"' in home and 'href="/contact/"' in home, "footer links About + Contact")
+    # Memo B claim lint over the new surfaces' copy (link targets excluded).
+    lint_paths = ["index.html", os.path.join("about", "index.html"), os.path.join("contact", "index.html")]
+    for root, _dirs, files in os.walk(os.path.join(DIST, "docs")):
+        for fn in files:
+            if fn == "index.html":
+                lint_paths.append(os.path.relpath(os.path.join(root, fn), DIST))
+    for rel in lint_paths:
+        text = re.sub(r'href="[^"]*"', "", read_dist(rel)).lower()
+        for word in ("insurance", "guarantee"):
+            check(word not in text, f"no Memo B claim word '{word}' in {rel}")
+        check(not re.search(r"\bsla\b", text), f"no Memo B claim word 'sla' in {rel}")
+
+
 def main():
     if not os.path.isdir(DIST):
         print("FAIL: site/dist missing — run `python3 site/run.py` first")
@@ -173,6 +229,7 @@ def main():
     check_changelog_artefacts()
     check_pricing_agreement()
     check_sitemap()
+    check_p2_surfaces()
     if FAILURES:
         print(f"\nDRIFT: {len(FAILURES)} check(s) failed")
         return 1

@@ -4,10 +4,39 @@
   <url><loc>https://axiom-code.com/how-it-works/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/pricing/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/ask/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/start/first-verification/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/start/first-certificate-check/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/start/first-mcp-call/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/guides/write-a-verifiable-lean-artefact/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/guides/use-the-queue/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/guides/check-and-revoke/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/guides/use-ask-without-letting-it-judge/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/guides/integrate-an-agent/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/guides/reconcile-metering/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/mcp/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/reference/verdicts-and-errors/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/reference/certificates/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/reference/keys-and-limits/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/reference/status-schema/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/reference/changelog-schema/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/explanation/what-verification-proves/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/explanation/what-it-does-not-prove/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/explanation/certificate-trust-model/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/explanation/queue-and-metering-model/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/explanation/ask-and-ai-boundaries/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/roles/guest/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/roles/users/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/roles/developers/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/roles/maintainers/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/roles/regulators/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/roles/admins/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/docs/roles/ops/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/docs/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/docs/api/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/verify/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/check/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/about/</loc><changefreq>weekly</changefreq></url>
+  <url><loc>https://axiom-code.com/contact/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/paperwork/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/paperwork/terms/</loc><changefreq>weekly</changefreq></url>
   <url><loc>https://axiom-code.com/paperwork/privacy/</loc><changefreq>weekly</changefreq></url>
