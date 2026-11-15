@@ -24,6 +24,46 @@ _REPO = "https://github.com/nrupala/axiomcode"
 
 ENTRIES = [
     {
+        "id": "2026-11-15-verification-reports-quarantine",
+        "date": "2026-11-15",
+        "title": "Verification report added — the trace-ledger index quarantine, proved",
+        "category": "Added",
+        "surfaces": ["Website", "Verification reports"],
+        "body": (
+            '<p>The <a href="/verifications/">verification reports</a> register gains the '
+            "quarantine report, the third law of the harness proof round. The "
+            '<a href="/verifications/harness-trace-quarantine/">index quarantine report</a>: '
+            "proved in Lean 4 that the verified part of a broken ledger is exactly the part "
+            "of its chain that verifies, with the split at the first failing entry; that a "
+            "trusted-only query never returns a quarantined row; that superseding an entry "
+            "never deletes it; and that the index&rsquo;s own hash chain detects alteration "
+            "at exactly its position — with its boundary stated on the report itself (the "
+            "status rule reads each entry&rsquo;s own recorded sequence number, and the "
+            "proof states the one case — a duplicated or regressed sequence number at or "
+            "beyond the break, reachable only in a hand-crafted ledger file — where an "
+            "entry is marked verified without being chain-checked; a query over a broken "
+            "index chain warns and still serves; quarantine is re-derived on every build "
+            "rather than held as a state; and the step from altered content to a differing "
+            "recomputation carries a named no-collision assumption). Both gaps were found "
+            "by the proof itself; fixing the code first and then re-proving has since been "
+            "ruled, and follows as a separate step whose report will join the register when "
+            "it closes — this report stands as the record of the law as proved against the "
+            "code as it then stood.</p>"
+        ),
+        "effect": "Anyone can now read the harness's index law as proved — including the "
+        "one case the proof found where the code's status rule trusts a sequence number "
+        "the chain walk never reached.",
+        "evidence": [
+            {"label": "Verification reports", "url": "https://axiom-code.com/verifications/"},
+            {
+                "label": "Index quarantine report",
+                "url": "https://axiom-code.com/verifications/harness-trace-quarantine/",
+            },
+        ],
+        "refs": [],
+        "disposition": "Live on the site; the register grows by completed records only.",
+    },
+    {
         "id": "2026-11-14-verification-reports-chain-anchored",
         "date": "2026-11-14",
         "title": "Two verification reports added — the trace-ledger chain, proved, and its anchoring, proved",
