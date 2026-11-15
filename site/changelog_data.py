@@ -24,6 +24,47 @@ _REPO = "https://github.com/nrupala/axiomcode"
 
 ENTRIES = [
     {
+        "id": "2026-11-15-verification-reports-supervisor-fence",
+        "date": "2026-11-15",
+        "title": "Verification report added — the run supervisor fence, proved",
+        "category": "Added",
+        "surfaces": ["Website", "Verification reports"],
+        "body": (
+            '<p>The <a href="/verifications/">verification reports</a> register gains the '
+            "supervisor fence report, the fourth law of the harness proof round. The "
+            '<a href="/verifications/harness-supervisor-fence/">run supervisor fence '
+            "report</a>: proved in Lean 4 that a run is classified completed exactly when "
+            "its own completion marker says &lsquo;complete&rsquo; — a present-but-invalid "
+            "completion marker failing the run, never completing it, where an invalid "
+            "failure marker is simply ignored; that a resume is launched only on a "
+            "checkpoint that verifies exactly in the same pass, carrying the "
+            "checkpoint&rsquo;s own step and the hash of its state file computed at "
+            "verification time, with an incomplete checkpoint declined by name and the "
+            "run preserved for good; and that the fence holds as an exact bound — the "
+            "resumes launched equal the attempt counter&rsquo;s growth, the total never "
+            "exceeds the declared maximum, and at a final state every further pass "
+            "changes nothing — with its boundary stated on the report itself (the fence "
+            "law&rsquo;s originally sketched form, total silence from the moment the "
+            "fence is reached, is false of the code and is not claimed; the claim that "
+            "the running code never consults process state is a fact read from the "
+            "code, not a theorem; the resume pin is derived in the pass, never compared "
+            "against a stored one; and this proof needed no named assumptions at "
+            "all).</p>"
+        ),
+        "effect": "Anyone can now read how the harness's supervisor is proved to judge "
+        "its runs — by their artifacts alone, with resumes exact and the resume fence "
+        "never crossed.",
+        "evidence": [
+            {"label": "Verification reports", "url": "https://axiom-code.com/verifications/"},
+            {
+                "label": "Run supervisor fence report",
+                "url": "https://axiom-code.com/verifications/harness-supervisor-fence/",
+            },
+        ],
+        "refs": [],
+        "disposition": "Live on the site; the register grows by completed records only.",
+    },
+    {
         "id": "2026-11-15-verification-reports-quarantine-fixed",
         "date": "2026-11-15",
         "title": "Verification report added — the index quarantine, re-proved against the fixed code",
