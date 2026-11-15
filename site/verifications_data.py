@@ -1011,7 +1011,15 @@ REPORTS = [
             "inside is refused, because the named path is what must be granted. No fix "
             "is claimed in this report: whether the code or the documentation changes "
             "is a separate decision, and any fix will be proved in its turn, as the "
-            "quarantine fix was.",
+            "quarantine fix was. "
+            "Correction, 2026-11-15: the Director ruled that the table follows "
+            "the code. The README row — and the module docstring's matching "
+            "gloss — now state the proved form: the refusal fires only when both "
+            "the named path and its resolved path lie outside the grant. The "
+            "unreachable branch has been removed from the code. Behaviour was "
+            "re-verified unchanged (the resident selftest passes 10 of 10 and the "
+            "empirical controls return the same verdicts as before), and the proof "
+            "stands unmodified, because the decision it proves did not change.",
             "Path resolution is taken as given. The proof judges the paths the system "
             "reports: a candidate's named path and its resolved real path, a link's "
             "resolved target. What resolution itself returns — how links are "
