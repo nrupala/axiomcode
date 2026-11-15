@@ -3,97 +3,172 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Software correctness, certified | AxiomCode</title>
-<meta name="description" content="AxiomCode is the certification authority for software correctness. Submit a specification, get a machine-checked proof and a signed certificate anyone can verify.">
+<title>Certification Authority for Software Correctness | AxiomCode</title>
+<meta name="description" content="AxiomCode verifies Lean 4 artefacts with a real toolchain and issues signed, revocable certificates. REST API and hosted MCP live; the trial is free — verdicts yes, certificates no.">
 <link rel="canonical" href="https://axiom-code.com/">
 <meta property="og:site_name" content="AxiomCode">
-<meta property="og:title" content="Software correctness, certified | AxiomCode">
-<meta property="og:description" content="AxiomCode is the certification authority for software correctness. Submit a specification, get a machine-checked proof and a signed certificate anyone can verify.">
+<meta property="og:title" content="Certification Authority for Software Correctness | AxiomCode">
+<meta property="og:description" content="AxiomCode verifies Lean 4 artefacts with a real toolchain and issues signed, revocable certificates. REST API and hosted MCP live; the trial is free — verdicts yes, certificates no.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://axiom-code.com/">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Software correctness, certified | AxiomCode">
-<meta name="twitter:description" content="AxiomCode is the certification authority for software correctness. Submit a specification, get a machine-checked proof and a signed certificate anyone can verify.">
+<meta name="twitter:title" content="Certification Authority for Software Correctness | AxiomCode">
+<meta name="twitter:description" content="AxiomCode verifies Lean 4 artefacts with a real toolchain and issues signed, revocable certificates. REST API and hosted MCP live; the trial is free — verdicts yes, certificates no.">
 <style>
-:root{--ink:#101828;--mut:#475467;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
---gold:#b98a2f;--goldsoft:#faf3e3;--green:#12805c;--greensoft:#e9f7f0;
---red:#b42318;--redsoft:#fdeceb;--navy:#0c1f3f;--radius:10px;
---mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+:root{--ink:#101828;--mut:#475467;--faint:#667085;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
+--wash2:#f2f4f7;--gold:#b98a2f;--goldsoft:#faf3e3;--goldink:#8a6414;
+--green:#12805c;--greensoft:#e9f7f0;--greenline:#bfe6d2;
+--red:#b42318;--redsoft:#fdeceb;--redline:#f3c2bc;
+--navy:#0c1f3f;--navy2:#12294f;--blue:#175cd3;--radius:12px;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
 --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;font-size:17px}
-a{color:#175cd3;text-decoration:none}a:hover{text-decoration:underline}
-.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 .prose{max-width:72ch}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:4px}
+.skip{position:absolute;left:-9999px;top:0;background:var(--navy);color:#fff;padding:10px 16px;z-index:99}
+.skip:focus{left:8px;top:8px}
 /* header */
-.prelaunch{background:var(--goldsoft);border-bottom:1px solid var(--line);padding:10px 0;font-size:14.5px}
 .sitehead{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
-.sitehead .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.sitehead .wrap{display:flex;align-items:center;gap:26px;min-height:64px;flex-wrap:wrap;padding-top:6px;padding-bottom:6px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink)}
 .brand:hover{text-decoration:none}
 .brand svg{width:30px;height:30px}
-.nav{display:flex;gap:22px;margin-left:auto;font-size:15px}
+.nav{display:flex;gap:20px;margin-left:auto;font-size:15px;flex-wrap:wrap}
 .nav a{color:var(--mut)}.nav a:hover{color:var(--ink)}
+.nav a[aria-current]{color:var(--ink);font-weight:700;border-bottom:2px solid var(--gold)}
 .cta{display:inline-block;background:var(--navy);color:#fff!important;padding:9px 18px;border-radius:8px;font-weight:600;font-size:15px}
-.cta:hover{background:#16294f;text-decoration:none}
+.cta:hover{background:var(--navy2);text-decoration:none}
+/* chips: availability and lifecycle are ALWAYS separate, text-first */
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:700;border:1px solid var(--line);background:var(--wash);color:var(--mut);white-space:nowrap}
+.chip.av-live{background:var(--greensoft);color:var(--green);border-color:var(--greenline)}
+.chip.av-paused,.chip.av-unavail{background:var(--wash2);color:var(--mut)}
+.chip.lc-soak{background:var(--goldsoft);color:var(--goldink);border-color:#ecd9a8}
+.chip.lc-live{background:var(--greensoft);color:var(--green);border-color:var(--greenline)}
+.chip.lc-paused{background:var(--wash2);color:var(--mut)}
+.chip.lc-design{background:#eef4ff;color:var(--blue);border-color:#c7d7fe}
+.chip.lc-notbuilt{background:var(--wash2);color:var(--faint)}
+.chip.scope{background:#fff;color:var(--goldink);border-color:#ecd9a8}
 /* hero */
-.hero{background:linear-gradient(180deg,#0c1f3f 0%,#12294f 100%);color:#fff;padding:84px 0 72px}
-.hero h1{font-size:46px;line-height:1.15;margin:0 0 18px;letter-spacing:-.5px;max-width:16em}
-.hero p.lede{font-size:20px;color:#cbd5e1;max-width:34em;margin:0 0 28px}
+.hero{background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:72px 0 64px}
+.hero h1{font-size:44px;line-height:1.14;margin:0 0 16px;letter-spacing:-.5px;max-width:15em}
+.hero p.lede{font-size:20px;color:#cbd5e1;max-width:36em;margin:0 0 14px}
+.hero .scope-line{font-size:15px;color:#93a1b8;max-width:40em;margin:0 0 26px}
 .hero .row{display:flex;gap:14px;flex-wrap:wrap}
 .btn{display:inline-block;padding:13px 26px;border-radius:9px;font-weight:700;font-size:16px;border:1px solid transparent}
 .btn-gold{background:var(--gold);color:#1a1206!important}.btn-gold:hover{background:#c99a3f;text-decoration:none}
 .btn-ghost{border-color:#3b4a63;color:#fff!important}.btn-ghost:hover{border-color:#5b6b85;text-decoration:none}
+.statusline{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;color:#93a1b8}
 .trustline{margin-top:26px;font-size:14px;color:#93a1b8}
 /* sections */
-section.block{padding:64px 0}
-section.block h2{font-size:30px;margin:0 0 12px;letter-spacing:-.3px}
+section.block{padding:60px 0}
+section.block.alt{background:var(--wash)}
+section.block h2{font-size:29px;margin:0 0 10px;letter-spacing:-.3px}
 .kicker{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:28px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:26px}
 .card{border:1px solid var(--line);border-radius:var(--radius);padding:26px;background:#fff}
 .card h3{margin:0 0 8px;font-size:19px}
 .card p{margin:0;color:var(--mut);font-size:15.5px}
 .card .num{display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;
 align-items:center;justify-content:center;font-weight:700;margin-bottom:12px}
+.card .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.card .go{margin-top:auto;padding-top:10px;font-weight:600;font-size:15px}
+.cardflex{display:flex;flex-direction:column;gap:8px}
 /* seal / cert demo */
 .sealbox{background:var(--wash);border:1px solid var(--line);border-radius:12px;padding:28px;margin-top:24px}
-pre.code{background:#0c1f3f;color:#d7e3f4;padding:20px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;font-family:var(--mono)}
+pre.code{background:var(--navy);color:#d7e3f4;padding:20px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;font-family:var(--mono)}
 code.inline{font-family:var(--mono);background:var(--wash);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:.88em}
 /* verdict badges */
 .badge{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;font-size:14px}
-.b-pass{background:var(--greensoft);color:var(--green);border:1px solid #bfe6d2}
-.b-fail{background:var(--redsoft);color:var(--red);border:1px solid #f3c2bc}
-.b-warn{background:var(--goldsoft);color:#8a6414;border:1px solid #ecd9a8}
+.b-pass{background:var(--greensoft);color:var(--green);border:1px solid var(--greenline)}
+.b-fail{background:var(--redsoft);color:var(--red);border:1px solid var(--redline)}
+.b-warn{background:var(--goldsoft);color:var(--goldink);border:1px solid #ecd9a8}
+/* artefact loop (interactive on home) */
+.loop{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:stretch;margin-top:26px}
+@media(max-width:860px){.loop{grid-template-columns:1fr}.loop .arrow{transform:rotate(90deg);justify-self:center}}
+.loop .pane{border:1px solid var(--line);border-radius:var(--radius);background:#fff;overflow:hidden}
+.loop .pane h3{margin:0;padding:14px 20px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--line);background:var(--wash)}
+.loop .pane .body{padding:18px 20px}
+.loop pre.code{border-radius:0}
+.arrow{align-self:center;font-size:26px;color:var(--gold);font-weight:700}
+.kv{font-size:14.5px;margin:0}
+.kv dt{color:var(--faint);font-size:12.5px;text-transform:uppercase;letter-spacing:.8px;margin-top:12px}
+.kv dd{margin:2px 0 0;font-family:var(--mono);font-size:14px;word-break:break-all}
+.kv dd.plain{font-family:var(--sans)}
+/* tables */
+table.spec,table.tax,table.status{width:100%;border-collapse:collapse;font-size:15px;margin:20px 0;background:#fff}
+table.spec th,table.spec td,table.tax th,table.tax td,table.status th,table.status td{border:1px solid var(--line);padding:11px 14px;text-align:left;vertical-align:top}
+table.spec th,table.tax th,table.status th{background:var(--wash)}
+table.tax th,table.status th{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
+table.status td .chips{display:flex;gap:6px;flex-wrap:wrap}
+table.status td small{color:var(--faint);display:block;margin-top:4px}
+.tablewrap{overflow-x:auto}
 /* pricing */
-.ptable{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-top:28px}
-.plan{border:1px solid var(--line);border-radius:12px;padding:28px;background:#fff;position:relative}
+.ptable{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:26px}
+.plan{border:1px solid var(--line);border-radius:12px;padding:26px;background:#fff;position:relative}
 .plan.hot{border:2px solid var(--gold);box-shadow:0 8px 30px rgba(185,138,47,.12)}
-.plan h3{margin:0 0 4px}.plan .price{font-size:34px;font-weight:800;margin:8px 0}
+.plan h3{margin:0 0 4px;font-size:17px}.plan .price{font-size:32px;font-weight:800;margin:6px 0 2px}
 .plan .per{color:var(--mut);font-size:14px}
-.plan ul{padding-left:20px;color:var(--mut);font-size:15px;margin:16px 0}
-.plan li{margin-bottom:8px}
+.plan ul{padding-left:20px;color:var(--mut);font-size:15px;margin:14px 0 0}
+.plan li{margin-bottom:7px}
+.plan .buy{margin-top:16px;display:inline-block;padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--wash2);color:var(--faint);font-weight:700;font-size:14.5px;cursor:not-allowed}
+.plan .buy.live{background:var(--navy);color:#fff;border-color:var(--navy);cursor:pointer}
 /* forms */
 textarea.codebox{width:100%;min-height:260px;font-family:var(--mono);font-size:14px;padding:16px;
 border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
-input[type=text],input[type=email]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px}
+textarea.plainbox{width:100%;min-height:150px;font-family:var(--sans);font-size:16px;padding:14px;
+border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
+input[type=text],input[type=email],input[type=password],select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:#fff}
 label.fl{display:block;font-weight:600;margin:18px 0 6px}
 button.go{background:var(--navy);color:#fff;border:0;padding:13px 30px;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer}
-button.go:hover{background:#16294f}button.go:disabled{opacity:.55;cursor:wait}
+button.go:hover{background:var(--navy2)}button.go:disabled{opacity:.55;cursor:wait}
 .result{margin-top:24px;border:1px solid var(--line);border-radius:10px;padding:22px;display:none}
 .result.show{display:block}
+.hp{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden}
+/* honesty furniture */
+.honest{border:1px solid #ecd9a8;background:var(--goldsoft);border-radius:var(--radius);padding:22px 26px;margin-top:26px}
+.honest h3{margin:0 0 8px;font-size:17px}
+.honest p{margin:0 0 8px;color:#5b4a17;font-size:15.5px}
+.honest p:last-child{margin-bottom:0}
+/* page head (status / docs / company) */
+.pagehead{padding:52px 0 8px}
+.pagehead h1{font-size:36px;margin:0 0 10px;letter-spacing:-.4px}
+.pagehead p{color:var(--mut);max-width:44em;margin:0}
+.asof{font-size:14px;color:var(--faint);margin-top:12px}
+/* docs layout */
+.docslayout{display:grid;grid-template-columns:250px 1fr;gap:36px;padding:44px 0 60px}
+@media(max-width:860px){.docslayout{grid-template-columns:1fr}}
+.sidenav{font-size:15px}
+.sidenav h4{margin:22px 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:1px;color:var(--faint)}
+.sidenav h4:first-child{margin-top:0}
+.sidenav ul{list-style:none;margin:0;padding:0}
+.sidenav li{margin:3px 0}
+.sidenav a{color:var(--mut)}
+.sidenav a[aria-current]{color:var(--ink);font-weight:700}
+.docmeta{border:1px solid var(--line);border-radius:10px;background:var(--wash);padding:14px 18px;font-size:14px;color:var(--mut);display:flex;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+.docmeta b{color:var(--ink)}
+.quad{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:22px}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:22px}
+.role{border:1px solid var(--line);border-radius:10px;padding:18px;background:#fff}
+.role h3{margin:0 0 4px;font-size:16px}
+.role p{margin:0;color:var(--mut);font-size:14px}
+.steps{counter-reset:step;margin-top:20px}
+.step{border-left:3px solid var(--gold);padding:2px 0 6px 20px;margin-bottom:22px}
+.step h3{margin:0 0 6px;font-size:18px}
+.step p{color:var(--mut);margin:0 0 10px;max-width:65ch}
 /* footer */
-.sitefoot{background:#0c1f3f;color:#aeb9cc;padding:56px 0 32px;margin-top:40px;font-size:15px}
-.sitefoot a{color:#d7e0ee}.sitefoot .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:28px}
-.sitefoot h4{color:#fff;margin:0 0 12px;font-size:15px}
-.sitefoot ul{list-style:none;margin:0;padding:0}.sitefoot li{margin-bottom:8px}
-.fine{margin-top:36px;padding-top:20px;border-top:1px solid #22345a;font-size:13px;color:#7d8ba3}
-/* docs */
+footer{border-top:1px solid var(--line);background:var(--wash);padding:44px 0 36px;font-size:14.5px;color:var(--mut);margin-top:40px}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:26px}
+footer h4{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--ink)}
+footer ul{list-style:none;margin:0;padding:0}
+footer li{margin:5px 0}
+footer a{color:var(--mut)}
+.legal{margin-top:30px;border-top:1px solid var(--line);padding-top:18px;font-size:13.5px;color:var(--faint)}
+/* misc page furniture */
 .docnav{background:var(--wash);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:24px 0}
-table.spec{width:100%;border-collapse:collapse;font-size:15px;margin:20px 0}
-table.spec th,table.spec td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}
-table.spec th{background:var(--wash)}
 .note{border-left:4px solid var(--gold);background:var(--goldsoft);padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0;font-size:15.5px}
-.note.blue{border-color:#175cd3;background:#eff4ff}
 h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 .sub{color:var(--mut);font-size:19px;margin:0 0 8px}
 .faq details{border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:10px}
@@ -112,99 +187,238 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 </script>
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
+<a class="skip" href="#main">Skip to content</a>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
-<nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/ask/">Ask</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/status/">Status</a><a href="/changelog/">Changelog</a><a href="/practice/">Practice</a><a href="/paperwork/">Paperwork</a></nav>
-<a class="cta" href="/verify/">Try free</a>
+<nav class="nav" aria-label="Primary"><a href="/how-it-works/">Product</a><a href="/verify/">Try it</a><a href="/docs/">Docs</a><a href="/#try">Examples</a><a href="/status/">Status</a><a href="/changelog/">Changelog</a><a href="/practice/">Practice</a><a href="/pricing/">Pricing</a></nav>
+<a class="cta" href="/verify/">Verify an artefact</a>
 </div></div>
-<div class="hero"><div class="wrap">
-<h1>Don’t trust our AI — verify our proof.</h1>
-<p class="lede">The certification authority for software correctness. Submit your specification. Our engine compiles it, checks the proof mechanically, and issues a signed certificate &mdash; binding your code hash, the verification result, and our identity &mdash; that anyone can re-check without trusting us.</p>
-<div class="row">
-<a class="btn btn-gold" href="/verify/">Verify something free</a>
-<a class="btn btn-ghost" href="/how-it-works/">How it works</a>
-</div>
-<p class="trustline">10 free trial verifications &middot; no certificate until you pay &middot; certificates valid 90 days, revocable, publicly checkable</p>
-</div></div>
+<main id="main">
+<section class="hero"><div class="wrap">
+<div class="kicker">Certification authority for software correctness</div>
+<h1>Verification as evidence, not verification as opinion.</h1>
+<p class="lede">AxiomCode checks Lean 4 artefacts with a real toolchain — the Lean kernel is the only judge — and issues signed, revocable certificates that bind the artefact hash, the verdict, and the toolchain. Don’t trust our AI — verify our proof.</p>
+<p class="scope-line">Scope, stated at the point of claim: Lean 4 artefacts only, today. A PASSED verdict means the artefact&rsquo;s proofs checked under the stated toolchain — not that the software does what you intended. <a href="/docs/explanation/what-it-does-not-prove/" style="color:#cbd5e1">What verification does not prove</a>.</p>
+<div class="row"><a class="btn btn-gold" href="/verify/">Run your first verification</a>
+<a class="btn btn-ghost" href="/docs/">Read the docs</a></div>
+<div class="statusline"><span>Service state</span><span class="chip av-live">REST API · Live</span><span class="chip lc-soak">In soak</span><span class="chip av-paused">Billing · Paused</span><span>Credit packs not yet on sale · API keys by email: <a href="mailto:hello@axiom-code.com" style="color:#cbd5e1">hello@axiom-code.com</a></span></div>
+<div class="trustline">Certificates bind artefact hash &middot; verdict &middot; toolchain &middot; issuer &middot; serial &middot; 90-day validity — independently checkable, publicly revocable.</div>
+</div></section>
 
-<section class="block"><div class="wrap"><div class="prose">
-<div class="kicker">The problem</div>
-<h2>AI writes code. Nobody can prove it&rsquo;s right.</h2>
-<p>Code review is opinion. Tests are samples. Audits are expensive snapshots. When software has to be <em>right</em> &mdash; money movement, access control, safety logic &mdash; &ldquo;looks good to me&rdquo; is not evidence. AxiomCode sells <strong>verification-as-evidence</strong>: a mechanical proof, checked by a real toolchain, sealed into a certificate you can hand to a regulator, a customer, or a counterparty.</p>
-</div>
+<section class="block alt"><div class="wrap">
+<div class="kicker">One engine, three doors</div>
+<h2>Same verdicts, same queue, same trial</h2>
+<p style="color:var(--mut);max-width:44em">Every door reaches the same verification engine and the same certificate authority. Availability and lifecycle are stated separately on every surface — a surface can be live to use and still in its post-release soak.</p>
 <div class="cards">
-<div class="card"><span class="num">1</span><h3>Submit</h3><p>Send a Lean 4 specification through the web UI or the REST API &mdash; the way your agent already talks to tools.</p></div>
-<div class="card"><span class="num">2</span><h3>We check it mechanically</h3><p>The engine compiles your spec with the real Lean toolchain and checks the proof. Vacuous builds, <code class="inline">sorry</code>, <code class="inline">admit</code>, and broken proofs are rejected &mdash; loudly.</p></div>
-<div class="card"><span class="num">3</span><h3>You get a certificate</h3><p>A signed certificate binding your artifact hash, the verdict, the toolchain, the issuer, and a validity window. Anyone can re-verify it without trusting us.</p></div>
+<div class="card cardflex"><div class="chips"><span class="chip av-live">Live</span> <span class="chip lc-soak">In soak</span></div>
+<h3>REST API</h3>
+<p><code class="inline">POST /verify</code> with your API key; long runs queue and are polled at <code class="inline">GET /verify/jobs/{id}</code>. Gate graduation judged 16 November 2026, per <a href="/practice/">practice</a>.</p>
+<p class="go"><a href="/docs/api/">API reference &rarr;</a></p></div>
+<div class="card cardflex"><div class="chips"><span class="chip av-live">Live</span> <span class="chip lc-soak">In soak</span></div>
+<h3>Hosted MCP</h3>
+<p>Seven tools at <code class="inline">/mcp/</code> for agent clients — same key, same queue, same trial semantics as REST. Gate graduation judged 16 November 2026, per <a href="/practice/">practice</a>.</p>
+<p class="go"><a href="/docs/mcp/">MCP tools &rarr;</a></p></div>
+<div class="card cardflex"><div class="chips"><span class="chip av-live">Live</span> <span class="chip lc-soak">In soak</span></div>
+<h3>Ask AxiomCode</h3>
+<p>A shell that orchestrates the same verify calls and explains the result. The facts are rendered in code; the model explains and never judges. Gate graduation judged 18 November 2026, per <a href="/practice/">practice</a>.</p>
+<p class="go"><a href="/ask/">Open Ask &rarr;</a></p></div>
 </div>
 </div></section>
 
-<section class="block" style="background:var(--wash)"><div class="wrap"><div class="prose">
-<div class="kicker">The guarantee</div>
-<h2>Our honesty is structural, not promised.</h2>
-<p>A certificate authority lives or dies on one thing: never saying &ldquo;verified&rdquo; when it isn&rsquo;t. So we built the incentives into the system:</p>
+<section class="block" id="try"><div class="wrap">
+<div class="kicker">Try it — live</div>
+<h2>One loop: artefact in, evidence out</h2>
+<p style="color:var(--mut);max-width:46em">This is the real service, not a recording. Paste <strong>your own API key</strong> and run the starter artefact, or replace it with your own Lean 4. The first 10 cases on a key are the trial: real verdicts and usage records, no certificate.</p>
+<div class="loop">
+<div class="pane"><h3>1 · Artefact in</h3><div class="body">
+<label class="fl" for="hkey" style="margin-top:0">Your API key</label>
+<input type="password" id="hkey" placeholder="axk_&hellip;" autocomplete="off">
+<label class="fl" for="hcode">Lean 4 artefact</label>
+<textarea class="codebox" id="hcode" style="min-height:140px" spellcheck="false">theorem add_comm_nat (a b : Nat) : a + b = b + a := Nat.add_comm a b</textarea>
+<div style="margin-top:16px"><button class="go" id="hgo" type="button">Verify it &rarr;</button></div>
+<p style="font-size:13.5px;color:var(--faint);margin:12px 0 0">Your key goes only to <code class="inline">api.axiom-code.com</code>, over HTTPS; this page never stores it. No key yet? <a href="mailto:hello@axiom-code.com?subject=API%20key%20request">Request one by email</a> — keys are free. Prefer the dedicated page? The same loop runs at <a href="/verify/">/verify/</a>.</p>
+</div></div>
+<div class="arrow" aria-hidden="true">&rarr;</div>
+<div class="pane"><h3>2 · Evidence out</h3><div class="body" id="hresult" aria-live="polite">
+<p style="color:var(--mut);margin:0">The verdict appears here — <strong>PASSED</strong> or <strong>FAILED</strong>, decided by the Lean kernel, with the artefact hash and the usage record. A run that ends before a verdict (payment required, timeout, refusal, failed queued job) is a <strong>NO VERDICT</strong> error outcome, never a verdict. On the trial, no certificate is attached — by design.</p>
+</div></div>
 </div>
-<div class="cards">
-<div class="card"><h3>Mis-issuance is the existential risk</h3><p>Every certificate carries a serial number, issuer identity, and validity window. If our toolchain is ever wrong, we revoke &mdash; publicly, through a published revocation list. Like TLS, but for correctness.</p></div>
-<div class="card"><h3>Expiry drives re-verification</h3><p>Certificates last 90 days. Software changes; proofs should be re-run. Renewal is the business model, the same way TLS renewal is.</p></div>
-<div class="card"><h3>You don&rsquo;t have to trust us</h3><p>The certificate binds the artifact hash and the proof transcript. Re-run the check yourself with the published toolchain. &ldquo;Don&rsquo;t trust our AI &mdash; verify our proof&rdquo; isn&rsquo;t a slogan; it&rsquo;s the architecture.</p></div>
+<p style="color:var(--mut);font-size:15px;margin-top:18px">Driving an agent instead? The same call is one POST over <a href="/docs/api/">REST</a>, or seven tools over <a href="/docs/mcp/">hosted MCP</a>. First time here: the <a href="/docs/start/first-verification/">first-verification tutorial</a> walks the whole loop.</p>
+</div></section>
+<script>
+const HAPI='https://api.axiom-code.com';
+const h$ = id => document.getElementById(id);
+function hesc(s){return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function hkv(k,v,plain){return '<dt>'+k+'</dt><dd'+(plain?' class="plain"':'')+'>'+v+'</dd>';}
+function hShow(j){
+  const ok = j.verified === true;
+  let h = '<span class="badge '+(ok?'b-pass':'b-fail')+'">'+(ok?'PASSED':'FAILED')+'</span>';
+  h += '<dl class="kv">';
+  if (j.artifact_hash) h += hkv('Artefact (SHA-256)', hesc(j.artifact_hash));
+  if (Array.isArray(j.attempts) && j.attempts.length){
+    let secs=0, cred=0, seen=false;
+    j.attempts.forEach(a=>{ if(typeof a.elapsed_seconds==='number'){secs+=a.elapsed_seconds;seen=true;} if(typeof a.credits_charged==='number'){cred+=a.credits_charged;} });
+    if (seen) h += hkv('Engine time', secs.toFixed(2)+' s');
+    h += hkv('Credits charged', String(Math.round(cred*100)/100));
+  }
+  if (j.trial) h += hkv('Trial', 'case '+j.trial.used+' of '+j.trial.limit+' — no certificate on the trial', true);
+  if (j.job_id) h += hkv('Job', hesc(j.job_id));
+  h += '</dl>';
+  if (j.certificate){
+    h += '<p style="margin:14px 0 6px"><strong>Signed certificate issued.</strong> Check it independently at <a href="/check/">/check/</a>.</p><pre class="code">'+hesc(JSON.stringify(j.certificate,null,2))+'</pre>';
+  } else if (j.trial){
+    h += '<p style="margin:14px 0 0;color:var(--mut)">Trial verdict — real verdict, real usage record, <strong>no certificate</strong>. Certificates are issued on paid verifications; packs are <a href="/pricing/">not yet on sale</a>.</p>';
+  }
+  h$('hresult').innerHTML = h;
+}
+function hErr(msg){ h$('hresult').innerHTML = '<span class="badge b-fail">NO VERDICT</span><p style="margin:12px 0 0">'+msg+'</p>'; }
+async function hPoll(jobId, key){
+  for (let i=0;i<40;i++){
+    await new Promise(r=>setTimeout(r,3000));
+    const r = await fetch(HAPI+'/verify/jobs/'+encodeURIComponent(jobId), {headers:{'X-Api-Key':key}});
+    const j = await r.json().catch(()=>({}));
+    if (r.status===200){ hShow(j); return; }
+    if (r.status!==202){ hErr('The queued job ended without a verdict ('+r.status+'). Nothing was certified.'); return; }
+    h$('hresult').innerHTML = '<span class="badge b-warn">QUEUED</span><p style="margin:12px 0 0">Still queued — position '+(j.position!=null?j.position:'…')+'. Polling every 3 seconds.</p>';
+  }
+  hErr('Still queued after two minutes. Poll <code class="inline">GET /verify/jobs/'+hesc(jobId)+'</code> with your key for the result.');
+}
+h$('hgo').addEventListener('click', async () => {
+  const key = h$('hkey').value.trim(), code = h$('hcode').value;
+  if (!key){ hErr('Paste your API key first — keys are free, by email: <a href="mailto:hello@axiom-code.com?subject=API%20key%20request">hello@axiom-code.com</a>. This loop runs on your own key; there is no shared demo key.'); return; }
+  if (!code.trim()){ hErr('The artefact is empty — paste a Lean 4 artefact, or restore the starter example.'); return; }
+  const btn = h$('hgo'); btn.disabled = true; btn.textContent = 'Verifying…';
+  h$('hresult').innerHTML = '<p style="color:var(--mut);margin:0">Running the real toolchain…</p>';
+  try {
+    const r = await fetch(HAPI+'/verify', {method:'POST', headers:{'Content-Type':'application/json','X-Api-Key':key}, body: JSON.stringify({code})});
+    const j = await r.json().catch(()=>({}));
+    if (r.status===200){ hShow(j); }
+    else if (r.status===202 && j.job_id){ h$('hresult').innerHTML = '<span class="badge b-warn">QUEUED</span><p style="margin:12px 0 0">Every proof slot is busy — job '+hesc(j.job_id)+' queued at position '+(j.position!=null?j.position:'…')+'. Polling…</p>'; hPoll(j.job_id, key); }
+    else if (r.status===401){ hErr('That API key was not accepted (401). Check the key, or request a new one by email.'); }
+    else if (r.status===402){ hErr('Payment required (402): this key is out of trial cases and has no credit balance. Packs are not yet on sale — see <a href="/pricing/">pricing</a>.'); }
+    else if (r.status===413){ hErr('Artefact too large (413): the limit is 256 KB.'); }
+    else if (r.status===429){ hErr('Rate limited (429): slow down and retry shortly.'); }
+    else if (r.status===504){ hErr('The run timed out (504) — a NO VERDICT outcome: nothing was certified and trial cases are not consumed by timeouts.'); }
+    else { hErr('The service answered '+r.status+' — a NO VERDICT outcome. Nothing was certified.'); }
+  } catch(e){ hErr('Could not reach the API. Check your connection and retry — a NO VERDICT outcome; nothing was certified.'); }
+  btn.disabled = false; btn.textContent = 'Verify it →';
+});
+</script>
+
+<section class="block alt"><div class="wrap">
+<div class="kicker">The seal</div>
+<h2>What a certificate binds</h2>
+<p style="color:var(--mut);max-width:44em">A certificate is a signed record, not a badge image. Anyone can check it — paste it into the <a href="/check/">public checker</a> and the signature, the validity window, and the revocation state are verified in your browser against our published CA keys.</p>
+<div class="sealbox">
+<pre class="code">{
+  "artifact_hash": "sha256:9f2c…e41a",
+  "verified": true,
+  "toolchain": "lean4-4.9.1 / axiomcode-0.3.0",
+  "issuer": "AxiomCode CA",
+  "serial": "AC-2026-000417",
+  "issued": "2026-09-26", "expires": "2026-12-25",
+  "signature": "ed25519:…"
+}</pre>
+<div class="note" style="margin-bottom:0"><strong>Read the fields, not the logo.</strong> The hash binds the exact bytes that were checked; the toolchain names what checked them; the serial is how a certificate is revoked if the toolchain is ever found wrong. A certificate without these fields is a picture, not evidence.</div>
 </div>
 </div></section>
 
-<section class="block"><div class="wrap"><div class="prose">
-<div class="kicker">Who it&rsquo;s for</div>
-<h2>Whoever has to <em>prove</em> it&rsquo;s correct.</h2>
-<p>The buyer isn&rsquo;t whoever writes the code. It&rsquo;s whoever must demonstrate correctness to a third party:</p>
-<ul>
-<li><strong>Regulated software teams</strong> &mdash; hand a certificate to the auditor instead of a test report.</li>
-<li><strong>Fintech</strong> &mdash; money-movement and access-control logic expressed as Lean 4 specifications, with a machine-checked proof attached.</li>
-<li><strong>AI agent builders</strong> &mdash; agents that ship code can now ship the proof too. Call the API from your agent and attach the certificate to the code.</li>
-<li><strong>Procurement &amp; contracts</strong> &mdash; &ldquo;certified correct&rdquo; as a deliverable, checkable by the buyer.</li>
-</ul>
-<p><a class="cta" href="/pricing/">See pricing</a></p>
-</div></div></section>
+<section class="block"><div class="wrap">
+<div class="kicker">Verdicts</div>
+<h2>Two verdicts — and one non-verdict</h2>
+<p style="color:var(--mut);max-width:44em">Verdicts are boolean. Anything that ends a run before a verdict exists is an error outcome with its own name, so a refusal can never be mistaken for a result.</p>
+<div class="tablewrap"><table class="tax">
+<tr><th style="width:16%">Outcome</th><th style="width:38%">What it means</th><th>Certificate?</th></tr>
+<tr><td><span class="badge b-pass">PASSED</span></td><td>The artefact compiled and every proof checked under the stated toolchain.</td><td>Yes — on paid verifications. Trial runs return the verdict and usage record only.</td></tr>
+<tr><td><span class="badge b-fail">FAILED</span></td><td>The artefact was checked and did not pass: a proof failed, or the artefact was rejected by the engine&rsquo;s rules.</td><td>Yes — on paid verifications. A FAILED certificate is evidence too: it records that the check ran and what it found.</td></tr>
+<tr><td><span class="badge b-warn">NO VERDICT</span></td><td>No verdict exists: payment required (402), engine timeout (504), concurrency, rate, or size refusal, or a queued job that failed. The run ended before a verdict.</td><td>Never. Nothing was decided, so nothing is certified.</td></tr>
+</table></div>
+<p style="color:var(--mut);font-size:15px">The full taxonomy — every status code and what it does to your balance — is in the <a href="/docs/reference/verdicts-and-errors/">verdicts &amp; errors reference</a>.</p>
+</div></section>
 
-<section class="block" style="background:var(--wash)"><div class="wrap"><div class="prose">
-<div class="kicker">Honest scope</div>
-<h2>What we certify today &mdash; and what we don&rsquo;t.</h2>
-<p>Today the engine verifies <strong>Lean 4 specifications</strong>. The certificate credentials the code: it is our assessment that the submitted artifact was built to its specification, as mechanically checked &mdash; recorded as the artifact hash, the toolchain version, and the verdict. <strong>We hold no responsibility beyond this assessment.</strong> We do not claim your whole system is correct, your spec matches your intent, or your deployment matches the artifact. Read the <a href="/paperwork/certificate-policy/">Certificate Policy</a> for the precise meaning of every field.</p>
-<div class="note">Verification is evidence, not opinion. The evidence is bounded, and we publish the bounds.</div>
+<section class="block alt"><div class="wrap">
+<div class="kicker">Pricing</div>
+<h2>Defined — and paused</h2>
+<p style="color:var(--mut);max-width:44em">Metered at 0.9 credits per second of engine compute; 1 credit = $0.01. Credit packs are priced and published, and <strong>not yet on sale</strong>: billing stays paused until the service&rsquo;s pre-billing conditions close. The trial needs no card and no pack.</p>
+<div class="ptable">
+<div class="plan"><h3>Trial</h3><div class="price">Free</div>
+<div class="per">10 free verifications</div>
+<ul><li>Real verdicts and usage records</li><li>Full artefact loop, REST or MCP</li>
+<li><strong>No certificate</strong> — the trial proves the engine, not your artefact</li></ul>
+<a class="buy live" href="/verify/" style="cursor:pointer">Run the trial</a></div>
+<div class="plan"><h3>Starter</h3><div class="price">$10</div>
+<div class="per">1,000 credits · metered at 0.9 credits/sec</div>
+<ul><li>Signed certificates on paid verifications</li><li>Same engine, same queue as the trial</li></ul>
+<span class="buy">Not yet on sale</span></div>
+<div class="plan"><h3>Growth</h3><div class="price">$50</div>
+<div class="per">5,000 credits · metered at 0.9 credits/sec</div>
+<ul><li>Signed certificates on paid verifications</li><li>Same engine, same queue as the trial</li></ul>
+<span class="buy">Not yet on sale</span></div>
+<div class="plan"><h3>Scale</h3><div class="price">$200</div>
+<div class="per">20,000 credits · metered at 0.9 credits/sec</div>
+<ul><li>Signed certificates on paid verifications</li><li>Same engine, same queue as the trial</li></ul>
+<span class="buy">Not yet on sale</span></div>
+</div>
+<p style="margin-top:18px"><a href="/pricing/">Full pricing — metering, refunds, and what a timeout costs &rarr;</a></p>
+</div></section>
+
+<section class="block"><div class="wrap"><div class="prose" style="max-width:76ch">
+<div class="kicker">Questions</div>
+<h2>Asked often</h2>
+<div class="faq">
+<details><summary>What exactly does a PASSED verdict claim?</summary><p>That the submitted artefact compiled under the stated Lean toolchain and its proofs checked — the kernel accepted them. It does not claim the specification says what you meant, that the deployed system matches the artefact, or anything about code that was not submitted. The bounds are stated on every certificate and in <a href="/docs/explanation/what-verification-proves/">what verification proves</a>.</p></details>
+<details><summary>Why does the trial withhold the certificate?</summary><p>Because the certificate is the product: our signature staked on a verdict, with the revocation and record-keeping duties that follow. Trial runs give you the verdict and the usage record so you can judge the engine; the signature is issued inside a paid relationship.</p></details>
+<details><summary>Can I check a certificate without an account?</summary><p>Yes. The <a href="/check/">checker</a> verifies the signature in your browser against the published CA keys, and the <a href="https://api.axiom-code.com/revoked">revocation list</a> is public. Checking never requires trust in this website.</p></details>
+<details><summary>Which languages are supported?</summary><p>Lean 4, today. Smart-contract verification is in design and the offline verifier is not built — both are labelled as such on the <a href="/status/">status page</a>, not implied here.</p></details>
+</div>
+<div class="honest"><h3>Stated plainly</h3>
+<p><strong>No external third-party audit of AxiomCode has been performed.</strong> The assurance case rests on the release gate, the soak, and the public record — read the <a href="/practice/">practice page</a> for exactly what that does and does not cover.</p>
+<p>Found an error on this site or in the service? Report it on <a href="https://github.com/nrupala/axiomcode/issues">GitHub Issues</a> — user-initiated only; this site carries no telemetry and attaches nothing you did not choose to send.</p></div>
 </div></div></section>
-<footer class="sitefoot"><div class="wrap">
+</main>
+<footer><div class="wrap">
 <div class="cols">
 <div><h4>Product</h4><ul>
 <li><a href="/how-it-works/">How it works</a></li>
-<li><a href="/pricing/">Pricing</a></li>
-<li><a href="/verify/">Try free</a></li>
-<li><a href="/ask/">Ask AxiomCode</a></li>
+<li><a href="/verify/">Verify</a></li>
 <li><a href="/check/">Check a certificate</a></li>
+<li><a href="/ask/">Ask AxiomCode</a></li>
+<li><a href="/pricing/">Pricing</a></li>
 </ul></div>
-<div><h4>Developers &amp; agents</h4><ul>
+<div><h4>Developers</h4><ul>
 <li><a href="/docs/">Documentation</a></li>
-<li><a href="/docs/api/">REST &amp; MCP API</a></li>
-<li><a href="/status.json">Status JSON</a></li>
+<li><a href="/docs/api/">REST API</a></li>
+<li><a href="/docs/mcp/">Hosted MCP</a></li>
+<li><a href="/docs/mcp/#local-mcp">Local MCP</a></li>
+<li><a href="https://api.axiom-code.com/openapi.json">OpenAPI (live)</a></li>
 <li><a href="/llms.txt">llms.txt</a></li>
-<li><a href="/.well-known/axiomcode.json">Machine-readable service info</a></li>
 </ul></div>
-<div><h4>Trust &amp; paperwork</h4><ul>
+<div><h4>Trust</h4><ul>
 <li><a href="/status/">Status</a></li>
 <li><a href="/changelog/">Changelog &amp; service record</a></li>
 <li><a href="/practice/">Practice</a></li>
-<li><a href="/paperwork/terms/">Terms of Service</a></li>
-<li><a href="/paperwork/privacy/">Privacy Policy</a></li>
-<li><a href="/paperwork/certificate-policy/">Certificate Policy &amp; CPS</a></li>
-<li><a href="/paperwork/refunds/">Refund Policy</a></li>
+<li><a href="/paperwork/certificate-policy/">Certificate Policy</a></li>
+<li><a href="/paperwork/security/">Security</a></li>
+<li><a href="/paperwork/privacy/">Privacy</a></li>
+<li><a href="/paperwork/terms/">Terms</a></li>
+<li><a href="/paperwork/refunds/">Refunds</a></li>
 <li><a href="/paperwork/sla/">Service Levels</a></li>
 </ul></div>
 <div><h4>Company</h4><ul>
+<li><a href="/about/">About</a></li>
+<li><a href="/contact/">Contact</a></li>
 <li><a href="/blog/">Blog</a></li>
-<li><a href="/releases/">Release log (now Changelog)</a></li>
-<li><a href="/paperwork/security/">Security &amp; disclosure</a></li>
-<li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
+</ul></div>
+<div><h4>Machine-readable</h4><ul>
+<li><a href="/status.json">Status JSON</a></li>
+<li><a href="/changelog.json">Changelog JSON</a></li>
+<li><a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">CA keys</a></li>
+<li><a href="https://api.axiom-code.com/revoked">Revocation list</a></li>
+<li><a href="/.well-known/axiomcode.json">Service record</a></li>
+<li><a href="/sitemap.xml">Sitemap</a></li>
 </ul></div>
 </div>
-<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
+<div class="legal">AxiomCode is a service of <strong>2351485 ALBERTA INC.</strong> (Alberta, Canada). Certificates are valid 90 days and revocable; the production CA key ID is <code>c731a5036812339d</code>. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
 </div></footer>
 </body>
 </html>

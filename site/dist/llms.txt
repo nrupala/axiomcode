@@ -29,6 +29,23 @@ How the practice runs (gates, soak, certificates, error reporting): https://axio
 
 Availability and lifecycle are separate: a surface can be live and still in release-candidate soak. A scheduled graduation date is not a graduation — graduation is a recorded gate decision.
 
+## Documentation
+
+Diátaxis-structured, with role packs. Home: https://axiom-code.com/docs/
+- Tutorials: /docs/start/first-verification/, /docs/start/first-certificate-check/,
+  /docs/start/first-mcp-call/
+- Reference: /docs/api/ (REST), /docs/mcp/ (hosted 7 tools + local 2 tools),
+  /docs/reference/verdicts-and-errors/, /docs/reference/certificates/,
+  /docs/reference/keys-and-limits/, /docs/reference/status-schema/,
+  /docs/reference/changelog-schema/
+- Explanation: /docs/explanation/what-verification-proves/,
+  /docs/explanation/what-it-does-not-prove/, /docs/explanation/certificate-trust-model/,
+  /docs/explanation/queue-and-metering-model/, /docs/explanation/ask-and-ai-boundaries/
+- Role packs: /docs/roles/{guest,users,developers,maintainers,regulators,admins,ops}/
+  (Maintainers is an evidence-on-request boundary: structure public, internals not.)
+- Every docs page has a Markdown mirror at <page>/index.md.
+- Company: https://axiom-code.com/about/ · https://axiom-code.com/contact/
+
 ## For agents
 
 - API docs: https://axiom-code.com/docs/api/

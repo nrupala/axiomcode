@@ -1,116 +1,115 @@
 import json
 
 from build import API_BASE, page
+from pages_docs_pack import DOCMETA, docmeta_html, sidenav
 
-# ---------- docs (humans) ----------
+# ---------- docs home (Diátaxis-first) ----------
+DOCMETA["/docs/"] = {
+    "type": "Documentation home",
+    "audience": "All",
+    "packs": "All seven",
+    "source": "Docs set; facts generated from canonical sources",
+    "title": "Documentation",
+}
 page(
     "/docs/",
     "Documentation",
-    "AxiomCode documentation for humans: writing verifiable Lean 4 specifications, reading verdicts and certificates, and understanding verification scope.",
-    """<section class="block"><div class="wrap"><div class="prose">
-<h1 class="pt">Documentation</h1>
-<p class="sub">For humans. Agents: see the <a href="/docs/api/">API reference</a> and <a href="/llms.txt">llms.txt</a>.</p>
+    "AxiomCode documentation: Diátaxis-first — tutorials, guides, reference, explanation — with role packs for Guest, Users, Developers, Maintainers, Regulators, Admins, and Ops.",
+    f"""<section><div class="wrap"><div class="docslayout">
+{sidenav("/docs/")}
+<div class="docbody">
+{docmeta_html("/docs/")}
+<h1>Documentation</h1>
+<p class="sub" style="font-size:18px">Organized the Diátaxis way: learn by doing in the tutorials, solve a task in the guides, look facts up in the reference, understand the system in the explanations. Role packs cut the same set by who you are.</p>
 
-<div class="docnav"><strong>On this page:</strong> &nbsp;<a href="#writing">Writing verifiable specs</a> &middot; <a href="#verdicts">Reading verdicts</a> &middot; <a href="#certificates">Certificates</a> &middot; <a href="#scope">Scope &amp; limits</a></div>
+<div class="quad">
+<div class="card"><h3>Tutorials</h3><p>Learning-oriented, step by step.</p>
+<p class="go"><a href="/docs/start/first-verification/">First verification</a><br>
+<a href="/docs/start/first-certificate-check/">First certificate check</a><br>
+<a href="/docs/start/first-mcp-call/">First MCP call</a></p></div>
+<div class="card"><h3>Guides</h3><p>Task-oriented, for working users.</p>
+<p class="go"><a href="/docs/guides/write-a-verifiable-lean-artefact/">Write a verifiable artefact</a><br>
+<a href="/docs/guides/use-the-queue/">Use the queue</a><br>
+<a href="/docs/guides/integrate-an-agent/">Integrate an agent</a></p></div>
+<div class="card"><h3>Reference</h3><p>Fact-oriented, complete and exact.</p>
+<p class="go"><a href="/docs/api/">REST API</a><br>
+<a href="/docs/mcp/">MCP (hosted &amp; local)</a><br>
+<a href="/docs/reference/verdicts-and-errors/">Verdicts &amp; errors</a></p></div>
+<div class="card"><h3>Explanation</h3><p>Understanding-oriented — the why.</p>
+<p class="go"><a href="/docs/explanation/what-verification-proves/">What verification proves</a><br>
+<a href="/docs/explanation/what-it-does-not-prove/">What it does not prove</a><br>
+<a href="/docs/explanation/certificate-trust-model/">Certificate trust model</a></p></div>
+</div>
 
-<h2 id="writing">Writing verifiable specifications</h2>
-<p>AxiomCode checks <strong>Lean 4</strong> artifacts. The unit of verification is one submission: a Lean source file (plus its declared dependencies) with an explicit target the engine should build.</p>
-<h3>What verifies cleanly</h3>
-<ul>
-<li>Explicit <code class="inline">theorem</code> / <code class="inline">def</code> targets with complete proofs.</li>
-<li>Statements that say what you mean: name the preconditions, name the postconditions.</li>
-<li>Self-contained developments, or ones whose dependencies you declare.</li>
-</ul>
-<h3>What gets rejected</h3>
-<ul>
-<li><code class="inline">sorry</code> and <code class="inline">admit</code> &mdash; placeholders are not proofs. The verdict is <span class="badge b-fail">FAILED</span>, and the transcript tells you exactly where.</li>
-<li>Targets that build nothing (vacuous builds) &mdash; <span class="badge b-fail">FAILED</span>.</li>
-<li>Anything that doesn&rsquo;t compile: you get <span class="badge b-fail">FAILED</span> with the compiler log, not a pass.</li>
-</ul>
-<div class="note blue"><strong>Customer responsibility:</strong> the certificate binds the artifact you submitted. It does not certify that your specification captures your intent, or that the deployed system matches the artifact. Writing a faithful spec is your job; checking the proof is ours.</div>
+<h2 style="margin-top:40px">Start in five minutes</h2>
+<p style="color:var(--mut)">Keys are issued by email (free; the first 10 cases are the trial). Then: <a href="/docs/start/first-verification/">first verification</a> → <a href="/docs/guides/write-a-verifiable-lean-artefact/">write your own artefact</a> → <a href="/docs/start/first-certificate-check/">check a certificate like a relying party</a>.</p>
 
-<h3>Minimal example</h3>
-<pre class="code">-- A tiny, honest spec: addition commutes on naturals.
-theorem add_comm_nat (a b : Nat) : a + b = b + a := by
-  exact Nat.add_comm a b</pre>
-<p>Submit this through the <a href="/docs/api/">API</a> or the <a href="/verify/">web verifier</a> with your API key: the engine compiles it, the proof checks, the verdict is <span class="badge b-pass">PASSED</span>.</p>
+<h2 style="margin-top:40px">Role packs</h2>
+<div class="roles">
+<div class="role"><h3><a href="/docs/roles/guest/">Guest</a></h3><p>Unauthenticated evaluator — judge it before you join it.</p></div>
+<div class="role"><h3><a href="/docs/roles/users/">Users</a></h3><p>Key-holders — the working set.</p></div>
+<div class="role"><h3><a href="/docs/roles/developers/">Developers</a></h3><p>Integrators and agent builders.</p></div>
+<div class="role"><h3><a href="/docs/roles/maintainers/">Maintainers</a></h3><p>Evidence on request — boundary published, internals not.</p></div>
+<div class="role"><h3><a href="/docs/roles/regulators/">Regulators</a></h3><p>Policy first, control → evidence index.</p></div>
+<div class="role"><h3><a href="/docs/roles/admins/">Admins</a></h3><p>Account administration as it actually works today.</p></div>
+<div class="role"><h3><a href="/docs/roles/ops/">Ops</a></h3><p>Surfaces, health evidence, the incident rule.</p></div>
+</div>
 
-<h2 id="verdicts">Reading verdicts</h2>
-<table class="spec">
-<tr><th>Verdict</th><th>Meaning</th><th>Certificate?</th></tr>
-<tr><td><span class="badge b-pass">PASSED</span></td><td>The toolchain compiled the artifact and the proof checked.</td><td>Yes (paid only)</td></tr>
-<tr><td><span class="badge b-fail">FAILED</span></td><td>The proof does not check: a broken proof, <code class="inline">sorry</code>/<code class="inline">admit</code>, a failed axiom audit, or an attempt that doesn&rsquo;t compile or builds nothing. The transcript shows why.</td><td>Yes (paid only) &mdash; records the failure</td></tr>
-<tr><td><span class="badge b-warn">NO VERDICT</span></td><td>The request ended before a verdict: payment required (trial used up and no credit balance), the proof ran past its time limit, or a concurrency, rate, or size refusal. This is an error outcome, not a verdict.</td><td>No</td></tr>
-</table>
-<p>Every verdict response carries its usage record &mdash; the exact compute time and what you were charged. Paid verifications also carry the signed certificate, pass or fail &mdash; the certificate records the verdict; it does not improve it.</p>
-
-<h2 id="certificates">Certificates</h2>
-<p>A certificate is a signed JSON document. Fields are defined in the <a href="/paperwork/certificate-policy/">Certificate Policy</a>. Anyone can check a certificate&rsquo;s serial against the <a href="/check/">public revocation list</a>; full signature validation runs offline against the CA&rsquo;s published keys, or through the <a href="/check/">certificate checker</a> with an API key. Possible outcomes: <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, <span class="badge b-warn">EXPIRED</span>.</p>
-
-<h2 id="scope">Scope &amp; limits</h2>
-<ul>
-<li><strong>Language:</strong> Lean 4 only, today.</li>
-<li><strong>What &ldquo;verified&rdquo; means:</strong> the certificate credentials the code &mdash; our assessment that the submitted artifact was built to its specification, as mechanically checked. We hold no responsibility beyond this assessment. Nothing about intent, deployment, or the rest of your system.</li>
-<li><strong>Validity:</strong> 90 days from issuance. Re-verify after changes.</li>
-<li><strong>Revocation:</strong> if we discover a toolchain or engine defect that undermines a verdict, the certificate is revoked publicly. There is no silent un-verification.</li>
-</ul>
+<div class="honest"><h3>About this documentation</h3>
+<p>Every page carries its audience, Diátaxis type, version, last-verified date, source artefact, and a Markdown mirror (linked in the meta block). Status, lifecycle, and pricing facts are generated from the same canonical sources as the <a href="/status/">status page</a> and are covered by CI drift checks. The Maintainers pack is the one deliberate boundary: structure public, internals on request.</p>
+<p>Documentation error? It is a product error — report it on <a href="https://github.com/nrupala/axiomcode/issues">GitHub Issues</a>, user-initiated only.</p></div>
+</div>
 </div></div></section>
 """,
 )
 
-# ---------- docs/api (agents) ----------
+# ---------- docs/api (reference) ----------
+DOCMETA["/docs/api/"] = {
+    "type": "Reference",
+    "audience": "Developers, agents",
+    "packs": "Developers",
+    "source": "Live OpenAPI (canonical) + service behaviour",
+    "title": "API — machine-first docs",
+}
 page(
     "/docs/api/",
-    "REST & MCP API",
-    "AxiomCode API for applications and AI agents: REST endpoints, authentication, the verification queue, metering, and machine-readable discovery.",
-    """<section class="block"><div class="wrap"><div class="prose">
-<h1 class="pt">REST API</h1>
-<p class="sub">Built for agents first. Humans welcome.</p>
-<div class="docnav"><strong>Machine-readable:</strong> &nbsp;<a href="/llms.txt">llms.txt</a> &middot; <a href="/.well-known/axiomcode.json">/.well-known/axiomcode.json</a> &middot; <a href="/docs/api/openapi.json">OpenAPI (JSON)</a></div>
-
-<h2>Base URL</h2>
-<p><code class="inline">https://api.axiom-code.com</code> &mdash; live.</p>
-
-<h2>Authentication</h2>
-<p>Every non-public endpoint takes an API key in the <code class="inline">X-API-Key</code> header (or <code class="inline">Authorization: Bearer &hellip;</code>). Your identity <em>is</em> the key &mdash; the service stores only its SHA-256 hash, and request bodies carry no identity. Keys are issued on request during the initial opening: email <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>. <strong>The first 10 verification cases on a new key are a free trial</strong>: real verdicts and usage records, but never a certificate. Certificates unlock when the key holds paid credits (credit packs are not yet on sale &mdash; billing is paused while the opening completes).</p>
-
-<h2>REST endpoints</h2>
+    "API — machine-first docs",
+    "AxiomCode REST API reference: endpoints, request and response shapes, the queue, trial semantics, and error outcomes. The live OpenAPI document is the contract of record.",
+    f"""<section><div class="wrap"><div class="docslayout">
+{sidenav("/docs/api/")}
+<div class="docbody">
+{docmeta_html("/docs/api/")}
+<h1>API — machine-first docs</h1>
+<p class="sub" style="font-size:18px">Base: <code class="inline">{API_BASE}</code> &middot; Auth: <code class="inline">X-Api-Key</code> header on every call except the public endpoints.</p>
+<div class="note"><strong>Contract of record:</strong> the live OpenAPI document at <a href="{API_BASE}/openapi.json"><code class="inline">{API_BASE}/openapi.json</code></a> (OpenAPI 3.1, served by the API itself) is canonical. This page is the human-readable rendering of the same contract; the summary JSON kept on this site for offline reading is labelled a summary and never overrides the live document.</div>
 <table class="spec">
-<tr><th>Method &amp; path</th><th>Auth</th><th>What it does</th></tr>
-<tr><td><code class="inline">POST /verify</code></td><td>API key</td><td>Verify a Lean artifact: <code class="inline">{"code": "&hellip;"}</code>. Returns the verdict, attempts, usage record, and &mdash; on a paid verification, pass or fail &mdash; the signed certificate recording that verdict. When every proof slot is busy, answers <code class="inline">202</code> with a queue position instead (see below). Answers <code class="inline">402</code> when the trial is exhausted and the key holds no credits &mdash; before any compute runs.</td></tr>
-<tr><td><code class="inline">GET /verify/jobs/{job_id}</code></td><td>API key</td><td>Your queued job&rsquo;s position, or its finished result. Only the submitting key can read a job &mdash; any other key gets <code class="inline">404</code>.</td></tr>
-<tr><td><code class="inline">POST /check</code></td><td>API key</td><td>Validate a certificate: <code class="inline">{"certificate": {&hellip;}}</code>. Recomputes the signature against the CA key and consults the revocation list.</td></tr>
-<tr><td><code class="inline">POST /shell/turn</code></td><td>API key</td><td>One interactive-shell turn for the <a href="/ask/">Ask page</a>: an optional action (<code class="inline">verify</code> / <code class="inline">check</code>) plus conversation. Answers with facts rendered in code from the service&rsquo;s own responses, and an optional explanation &mdash; verdicts are never the model&rsquo;s.</td></tr>
-<tr><td><code class="inline">GET /shell/jobs/{job_id}</code></td><td>API key</td><td>The shell&rsquo;s polling read for a queued job: the same owner-only view as <code class="inline">GET /verify/jobs/{job_id}</code>, plus the rendered fact block.</td></tr>
-<tr><td><code class="inline">GET /revoked</code></td><td>public</td><td>The public revocation list: issuer + revoked serials.</td></tr>
-<tr><td><code class="inline">GET /.well-known/axiomcode-keys.json</code></td><td>public</td><td>The CA&rsquo;s published public keys &mdash; validate certificates offline, without trusting this server.</td></tr>
-<tr><td><code class="inline">GET /health</code></td><td>public</td><td>Service health.</td></tr>
+<tr><th>Endpoint</th><th>What</th></tr>
+<tr><td><code class="inline">POST /verify</code></td><td>Submit a Lean artefact <code class="inline">{{"code": "..."}}</code>. 200 → verdict + usage (+ certificate when paid). 202 → queued, poll the job.</td></tr>
+<tr><td><code class="inline">GET /verify/jobs/{{job_id}}</code></td><td>Poll a queued job (same key). 202 while queued/running; 200 with the result; a failed job reports a NO VERDICT outcome.</td></tr>
+<tr><td><code class="inline">POST /check</code></td><td>Validate a certificate <code class="inline">{{"certificate": {{...}}}}</code> — signature, validity window, revocation.</td></tr>
+<tr><td><code class="inline">GET /revoked</code></td><td>Public revocation list. No auth.</td></tr>
+<tr><td><code class="inline">GET /.well-known/axiomcode-keys.json</code></td><td>CA public keys. No auth.</td></tr>
+<tr><td><code class="inline">GET /health</code></td><td>Service health. No auth.</td></tr>
+<tr><td><code class="inline">POST /shell/turn</code> · <code class="inline">GET /shell/jobs/{{job_id}}</code></td><td>The Ask shell's backend — orchestrates the same verify/check callables; the shell's facts are rendered in code from these payloads.</td></tr>
 </table>
-
-<h3>Example: verification</h3>
-<pre class="code">curl -X POST https://api.axiom-code.com/verify \\
-  -H 'X-Api-Key: YOUR_KEY' -H 'Content-Type: application/json' \\
-  -d '{"code":"theorem add_comm_nat (a b : Nat) : a + b = b + a := by\\n  exact Nat.add_comm a b"}'
-# {"verified":true,"attempts":1,"certificate":null,
-#  "usage":{"compute_s":11.8,"rate_credits_per_s":0.9,"credits":0,"usd":0},
-#  "trial":{"cases_used":1,"cases_left":9,"certificates":"unlock with a credit pack"}}</pre>
-
-<h2>The queue</h2>
-<p>Proofs run in a bounded number of slots. When they are all busy, <code class="inline">POST /verify</code> does not fail and does not pile on &mdash; your request joins a <strong>durable first-in-first-out queue</strong> and the response says so: <code class="inline">202 {"status":"queued","job_id":"&hellip;","position":N}</code>. Poll <code class="inline">GET /verify/jobs/{job_id}</code> for the position and, when it finishes, the same result an inline run would have returned. One queue for everyone, in arrival order &mdash; there is no priority lane. A key that cannot pay never takes a place in line: eligibility is decided before admission.</p>
-
-<h2>MCP server</h2>
-<p>An MCP server (<code class="inline">verify</code>, <code class="inline">check_certificate</code>) ships in the <a href="https://github.com/nrupala/axiomcode">AxiomCode repository</a> and runs locally against this API. <strong>A hosted MCP endpoint is also live</strong> on the API host at <code class="inline">/mcp</code> &mdash; the same keys, the same durable queue, the same trial rules; agents may call either transport.</p>
-<div class="note blue"><strong>Agent pattern:</strong> after your coding agent finishes a safety-critical function, have it write the Lean spec and call <code class="inline">POST /verify</code>. Ship the certificate with the code &mdash; your user can check it without trusting your agent.</div>
-
-<h2>Metering</h2>
-<p>Compute time is metered at 0.9 credits/second (1 credit = US$0.01). Every verdict response includes its usage record &mdash; <code class="inline">compute_s</code>, <code class="inline">rate_credits_per_s</code>, <code class="inline">credits</code>, <code class="inline">usd</code> &mdash; and meter records are append-only in a hash-chained audit log, so your bill always reconciles.</p>
-
-<h2>Rate limits &amp; abuse</h2>
+<p style="color:var(--mut);font-size:15px">Billing endpoints (<code class="inline">POST /billing/checkout</code>, <code class="inline">POST /billing/webhook</code>) exist in the route table and answer 501 while billing is paused.</p>
+<h2>Rules of the road</h2>
 <ul>
-<li>60 requests per minute per key; up to 2 proofs in flight per key &mdash; beyond that, requests queue (above) rather than fail.</li>
-<li>Submissions are capped at 256 KB of source; proof wall-clock is capped per call.</li>
-<li>We may suspend keys used to probe the engine adversarially or to multiply trials. See the <a href="/paperwork/terms/">Terms</a>.</li>
+<li><strong>Verdicts are boolean</strong> — PASSED or FAILED. Errors are <a href="/docs/reference/verdicts-and-errors/">NO VERDICT outcomes</a> (401/402/413/429/504, failed jobs) and never carry certificates.</li>
+<li><strong>Trial:</strong> the first 10 cases per key return verdicts + usage, never certificates. Certificates ride paid verifications (packs not yet on sale — <a href="/pricing/">pricing</a>).</li>
+<li><strong>Queue:</strong> bounded proof slots; saturation answers 202 with a position. See <a href="/docs/guides/use-the-queue/">use the queue</a>.</li>
+<li><strong>Metering:</strong> 0.9 credits per engine second; timeouts and refusals are free. See <a href="/docs/guides/reconcile-metering/">reconcile metering</a>.</li>
+<li><strong>Limits:</strong> 256 KB artefacts; keys stored as hashes only. See <a href="/docs/reference/keys-and-limits/">keys &amp; limits</a>.</li>
+<li><strong>MCP instead?</strong> The same service is exposed as seven tools at <code class="inline">{API_BASE}/mcp/</code> — see the <a href="/docs/mcp/">MCP reference</a>.</li>
 </ul>
+<pre class="code">curl -X POST {API_BASE}/verify \\
+  -H "X-Api-Key: $AXIOMCODE_KEY" -H "Content-Type: application/json" \\
+  -d '{{"code": "theorem t (a b : Nat) : a + b = b + a := Nat.add_comm a b"}}'
+
+&rarr; {{"verified": true, "job_id": null, "artifact_hash": "sha256:…",
+    "attempts": […], "usage": {{…}},
+    "trial": {{"used": 1, "limit": 10}}, "certificate": null}}</pre>
+</div>
 </div></div></section>
 """,
 )

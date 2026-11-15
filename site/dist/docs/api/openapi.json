@@ -3,7 +3,7 @@
   "info": {
     "title": "AxiomCode API",
     "version": "0.2.0",
-    "description": "Verification and certification API \u2014 live since 2026-11-09. The first 10 verification cases per API key are a free trial (no certificates). When every proof slot is busy, POST /verify answers 202 with a queue position. Full reference at https://axiom-code.com/docs/api/"
+    "description": "SUMMARY of the live contract, kept for offline reading \u2014 the canonical OpenAPI 3.1 document is served by the API itself at https://api.axiom-code.com/openapi.json and overrides this summary wherever they differ. Verification and certification API \u2014 live since 2026-11-09. The first 10 verification cases per API key are a free trial (no certificates). When every proof slot is busy, POST /verify answers 202 with a queue position. Full reference at https://axiom-code.com/docs/api/"
   },
   "servers": [
     {
