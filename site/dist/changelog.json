@@ -6,6 +6,30 @@
   "rss": "https://axiom-code.com/changelog.rss.xml",
   "entries": [
     {
+      "id": "2026-11-15-verification-reports-resident-boundary-correction",
+      "date": "2026-11-15",
+      "title": "Verification report corrected \u2014 the resident boundary's OUTSIDE-GRANT note",
+      "category": "Documentation",
+      "surfaces": [
+        "Website",
+        "Verification reports"
+      ],
+      "body": "<p>A dated correction is appended to the <a href=\"/verifications/harness-resident-boundary/\">resident boundary report</a>, in its boundary list. The report recorded that one of the code&rsquo;s named refusals \u2014 OUTSIDE-GRANT, for a path named outside the grant that resolves inside it \u2014 is unreachable as written, and that the service&rsquo;s own documentation stated the opposite rule. The Director has ruled that the table follows the code. The documentation \u2014 the refusal table and the module docstring&rsquo;s matching gloss \u2014 now states the proved form: the refusal fires only when both the named path and its resolved path lie outside the grant. The unreachable branch has been removed from the code. Behaviour was re-verified unchanged \u2014 the resident selftest passes 10 of 10 and the empirical controls return the same verdicts as before \u2014 and the proof stands unmodified, because the decision it proves did not change. The report&rsquo;s original wording stands, with the correction appended to it, as this register&rsquo;s discipline requires.</p>",
+      "effect": "The one place the resident boundary report recorded the code and its documentation in disagreement is resolved on the record: the documentation now states the proved behaviour, and the report carries both the original finding and its correction.",
+      "evidence": [
+        {
+          "label": "Verification reports",
+          "url": "https://axiom-code.com/verifications/"
+        },
+        {
+          "label": "Resident boundary report",
+          "url": "https://axiom-code.com/verifications/harness-resident-boundary/"
+        }
+      ],
+      "refs": [],
+      "disposition": "Live on the site; corrections are appended, never silently edited."
+    },
+    {
       "id": "2026-11-15-verification-reports-resident-boundary",
       "date": "2026-11-15",
       "title": "Verification report added \u2014 the resident boundary, proved",
