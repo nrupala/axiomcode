@@ -11,6 +11,13 @@ that actually ships. Fails when:
   declaration hides;
 - a declared pathway covers a path with no declared route, or a
   declared route is covered by no pathway;
+- a pathway whose covers is an external https URL declares an
+  off-host surface (gate package 0.5.0 — e.g. the website's
+  contact form, which lives on the website zone, not on
+  base_url's host): such a covers must be all-external (never
+  mixed with route paths) and well-formed, it covers no declared
+  route, and every declared route must still be covered by an
+  on-host pathway;
 - a declared doc (threat model, coverage ledger, changelog) is
   missing, or the coverage ledger is not a JSON list of units each
   carrying coverage_id + status.
@@ -87,6 +94,17 @@ def main() -> int:
     for pw in gate.get("pathways") or []:
         covers = pw.get("covers")
         paths = covers if isinstance(covers, list) else [covers]
+        external = [p for p in paths if isinstance(p, str) and p.startswith("https://")]
+        if external:
+            # Off-host pathway (0.5.0): the surface is an external
+            # URL, not a route on base_url's host. All-external or
+            # malformed is a failure; it covers no declared route.
+            if len(external) != len(paths):
+                fail(f"pathway {pw.get('id')} mixes route paths and external URLs in covers")
+            for p in external:
+                if not re.fullmatch(r"https://[A-Za-z0-9.-]+(?::\d+)?(?:/\S*)?", p):
+                    fail(f"pathway {pw.get('id')} has a malformed external covers URL: {p}")
+            continue
         for p in paths:
             covered.add(p)
             if p not in declared:

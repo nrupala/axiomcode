@@ -1,5 +1,5 @@
 product: axiomcode
-version: "0.4.0"
+version: "0.5.0"
 base_url: https://api.axiom-code.com
 types:
   - web
@@ -127,6 +127,11 @@ pathways:
     situation: Stripe reports a checkout completion or a refund; exactly one credit grant (or reversal) may result
     gateway: stripe_billing.handle_webhook — the only path from a payment event to a credit grant
     validation: Stripe HMAC signature verified against the webhook secret before the event is read; grants are idempotent on the Stripe session id (a replay grants nothing); refunds reverse the original grant
+  - id: PW-CONTACT
+    covers: https://axiom-code.com/contact
+    situation: an unauthenticated website visitor POSTs a message through the contact form on axiom-code.com — the website surface, NOT this file's base_url host, so the pathway declares no routes entry (routes are probed against the API host) and its covers is the external URL, held to the off-host rules in scripts/check_gate_contract.py. The form carries name, email, one of five fixed subject options, message; the operator reads it in his mailbox and replies to the address given
+    gateway: the axiomcode-contact Cloudflare Worker on the axiom-code.com zone (routes axiom-code.com/contact and axiom-code.com/contact/) — the only path from the form to any store or mailbox. Non-POST requests pass through to the Pages origin untouched. Every accepted submission is written to the site's own SUBMISSIONS KV namespace FIRST (durable capture), then forwarded best-effort to the house Google Apps Script sink (Sheet row + Gmail notification under the sink's Contact-prefix subject convention) — the same sink the operator's other sites use, in the same shape
+    validation: no authentication — a public contact form is unauthenticated by design, so the controls are the house pattern's abuse controls. A per-IP rate bound (60 POSTs/minute, the product's standing per-identity limiter shape from services/api/limits.py; the counter is a KV key and eventually consistent, so it is a flood bound, not an exact meter) answers an honest 429 before any capture. A honeypot field and a timestamp trap are dropped silently with a success answer, so bots learn nothing and nothing reaches KV, the Sheet or the mailbox. Field caps at the Worker (name 200, email 254, subject 200, message 5000 chars — the reference Worker's limits); missing required fields or a malformed email answer an honest 400 and are never captured. The KV write precedes the email leg, so a failed forward never loses a submission, the record is re-written after the forward attempt with its outcome (sent / failed / unconfigured) so the leg's health is never silent, and the page's pre-addressed mailto fallback stays live for any failure the visitor can see. The form offers no attachment field and the Worker accepts none
 isolation:
   - point: CA private key (Ed25519)
     kind: signing
@@ -148,6 +153,10 @@ isolation:
     kind: critical-data
     tier: in-process-exception
     acceptance: "Wright (builder), 2026-11-11 — a shell turn's message, history and fact blocks are sent only to the model endpoint on the same host (loopback llama router, http://127.0.0.1:8830/v1 by default; the endpoint is env-configurable and no credential is configured for it). Nothing leaves the host; the model keeps no state between turns and cannot issue or alter verdicts (facts are rendered in code from API payloads, and the model's text is never parsed for facts). The caller's API key and its hash are never placed in the model context."
+  - point: contact-form submissions and the Apps Script capability URL
+    kind: critical-data
+    tier: in-process-exception
+    acceptance: "Wright (builder), 2026-11-14 — a contact submission (visitor's name, email, subject, message, and the platform-observed IP) is correspondence the visitor chose to send; it is captured in the axiom-code.com zone's own SUBMISSIONS KV namespace and forwarded to the operator's house Apps Script sink (his own Sheet + mailbox). The sink's capability URL exists only as a Worker secret on the axiomcode-contact Worker — never in this repo or any repo. No third party processes the data beyond delivery (Cloudflare, Google), which is exactly what the contact page's privacy sentence states."
 # Notes for the gate (flip package, 2026-11-09):
 # - F-AX-8 disposition: /docs and /openapi.json on the API host stay
 #   PUBLIC by deliberate decision. They disclose the documented route
@@ -230,3 +239,33 @@ isolation:
 #   conversation data leaves the host, and billing is untouched —
 #   the shell states the site's published pricing and that packs
 #   are not yet on sale; it sells nothing.
+# - Contact-form package (0.5.0, 2026-11-14): PW-CONTACT is a NEW
+#   pathway under Ruling 2's rule (a new face is its own gate) —
+#   declared here BEFORE the Worker deploys, on the Director's
+#   order of 2026-11-14 (the P2 website build left the form with no
+#   receiving handler; its record names this as OI-1). The pathway
+#   lives on the WEBSITE zone (axiom-code.com), not the API host,
+#   so it declares no routes entry: routes in this file are probed
+#   against base_url (the API host), which has no /contact route
+#   and must not grow one. Representing an off-host pathway
+#   required a narrow extension to scripts/check_gate_contract.py
+#   in the same package: a covers that is an external https URL
+#   must be all-external and well-formed, covers no declared
+#   route, and every declared route must still be covered by an
+#   on-host pathway. The pathway's proof is instead a live
+#   end-to-end test submission after deploy, labelled as a
+#   verification test, with the KV record and the Gmail
+#   notification filed as evidence in the build report
+#   (~/workspace/axiomcode/contact-handler-report-2026-11-14.md).
+#   The handler is the house pattern of the operator's other sites
+#   (reference: nrupalakolkar.com, in production since 2026-09-26):
+#   Worker POST /contact -> SUBMISSIONS KV first -> Apps Script
+#   sink (Sheet row + Gmail notification, subject "Contact:
+#   <topic>"). Threat model gains T10 (form abuse: spam/honeypot,
+#   oversize, header injection into the email leg). Version moves
+#   0.4.0 -> 0.5.0 (minor: a new declared face, no REST/MCP/shell
+#   behaviour change); pyproject.toml moves 0.2.0 -> 0.5.0 in the
+#   same package, settling the version tidy-up the Director
+#   approved to ride the next versioned package (the package
+#   version is metadata — nothing at runtime reads it). Billing
+#   stays paused; Memo B untouched.

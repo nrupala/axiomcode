@@ -3,7 +3,9 @@
 Filed for gate finding F-AX-4 (2026-10-23 full gate). Repo-grounded:
 every claim below names the code or the deployment fact it rests on.
 Updated at the public flip, 2026-11-09; the hosted MCP transport
-(T8) was added with the 0.3.0 package, 2026-11-09.
+(T8) was added with the 0.3.0 package, 2026-11-09; the interactive
+shell (T9) with the 0.4.0 package, 2026-11-11; the website contact
+form (T10) with the 0.5.0 package, 2026-11-14.
 
 ## What this service is
 
@@ -42,6 +44,11 @@ isn't — and this model is organised around it.
   startup and certificates are signed only inside
   `verify_service.execute_verification`, after the proof run.
   There is no other signing path and no other host signs.
+- The website (`axiom-code.com`, Cloudflare Pages) is a separate
+  surface from the API host. Its one stateful pathway is the
+  contact form (T10): a dedicated Worker on the zone, a KV
+  namespace, and the operator's Apps Script sink. Nothing on the
+  website surface can reach the API host's state.
 - Billing is **paused** (owner's readiness-arming rule, 2026-11-06):
   the Stripe webhook endpoint and all Payment Links are deactivated
   in Stripe, and no Stripe secret key is configured on the host —
@@ -54,7 +61,10 @@ isn't — and this model is organised around it.
 - **Relying party** — anyone verifying a certificate offline against
   the published keys, or reading `/revoked`. Needs no account.
 - **Attacker, unauthenticated** — sees only the public reads, the
-  webhook route, and 401s.
+  webhook route, and 401s on the API host; on the website, the
+  contact form (T10).
+- **Website visitor** — unauthenticated by design; may send the
+  operator one message through the contact form (T10).
 - **Attacker with a stolen customer key** — bounded by that key's
   trial/balance, rate limit, and concurrency; cannot read other
   keys' jobs (404), cannot mint grants, cannot sign.
@@ -212,6 +222,64 @@ isn't — and this model is organised around it.
   walk (a first-time customer talking to the shell) is the control
   for explanation quality; it is owed before this face is called
   proven, and it cannot affect verdicts either way.
+
+### T10 — The website contact form (unauthenticated intake)
+- The contact form (`POST https://axiom-code.com/contact`, page
+  `/contact/`) is the product's one unauthenticated intake that
+  carries personal data — a visitor's name, email and message —
+  into operator systems. It is declared as its own pathway
+  (PW-CONTACT in `gate.yaml`, gate package 0.5.0), declared before
+  the handler deployed. The pathway lives on the website zone, not
+  the API host, so it carries no `routes` entry in `gate.yaml`
+  (routes are probed against the API host); its proof is a live
+  end-to-end test submission, labelled as a verification test,
+  with the KV record and the mailbox notification filed as
+  evidence in the build report.
+- Gateway: a dedicated Cloudflare Worker (`axiomcode-contact`) on
+  the zone routes `axiom-code.com/contact` and
+  `axiom-code.com/contact/`. It is the only path from the form to
+  any store or mailbox; non-POST requests pass through to the
+  Pages origin untouched. Every accepted submission is written to
+  the site's own SUBMISSIONS KV namespace FIRST, then forwarded
+  best-effort to the house Google Apps Script sink (Sheet row +
+  Gmail notification, subject `Contact: <topic>`) — the same sink,
+  in the same shape, as the operator's other sites (reference:
+  nrupalakolkar.com, in production since 2026-09-26). A failed
+  forward loses nothing: the KV record stands, the record is
+  re-written with the forward's outcome so a broken email leg is
+  visible in the durable record rather than silent, and the page
+  keeps its pre-addressed mailto fallback for any failure the
+  visitor can see.
+- Form abuse, the named cases:
+  - **Spam and bot floods.** A honeypot field and a timestamp
+    trap (the house pattern that replaced Turnstile on the
+    reference site; the page also runs both traps client-side).
+    Suspected bots are dropped silently with a success answer —
+    they learn nothing, and nothing reaches KV, the Sheet or the
+    mailbox. A per-IP rate bound (60 POSTs/minute, the product's
+    standing per-identity limiter shape from
+    `services/api/limits.py`; the counter is an eventually
+    consistent KV key, so it is a flood bound, not an exact
+    meter) answers an honest 429 before any capture.
+  - **Oversize and malformed payloads.** Field caps at the
+    Worker — name 200, email 254, subject 200, message 5,000
+    chars, the reference Worker's limits. Missing required
+    fields or a malformed email answer an honest 400 and are
+    never captured. The form offers no attachment field and the
+    Worker accepts none, so there is no file payload to abuse.
+  - **Header injection into the email leg.** The visitor's
+    subject choice is one of five fixed option values the page
+    offers; the Worker maps each to its fixed display label
+    before anything is forwarded, so no visitor-controlled string
+    reaches the notification's Subject line beyond the capped
+    name/email/message body fields. The sink composes the subject
+    as `Contact: <topic>` from that label, and sends with the
+    visitor's address as reply-to only.
+- What this surface cannot do: it holds no API credential, no
+  signing material and no path to the API host's state (see the
+  deployment facts). Its worst case is a flooded operator mailbox,
+  bounded by the rate limit and the traps — never a forged
+  verdict, a credit grant or a key.
 
 ## Out of scope / not claimed
 
