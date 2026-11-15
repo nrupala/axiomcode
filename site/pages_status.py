@@ -30,10 +30,20 @@ def _fmt_date(iso):
     return f"{int(d)} {_MONTHS[int(m) - 1]} {y}"
 
 
+_AV_CLASS = {"live": "av-live", "paused": "av-paused", "unavailable": "av-unavail"}
+_LC_CLASS = {
+    "live": "lc-live",
+    "paused": "lc-paused",
+    "in_soak": "lc-soak",
+    "in_design": "lc-design",
+    "not_built": "lc-notbuilt",
+}
+
+
 def _chip(kind, value):
-    labels = status_data.AVAILABILITY_LABELS if kind == "availability" else status_data.LIFECYCLE_LABELS
-    cls = "b-pass" if value == "live" else ("b-fail" if value in ("unavailable", "not_built") else "b-warn")
-    return f'<span class="badge {cls}">{labels[value]}</span>'
+    if kind == "availability":
+        return f'<span class="chip {_AV_CLASS[value]}">{status_data.AVAILABILITY_LABELS[value]}</span>'
+    return f'<span class="chip {_LC_CLASS[value]}">{status_data.LIFECYCLE_LABELS[value]}</span>'
 
 
 def _evidence_links(evidence):
@@ -43,73 +53,105 @@ def _evidence_links(evidence):
 
 
 # ---------- /status/ ----------
+def _evidence(sid, label):
+    s = next(x for x in status_data.SURFACES if x["surface_id"] == sid)
+    for e in s["evidence"]:
+        if e["label"] == label:
+            return e
+    return None
+
+
+def _health_cards():
+    specs = [
+        ("rest_api", "Health", "API health", "Health endpoint — public, no key."),
+        ("rest_api", "OpenAPI", "OpenAPI", "The live contract of record, served by the API itself."),
+        (
+            "certificate_checker",
+            "CA public keys",
+            "CA public keys",
+            "Production CA key ID c731a5036812339d — verify any certificate offline.",
+        ),
+        (
+            "certificate_checker",
+            "Revocation list",
+            "Revocation list",
+            "Public, no key — the current revocation state of every certificate.",
+        ),
+    ]
+    cards = []
+    for sid, label, title, note in specs:
+        e = _evidence(sid, label)
+        if e is None:
+            continue
+        cards.append(
+            f'<div class="card"><h3>{title}</h3><p>{note}</p>'
+            f'<p class="go"><a href="{e["url"]}">{html.escape(e["url"].replace("https://", ""))}</a></p></div>'
+        )
+    return "".join(cards)
+
+
 def _status_body():
     meta = status_data.STATUS_META
     rows = []
     for s in status_data.SURFACES:
-        sched = _fmt_date(s["graduates_on"]) if s["graduates_on"] else "—"
+        since = _fmt_date(s["public_since"])
         if s["graduates_on"]:
-            sched = f"Graduation decision: {sched}"
+            since += f"<small>Graduation decision: {_fmt_date(s['graduates_on'])}</small>"
+        notes = html.escape(s["summary"])
+        for lim in s["known_limits"]:
+            notes += f"<small>Known limit: {html.escape(lim)}</small>"
+        notes += f"<small>Evidence: {_evidence_links(s['evidence'])}</small>"
+        url = html.escape(s["canonical_url"].replace("https://", ""))
         rows.append(
             "<tr>"
-            f'<td><strong>{html.escape(s["name"])}</strong><br><span style="color:var(--mut)">{html.escape(s["summary"])}</span></td>'
+            f"<td><strong>{html.escape(s['name'])}</strong><small>{url}</small></td>"
             f"<td>{_chip('availability', s['availability'])}</td>"
             f"<td>{_chip('lifecycle', s['lifecycle'])}</td>"
-            f"<td>{_fmt_date(s['public_since'])}</td>"
-            f"<td>{sched}</td>"
-            f"<td>{_evidence_links(s['evidence'])}</td>"
+            f"<td>{since}</td>"
+            f"<td>{notes}</td>"
             "</tr>"
         )
-    health = []
-    for s in status_data.SURFACES:
-        if s["availability"] == "live":
-            health.append(f"<li><strong>{html.escape(s['name'])}</strong> — {_evidence_links(s['evidence'])}</li>")
     scheduled = [s for s in status_data.SURFACES if s["graduates_on"]]
     sched_html = "".join(
-        f"<li><strong>{html.escape(s['name'])}</strong> — graduation decision scheduled "
-        f"{_fmt_date(s['graduates_on'])}. A scheduled date is a plan, not a result: graduation "
-        "requires a recorded gate decision and a changelog entry.</li>"
+        f'<div class="card"><h3>{html.escape(s["name"])}</h3>'
+        f"<p>Graduation decision scheduled {_fmt_date(s['graduates_on'])}. A scheduled date is a "
+        "plan, not a result: graduation requires a recorded gate decision, entered in the "
+        "changelog when it happens.</p></div>"
         for s in scheduled
     )
-    limits = []
-    for s in status_data.SURFACES:
-        for lim in s["known_limits"]:
-            limits.append(f"<li><strong>{html.escape(s['name'])}:</strong> {html.escape(lim)}</li>")
     recent = [e for e in changelog_data.ENTRIES if e["category"] in ("Status", "Added", "Finding")][:4]
     recent_html = "".join(
         f'<li>{_fmt_date(e["date"])} — <a href="/changelog/#{e["id"]}">{html.escape(e["title"])}</a></li>'
         for e in recent
     )
-    return f"""<section class="block"><div class="wrap"><div class="prose">
-<h1 class="pt">Status</h1>
-<p class="sub">The current truth for every AxiomCode surface — including what is paused, in design, or not built.</p>
-<div class="note"><strong>Last verified {_fmt_date(meta["as_of"])} ({meta["timezone"]}).</strong>
-This page is generated from one canonical status source; the same source produces
-<a href="/status.json">status.json</a>, the status section of the
-<a href="/.well-known/axiomcode.json">machine-readable service record</a>, and the status
-section of <a href="/llms.txt">llms.txt</a>. CI drift checks fail the build when they disagree.
-Availability and lifecycle are separate facts: a surface can be <strong>live</strong> and still
-<strong>in soak</strong>.</div>
+    return f"""<section class="pagehead"><div class="wrap">
+<h1>Status</h1>
+<p>Every surface, one page, generated from the canonical status source — including what is paused, in soak, in design, or not built. If a surface is not listed here, it does not exist.</p>
+<p class="asof">Last verified {_fmt_date(meta["as_of"])} ({meta["timezone"]}) &middot; Machine-readable: <a href="/status.json">status.json</a> &middot; <a href="/.well-known/axiomcode.json">service record</a> &middot; <a href="/llms.txt">llms.txt</a></p>
+</div></section>
 
-<h2>Service health now</h2>
-<ul>{"".join(health)}</ul>
+<section class="block" style="padding-top:26px"><div class="wrap">
+<div class="kicker">Health evidence</div>
+<h2>Check it yourself</h2>
+<div class="cards">{"".join(_health_cards())}</div>
 
-<h2>Lifecycle</h2>
-<table class="spec">
-<tr><th>Surface</th><th>Availability</th><th>Lifecycle</th><th>Public since</th><th>Scheduled</th><th>Evidence</th></tr>
+<h2 style="margin-top:52px">All surfaces</h2>
+<div class="tablewrap"><table class="status">
+<tr><th style="width:20%">Surface</th><th>Availability</th><th>Lifecycle</th><th style="width:16%">Since / transition</th><th>Notes &amp; known limits</th></tr>
 {"".join(rows)}
-</table>
+</table></div>
 
-<h2>Scheduled transitions</h2>
-<ul>{sched_html}</ul>
+<h2 style="margin-top:52px">Scheduled transitions</h2>
+<div class="cards">{sched_html}</div>
 
-<h2>Known limitations</h2>
-<ul>{"".join(limits)}</ul>
+<div class="honest"><h3>How to read this page</h3>
+<p><strong>Availability</strong> says whether you can use the surface now. <strong>Lifecycle</strong> says where it stands in its release process. A surface can be <em>live</em> and <em>in soak</em> at once: usable today, still inside its post-release observation window, with graduation a recorded gate decision — never a date passing quietly.</p>
+<p>This page, <a href="/status.json">status.json</a>, the service record, and the llms.txt status section are all generated from one source; CI drift checks fail the build when any rendering disagrees with it.</p></div>
 
-<h2>Recent status changes</h2>
+<h2 style="margin-top:52px">Recent status changes</h2>
 <ul>{recent_html}</ul>
 <p>Full record: <a href="/changelog/">Changelog &amp; service record</a>.</p>
-</div></div></section>
+</div></section>
 """
 
 
@@ -218,7 +260,7 @@ page(
 <p><a href="{_REPORT_URL}"><strong>Report an error</strong></a> — the form asks for: the surface (web, REST, MCP, Ask), the date and time, what you expected, what actually happened, and an artefact hash or certificate serial where relevant. The acknowledgement you receive names the issue number. <strong>Security vulnerabilities do not use the public form</strong> — use the disclosure route on the <a href="/paperwork/security/">Security page</a> (security@axiom-code.com). Support email: <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</p>
 
 <h2>9. Documentation control</h2>
-<p>Documentation is a product surface, held to the house documentation standard (Diátaxis structure; role packs for Users, Developers, Maintainers, Regulators, Admins, and Ops). The role-pack documentation rebuild is part of the approved website redesign package and is in progress; until it lands, the <a href="/docs/">documentation home</a> is the current set. Status, lifecycle, pricing, and endpoint facts in the documentation derive from the same canonical sources as this page, and CI drift checks fail when renderings disagree.</p>
+<p>Documentation is a product surface, held to the house documentation standard (Diátaxis structure; role packs for Guest, Users, Developers, Maintainers, Regulators, Admins, and Ops). The role-pack documentation rebuild landed on 14 November 2026 as part of the approved website redesign: the <a href="/docs/">documentation home</a> is Diátaxis-first, every docs page carries its audience, type, version, last-verified date, source artefact, and a Markdown mirror, and the Maintainers pack is published as an evidence-on-request boundary — its structure is public, its internals are not. Status, lifecycle, pricing, and endpoint facts in the documentation derive from the same canonical sources as this page, and CI drift checks fail when renderings disagree.</p>
 
 <h2>10. Known limitations</h2>
 <ul>{_practice_limits()}</ul>

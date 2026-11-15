@@ -20,7 +20,7 @@ Rules (blueprint C1/C3):
 
 STATUS_META = {
     "service": "AxiomCode",
-    "as_of": "2026-11-12",
+    "as_of": "2026-11-14",
     "timezone": "America/Edmonton",
     "source": "site/status_data.py",
     "status_page": "https://axiom-code.com/status/",
@@ -39,7 +39,7 @@ LIFECYCLE_LABELS = {
 }
 
 _OWNER = "AxiomCode service owner"
-_VERIFIED = "2026-11-12"
+_VERIFIED = "2026-11-14"
 
 SURFACES = [
     {

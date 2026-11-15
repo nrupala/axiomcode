@@ -62,7 +62,10 @@ WELLKNOWN = {
     "note": "Live since 2026-11-09: the API at https://api.axiom-code.com is open (POST /verify, POST /check, GET /verify/jobs/{job_id}); the revocation list (GET /revoked) and CA public keys (GET /.well-known/axiomcode-keys.json) are public. The first 10 verification cases per API key are a free trial (no certificates). Credit packs are not yet on sale: billing is paused under the owner's readiness-arming rule, with the Stripe webhook and Payment Links deactivated until pack sales open. A hosted MCP endpoint is live at https://api.axiom-code.com/mcp/ (the same API key, the same queue, seven tools: verify, job_status, check_certificate, revoked, health, usage_report, pricing); the MCP server also ships in the repository for local use.",
     "homepage": SITE,
     "llms_txt": SITE + "/llms.txt",
-    "docs": SITE + "/docs/api/",
+    "docs": SITE + "/docs/",
+    "api_docs": SITE + "/docs/api/",
+    "about": SITE + "/about/",
+    "contact_page": SITE + "/contact/",
     "api_base": "https://api.axiom-code.com",
     "revocation_list": "https://api.axiom-code.com/revoked",
     "ca_public_keys": "https://api.axiom-code.com/.well-known/axiomcode-keys.json",
@@ -91,7 +94,24 @@ verdict, toolchain, issuer, serial, and validity window.
 
 """
 
-_LLMS_TAIL = """## For agents
+_LLMS_TAIL = """## Documentation
+
+Diátaxis-structured, with role packs. Home: https://axiom-code.com/docs/
+- Tutorials: /docs/start/first-verification/, /docs/start/first-certificate-check/,
+  /docs/start/first-mcp-call/
+- Reference: /docs/api/ (REST), /docs/mcp/ (hosted 7 tools + local 2 tools),
+  /docs/reference/verdicts-and-errors/, /docs/reference/certificates/,
+  /docs/reference/keys-and-limits/, /docs/reference/status-schema/,
+  /docs/reference/changelog-schema/
+- Explanation: /docs/explanation/what-verification-proves/,
+  /docs/explanation/what-it-does-not-prove/, /docs/explanation/certificate-trust-model/,
+  /docs/explanation/queue-and-metering-model/, /docs/explanation/ask-and-ai-boundaries/
+- Role packs: /docs/roles/{guest,users,developers,maintainers,regulators,admins,ops}/
+  (Maintainers is an evidence-on-request boundary: structure public, internals not.)
+- Every docs page has a Markdown mirror at <page>/index.md.
+- Company: https://axiom-code.com/about/ · https://axiom-code.com/contact/
+
+## For agents
 
 - API docs: https://axiom-code.com/docs/api/
 - Machine-readable service info: https://axiom-code.com/.well-known/axiomcode.json

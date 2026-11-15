@@ -24,6 +24,43 @@ _REPO = "https://github.com/nrupala/axiomcode"
 
 ENTRIES = [
     {
+        "id": "2026-11-14-p2-redesign-docs",
+        "date": "2026-11-14",
+        "title": "Website redesign (P2) and the AppDocStudio documentation rebuild",
+        "category": "Changed",
+        "surfaces": ["Website", "Documentation", "Home", "Status", "About", "Contact"],
+        "body": (
+            "<p>The website was redesigned and the documentation rebuilt to the house documentation "
+            "standard. The home page now carries an interactive artefact loop that runs the real "
+            "trial on the visitor&rsquo;s own API key (no shared demo key exists), with availability "
+            'and lifecycle chips generated from the canonical status source. The <a href="/status/">status '
+            'page</a> presents all fourteen surfaces in one table. The <a href="/docs/">documentation</a> '
+            "is now Di&aacute;taxis-first — tutorials, guides, reference, explanation — with seven role "
+            "packs (Guest, Users, Developers, Maintainers, Regulators, Admins, Ops); the Maintainers pack "
+            "is published as an evidence-on-request boundary, its structure public and its internals not. "
+            "Every docs page carries its audience, type, version, last-verified date, source artefact, and "
+            'a Markdown mirror. New <a href="/about/">About</a> and <a href="/contact/">Contact</a> pages '
+            "replace the placeholder routes that previously returned the home page. The REST API "
+            "reference now names the live OpenAPI document as the contract of record. No service "
+            "behaviour changed: this entry records presentation and documentation only, and the "
+            "graduations scheduled for 16 and 18 November remain pending gate decisions.</p>"
+        ),
+        "effect": "Visitors, relying parties, and agents read the same generated facts in a "
+        "documentation set shaped for their role; nothing about the service, its verdicts, or its "
+        "billing state changed.",
+        "evidence": [
+            {"label": "Home", "url": "https://axiom-code.com/"},
+            {"label": "Documentation", "url": "https://axiom-code.com/docs/"},
+            {"label": "Status", "url": "https://axiom-code.com/status/"},
+            {"label": "About", "url": "https://axiom-code.com/about/"},
+            {"label": "Contact", "url": "https://axiom-code.com/contact/"},
+        ],
+        "refs": [],
+        "disposition": "Live on the site; the contact form's receiving endpoint is a named open "
+        "item (the house per-site form pipeline is not yet wired for this domain) — the form "
+        "degrades to a pre-addressed email rather than failing silently.",
+    },
+    {
         "id": "2026-11-12-status-changelog-practice",
         "date": "2026-11-12",
         "title": "Status page, changelog, and practice page — one canonical source",

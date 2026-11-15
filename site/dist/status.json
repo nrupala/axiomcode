@@ -1,7 +1,7 @@
 {
   "meta": {
     "service": "AxiomCode",
-    "as_of": "2026-11-12",
+    "as_of": "2026-11-14",
     "timezone": "America/Edmonton",
     "source": "site/status_data.py",
     "status_page": "https://axiom-code.com/status/"
@@ -30,7 +30,7 @@
         "In release-candidate soak as part of the 2026-11-09 public flip. Graduation is a recorded gate decision scheduled for 2026-11-16 \u2014 the date alone does not graduate it."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "hosted_mcp",
@@ -55,7 +55,7 @@
         "In release-candidate soak with the public flip; graduation is a recorded gate decision scheduled for 2026-11-16."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "local_mcp",
@@ -74,7 +74,7 @@
       ],
       "known_limits": [],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "web_verifier",
@@ -95,7 +95,7 @@
         "Browser submission was broken at the public flip (finding F-AX-10: the API lacked the cross-origin leg for the site origin) and was repaired and re-verified on 2026-11-11."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "certificate_checker",
@@ -124,7 +124,7 @@
         "Browser submission was broken at the public flip (finding F-AX-10) and was repaired and re-verified on 2026-11-11."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "ask_shell",
@@ -145,7 +145,7 @@
         "In release-candidate soak; graduation is a recorded gate decision scheduled for 2026-11-18."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "ask_explanations",
@@ -166,7 +166,7 @@
         "Degraded-first: the explanation step may time out under load. The service facts are still returned and the missing explanation is stated. Explanation latency is an open residual carried in the soak."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "trial",
@@ -185,7 +185,7 @@
       ],
       "known_limits": [],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "billing",
@@ -206,7 +206,7 @@
         "No purchase path is open. Checkout answers 501 while billing is paused."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "paid_certificates",
@@ -231,7 +231,7 @@
         "Unlock when pack sales open; the trial never produces a certificate."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "smart_contract_verification",
@@ -252,7 +252,7 @@
         "Not a current capability. Nothing on this site presents it as one."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "offline_verifier",
@@ -273,7 +273,7 @@
         "Offline certificate validation IS available today (public CA keys and revocation list). Offline verification is a different capability and is not built."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "l3_agent",
@@ -292,7 +292,7 @@
       ],
       "known_limits": [],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     },
     {
       "surface_id": "verified_library",
@@ -313,7 +313,7 @@
         "The verified library is incomplete."
       ],
       "owner": "AxiomCode service owner",
-      "last_verified_at": "2026-11-12"
+      "last_verified_at": "2026-11-14"
     }
   ]
 }

@@ -4,96 +4,171 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Documentation | AxiomCode</title>
-<meta name="description" content="AxiomCode documentation for humans: writing verifiable Lean 4 specifications, reading verdicts and certificates, and understanding verification scope.">
+<meta name="description" content="AxiomCode documentation: Diátaxis-first — tutorials, guides, reference, explanation — with role packs for Guest, Users, Developers, Maintainers, Regulators, Admins, and Ops.">
 <link rel="canonical" href="https://axiom-code.com/docs/">
 <meta property="og:site_name" content="AxiomCode">
 <meta property="og:title" content="Documentation | AxiomCode">
-<meta property="og:description" content="AxiomCode documentation for humans: writing verifiable Lean 4 specifications, reading verdicts and certificates, and understanding verification scope.">
+<meta property="og:description" content="AxiomCode documentation: Diátaxis-first — tutorials, guides, reference, explanation — with role packs for Guest, Users, Developers, Maintainers, Regulators, Admins, and Ops.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://axiom-code.com/docs/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Documentation | AxiomCode">
-<meta name="twitter:description" content="AxiomCode documentation for humans: writing verifiable Lean 4 specifications, reading verdicts and certificates, and understanding verification scope.">
+<meta name="twitter:description" content="AxiomCode documentation: Diátaxis-first — tutorials, guides, reference, explanation — with role packs for Guest, Users, Developers, Maintainers, Regulators, Admins, and Ops.">
 <style>
-:root{--ink:#101828;--mut:#475467;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
---gold:#b98a2f;--goldsoft:#faf3e3;--green:#12805c;--greensoft:#e9f7f0;
---red:#b42318;--redsoft:#fdeceb;--navy:#0c1f3f;--radius:10px;
---mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+:root{--ink:#101828;--mut:#475467;--faint:#667085;--line:#e4e7ec;--paper:#fff;--wash:#f8fafc;
+--wash2:#f2f4f7;--gold:#b98a2f;--goldsoft:#faf3e3;--goldink:#8a6414;
+--green:#12805c;--greensoft:#e9f7f0;--greenline:#bfe6d2;
+--red:#b42318;--redsoft:#fdeceb;--redline:#f3c2bc;
+--navy:#0c1f3f;--navy2:#12294f;--blue:#175cd3;--radius:12px;
+--mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
 --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif}
 *{box-sizing:border-box}html{scroll-behavior:smooth}
 body{margin:0;font-family:var(--sans);color:var(--ink);background:var(--paper);line-height:1.65;font-size:17px}
-a{color:#175cd3;text-decoration:none}a:hover{text-decoration:underline}
-.wrap{max-width:1080px;margin:0 auto;padding:0 24px}
+a{color:var(--blue);text-decoration:none}a:hover{text-decoration:underline}
+.wrap{max-width:1120px;margin:0 auto;padding:0 24px}
 .prose{max-width:72ch}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px;border-radius:4px}
+.skip{position:absolute;left:-9999px;top:0;background:var(--navy);color:#fff;padding:10px 16px;z-index:99}
+.skip:focus{left:8px;top:8px}
 /* header */
-.prelaunch{background:var(--goldsoft);border-bottom:1px solid var(--line);padding:10px 0;font-size:14.5px}
 .sitehead{border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:50}
-.sitehead .wrap{display:flex;align-items:center;gap:28px;height:64px}
+.sitehead .wrap{display:flex;align-items:center;gap:26px;min-height:64px;flex-wrap:wrap;padding-top:6px;padding-bottom:6px}
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;color:var(--ink)}
 .brand:hover{text-decoration:none}
 .brand svg{width:30px;height:30px}
-.nav{display:flex;gap:22px;margin-left:auto;font-size:15px}
+.nav{display:flex;gap:20px;margin-left:auto;font-size:15px;flex-wrap:wrap}
 .nav a{color:var(--mut)}.nav a:hover{color:var(--ink)}
+.nav a[aria-current]{color:var(--ink);font-weight:700;border-bottom:2px solid var(--gold)}
 .cta{display:inline-block;background:var(--navy);color:#fff!important;padding:9px 18px;border-radius:8px;font-weight:600;font-size:15px}
-.cta:hover{background:#16294f;text-decoration:none}
+.cta:hover{background:var(--navy2);text-decoration:none}
+/* chips: availability and lifecycle are ALWAYS separate, text-first */
+.chip{display:inline-block;padding:2px 10px;border-radius:999px;font-size:12.5px;font-weight:700;border:1px solid var(--line);background:var(--wash);color:var(--mut);white-space:nowrap}
+.chip.av-live{background:var(--greensoft);color:var(--green);border-color:var(--greenline)}
+.chip.av-paused,.chip.av-unavail{background:var(--wash2);color:var(--mut)}
+.chip.lc-soak{background:var(--goldsoft);color:var(--goldink);border-color:#ecd9a8}
+.chip.lc-live{background:var(--greensoft);color:var(--green);border-color:var(--greenline)}
+.chip.lc-paused{background:var(--wash2);color:var(--mut)}
+.chip.lc-design{background:#eef4ff;color:var(--blue);border-color:#c7d7fe}
+.chip.lc-notbuilt{background:var(--wash2);color:var(--faint)}
+.chip.scope{background:#fff;color:var(--goldink);border-color:#ecd9a8}
 /* hero */
-.hero{background:linear-gradient(180deg,#0c1f3f 0%,#12294f 100%);color:#fff;padding:84px 0 72px}
-.hero h1{font-size:46px;line-height:1.15;margin:0 0 18px;letter-spacing:-.5px;max-width:16em}
-.hero p.lede{font-size:20px;color:#cbd5e1;max-width:34em;margin:0 0 28px}
+.hero{background:linear-gradient(180deg,var(--navy) 0%,var(--navy2) 100%);color:#fff;padding:72px 0 64px}
+.hero h1{font-size:44px;line-height:1.14;margin:0 0 16px;letter-spacing:-.5px;max-width:15em}
+.hero p.lede{font-size:20px;color:#cbd5e1;max-width:36em;margin:0 0 14px}
+.hero .scope-line{font-size:15px;color:#93a1b8;max-width:40em;margin:0 0 26px}
 .hero .row{display:flex;gap:14px;flex-wrap:wrap}
 .btn{display:inline-block;padding:13px 26px;border-radius:9px;font-weight:700;font-size:16px;border:1px solid transparent}
 .btn-gold{background:var(--gold);color:#1a1206!important}.btn-gold:hover{background:#c99a3f;text-decoration:none}
 .btn-ghost{border-color:#3b4a63;color:#fff!important}.btn-ghost:hover{border-color:#5b6b85;text-decoration:none}
+.statusline{margin-top:28px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;font-size:14px;color:#93a1b8}
 .trustline{margin-top:26px;font-size:14px;color:#93a1b8}
 /* sections */
-section.block{padding:64px 0}
-section.block h2{font-size:30px;margin:0 0 12px;letter-spacing:-.3px}
+section.block{padding:60px 0}
+section.block.alt{background:var(--wash)}
+section.block h2{font-size:29px;margin:0 0 10px;letter-spacing:-.3px}
 .kicker{font-size:13px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:8px}
-.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:28px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:20px;margin-top:26px}
 .card{border:1px solid var(--line);border-radius:var(--radius);padding:26px;background:#fff}
 .card h3{margin:0 0 8px;font-size:19px}
 .card p{margin:0;color:var(--mut);font-size:15.5px}
 .card .num{display:inline-flex;width:34px;height:34px;border-radius:50%;background:var(--navy);color:#fff;
 align-items:center;justify-content:center;font-weight:700;margin-bottom:12px}
+.card .chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.card .go{margin-top:auto;padding-top:10px;font-weight:600;font-size:15px}
+.cardflex{display:flex;flex-direction:column;gap:8px}
 /* seal / cert demo */
 .sealbox{background:var(--wash);border:1px solid var(--line);border-radius:12px;padding:28px;margin-top:24px}
-pre.code{background:#0c1f3f;color:#d7e3f4;padding:20px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;font-family:var(--mono)}
+pre.code{background:var(--navy);color:#d7e3f4;padding:20px;border-radius:10px;overflow:auto;font-size:14px;line-height:1.55;font-family:var(--mono)}
 code.inline{font-family:var(--mono);background:var(--wash);border:1px solid var(--line);border-radius:5px;padding:1px 7px;font-size:.88em}
 /* verdict badges */
 .badge{display:inline-block;padding:4px 14px;border-radius:999px;font-weight:700;font-size:14px}
-.b-pass{background:var(--greensoft);color:var(--green);border:1px solid #bfe6d2}
-.b-fail{background:var(--redsoft);color:var(--red);border:1px solid #f3c2bc}
-.b-warn{background:var(--goldsoft);color:#8a6414;border:1px solid #ecd9a8}
+.b-pass{background:var(--greensoft);color:var(--green);border:1px solid var(--greenline)}
+.b-fail{background:var(--redsoft);color:var(--red);border:1px solid var(--redline)}
+.b-warn{background:var(--goldsoft);color:var(--goldink);border:1px solid #ecd9a8}
+/* artefact loop (interactive on home) */
+.loop{display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:stretch;margin-top:26px}
+@media(max-width:860px){.loop{grid-template-columns:1fr}.loop .arrow{transform:rotate(90deg);justify-self:center}}
+.loop .pane{border:1px solid var(--line);border-radius:var(--radius);background:#fff;overflow:hidden}
+.loop .pane h3{margin:0;padding:14px 20px;font-size:14px;letter-spacing:1px;text-transform:uppercase;color:var(--mut);border-bottom:1px solid var(--line);background:var(--wash)}
+.loop .pane .body{padding:18px 20px}
+.loop pre.code{border-radius:0}
+.arrow{align-self:center;font-size:26px;color:var(--gold);font-weight:700}
+.kv{font-size:14.5px;margin:0}
+.kv dt{color:var(--faint);font-size:12.5px;text-transform:uppercase;letter-spacing:.8px;margin-top:12px}
+.kv dd{margin:2px 0 0;font-family:var(--mono);font-size:14px;word-break:break-all}
+.kv dd.plain{font-family:var(--sans)}
+/* tables */
+table.spec,table.tax,table.status{width:100%;border-collapse:collapse;font-size:15px;margin:20px 0;background:#fff}
+table.spec th,table.spec td,table.tax th,table.tax td,table.status th,table.status td{border:1px solid var(--line);padding:11px 14px;text-align:left;vertical-align:top}
+table.spec th,table.tax th,table.status th{background:var(--wash)}
+table.tax th,table.status th{font-size:13px;text-transform:uppercase;letter-spacing:.8px;color:var(--mut)}
+table.status td .chips{display:flex;gap:6px;flex-wrap:wrap}
+table.status td small{color:var(--faint);display:block;margin-top:4px}
+.tablewrap{overflow-x:auto}
 /* pricing */
-.ptable{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:18px;margin-top:28px}
-.plan{border:1px solid var(--line);border-radius:12px;padding:28px;background:#fff;position:relative}
+.ptable{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:26px}
+.plan{border:1px solid var(--line);border-radius:12px;padding:26px;background:#fff;position:relative}
 .plan.hot{border:2px solid var(--gold);box-shadow:0 8px 30px rgba(185,138,47,.12)}
-.plan h3{margin:0 0 4px}.plan .price{font-size:34px;font-weight:800;margin:8px 0}
+.plan h3{margin:0 0 4px;font-size:17px}.plan .price{font-size:32px;font-weight:800;margin:6px 0 2px}
 .plan .per{color:var(--mut);font-size:14px}
-.plan ul{padding-left:20px;color:var(--mut);font-size:15px;margin:16px 0}
-.plan li{margin-bottom:8px}
+.plan ul{padding-left:20px;color:var(--mut);font-size:15px;margin:14px 0 0}
+.plan li{margin-bottom:7px}
+.plan .buy{margin-top:16px;display:inline-block;padding:10px 18px;border-radius:8px;border:1px solid var(--line);background:var(--wash2);color:var(--faint);font-weight:700;font-size:14.5px;cursor:not-allowed}
+.plan .buy.live{background:var(--navy);color:#fff;border-color:var(--navy);cursor:pointer}
 /* forms */
 textarea.codebox{width:100%;min-height:260px;font-family:var(--mono);font-size:14px;padding:16px;
 border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
-input[type=text],input[type=email]{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px}
+textarea.plainbox{width:100%;min-height:150px;font-family:var(--sans);font-size:16px;padding:14px;
+border:1px solid var(--line);border-radius:10px;background:#fbfcfe;resize:vertical}
+input[type=text],input[type=email],input[type=password],select{width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:8px;font-size:16px;background:#fff}
 label.fl{display:block;font-weight:600;margin:18px 0 6px}
 button.go{background:var(--navy);color:#fff;border:0;padding:13px 30px;border-radius:9px;font-size:16px;font-weight:700;cursor:pointer}
-button.go:hover{background:#16294f}button.go:disabled{opacity:.55;cursor:wait}
+button.go:hover{background:var(--navy2)}button.go:disabled{opacity:.55;cursor:wait}
 .result{margin-top:24px;border:1px solid var(--line);border-radius:10px;padding:22px;display:none}
 .result.show{display:block}
+.hp{position:absolute;left:-9999px;top:-9999px;width:1px;height:1px;overflow:hidden}
+/* honesty furniture */
+.honest{border:1px solid #ecd9a8;background:var(--goldsoft);border-radius:var(--radius);padding:22px 26px;margin-top:26px}
+.honest h3{margin:0 0 8px;font-size:17px}
+.honest p{margin:0 0 8px;color:#5b4a17;font-size:15.5px}
+.honest p:last-child{margin-bottom:0}
+/* page head (status / docs / company) */
+.pagehead{padding:52px 0 8px}
+.pagehead h1{font-size:36px;margin:0 0 10px;letter-spacing:-.4px}
+.pagehead p{color:var(--mut);max-width:44em;margin:0}
+.asof{font-size:14px;color:var(--faint);margin-top:12px}
+/* docs layout */
+.docslayout{display:grid;grid-template-columns:250px 1fr;gap:36px;padding:44px 0 60px}
+@media(max-width:860px){.docslayout{grid-template-columns:1fr}}
+.sidenav{font-size:15px}
+.sidenav h4{margin:22px 0 6px;font-size:12.5px;text-transform:uppercase;letter-spacing:1px;color:var(--faint)}
+.sidenav h4:first-child{margin-top:0}
+.sidenav ul{list-style:none;margin:0;padding:0}
+.sidenav li{margin:3px 0}
+.sidenav a{color:var(--mut)}
+.sidenav a[aria-current]{color:var(--ink);font-weight:700}
+.docmeta{border:1px solid var(--line);border-radius:10px;background:var(--wash);padding:14px 18px;font-size:14px;color:var(--mut);display:flex;gap:18px;flex-wrap:wrap;margin-bottom:26px}
+.docmeta b{color:var(--ink)}
+.quad{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:18px;margin-top:22px}
+.roles{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-top:22px}
+.role{border:1px solid var(--line);border-radius:10px;padding:18px;background:#fff}
+.role h3{margin:0 0 4px;font-size:16px}
+.role p{margin:0;color:var(--mut);font-size:14px}
+.steps{counter-reset:step;margin-top:20px}
+.step{border-left:3px solid var(--gold);padding:2px 0 6px 20px;margin-bottom:22px}
+.step h3{margin:0 0 6px;font-size:18px}
+.step p{color:var(--mut);margin:0 0 10px;max-width:65ch}
 /* footer */
-.sitefoot{background:#0c1f3f;color:#aeb9cc;padding:56px 0 32px;margin-top:40px;font-size:15px}
-.sitefoot a{color:#d7e0ee}.sitefoot .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:28px}
-.sitefoot h4{color:#fff;margin:0 0 12px;font-size:15px}
-.sitefoot ul{list-style:none;margin:0;padding:0}.sitefoot li{margin-bottom:8px}
-.fine{margin-top:36px;padding-top:20px;border-top:1px solid #22345a;font-size:13px;color:#7d8ba3}
-/* docs */
+footer{border-top:1px solid var(--line);background:var(--wash);padding:44px 0 36px;font-size:14.5px;color:var(--mut);margin-top:40px}
+footer .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:26px}
+footer h4{margin:0 0 10px;font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--ink)}
+footer ul{list-style:none;margin:0;padding:0}
+footer li{margin:5px 0}
+footer a{color:var(--mut)}
+.legal{margin-top:30px;border-top:1px solid var(--line);padding-top:18px;font-size:13.5px;color:var(--faint)}
+/* misc page furniture */
 .docnav{background:var(--wash);border:1px solid var(--line);border-radius:10px;padding:18px 22px;margin:24px 0}
-table.spec{width:100%;border-collapse:collapse;font-size:15px;margin:20px 0}
-table.spec th,table.spec td{border:1px solid var(--line);padding:10px 14px;text-align:left;vertical-align:top}
-table.spec th{background:var(--wash)}
 .note{border-left:4px solid var(--gold);background:var(--goldsoft);padding:14px 18px;border-radius:0 8px 8px 0;margin:20px 0;font-size:15.5px}
-.note.blue{border-color:#175cd3;background:#eff4ff}
 h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 .sub{color:var(--mut);font-size:19px;margin:0 0 8px}
 .faq details{border:1px solid var(--line);border-radius:8px;padding:14px 18px;margin-bottom:10px}
@@ -103,94 +178,102 @@ h1.pt{font-size:38px;letter-spacing:-.4px;margin:0 0 10px}
 
 </head>
 <body>
-<div class="prelaunch"><div class="wrap"><strong>Live:</strong> the AxiomCode verification service is open at <strong>api.axiom-code.com</strong>. Credit packs are not yet on sale &mdash; API keys with 10 free trial verifications are issued on request at <a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a>.</div></div>
+<a class="skip" href="#main">Skip to content</a>
 <div class="sitehead"><div class="wrap">
 <a class="brand" href="/"><svg viewBox="0 0 32 32" fill="none" aria-hidden="true"><path d="M16 2l10 4v8c0 6.6-4.2 11.4-10 14C10.2 25.4 6 20.6 6 14V6l10-4z" fill="#b98a2f"/><path d="M11.5 16.2l3.2 3.2 6-6.4" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg><span>AxiomCode</span></a>
-<nav class="nav"><a href="/how-it-works/">How it works</a><a href="/pricing/">Pricing</a><a href="/ask/">Ask</a><a href="/docs/">Docs</a><a href="/docs/api/">API</a><a href="/status/">Status</a><a href="/changelog/">Changelog</a><a href="/practice/">Practice</a><a href="/paperwork/">Paperwork</a></nav>
-<a class="cta" href="/verify/">Try free</a>
+<nav class="nav" aria-label="Primary"><a href="/how-it-works/">Product</a><a href="/verify/">Try it</a><a href="/docs/">Docs</a><a href="/#try">Examples</a><a href="/status/">Status</a><a href="/changelog/">Changelog</a><a href="/practice/">Practice</a><a href="/pricing/">Pricing</a></nav>
+<a class="cta" href="/verify/">Verify an artefact</a>
 </div></div>
-<section class="block"><div class="wrap"><div class="prose">
-<h1 class="pt">Documentation</h1>
-<p class="sub">For humans. Agents: see the <a href="/docs/api/">API reference</a> and <a href="/llms.txt">llms.txt</a>.</p>
+<main id="main">
+<section><div class="wrap"><div class="docslayout">
+<nav class="sidenav" aria-label="Documentation"><h4>Start here</h4><ul><li><a href="/docs/start/first-verification/">First verification</a></li><li><a href="/docs/start/first-certificate-check/">First certificate check</a></li><li><a href="/docs/start/first-mcp-call/">First MCP call</a></li></ul><h4>Guides</h4><ul><li><a href="/docs/guides/write-a-verifiable-lean-artefact/">Write a verifiable artefact</a></li><li><a href="/docs/guides/use-the-queue/">Use the queue</a></li><li><a href="/docs/guides/check-and-revoke/">Check & revoke</a></li><li><a href="/docs/guides/use-ask-without-letting-it-judge/">Ask without letting it judge</a></li><li><a href="/docs/guides/integrate-an-agent/">Integrate an agent</a></li><li><a href="/docs/guides/reconcile-metering/">Reconcile metering</a></li></ul><h4>Reference</h4><ul><li><a href="/docs/api/">REST API</a></li><li><a href="/docs/mcp/">MCP (hosted & local)</a></li><li><a href="/docs/reference/verdicts-and-errors/">Verdicts & errors</a></li><li><a href="/docs/reference/certificates/">Certificates</a></li><li><a href="/docs/reference/keys-and-limits/">Keys & limits</a></li><li><a href="/docs/reference/status-schema/">Status schema</a></li><li><a href="/docs/reference/changelog-schema/">Changelog schema</a></li></ul><h4>Explanation</h4><ul><li><a href="/docs/explanation/what-verification-proves/">What verification proves</a></li><li><a href="/docs/explanation/what-it-does-not-prove/">What it does not prove</a></li><li><a href="/docs/explanation/certificate-trust-model/">Certificate trust model</a></li><li><a href="/docs/explanation/queue-and-metering-model/">Queue & metering model</a></li><li><a href="/docs/explanation/ask-and-ai-boundaries/">Ask & AI boundaries</a></li></ul><h4>Role packs</h4><ul><li><a href="/docs/roles/guest/">Guest</a></li><li><a href="/docs/roles/users/">Users</a></li><li><a href="/docs/roles/developers/">Developers</a></li><li><a href="/docs/roles/maintainers/">Maintainers — on request</a></li><li><a href="/docs/roles/regulators/">Regulators</a></li><li><a href="/docs/roles/admins/">Admins</a></li><li><a href="/docs/roles/ops/">Ops</a></li></ul></nav>
+<div class="docbody">
+<div class="docmeta"><span>Type <b>Documentation home</b></span><span>Audience <b>All</b></span><span>Role packs <b>All seven</b></span><span>Version <b>Docs set 2026-11-14</b></span><span>Last verified <b>2026-11-14</b></span><span>Source <b>Docs set; facts generated from canonical sources</b></span><span><a href="/docs/index.md">Markdown mirror</a></span></div>
+<h1>Documentation</h1>
+<p class="sub" style="font-size:18px">Organized the Diátaxis way: learn by doing in the tutorials, solve a task in the guides, look facts up in the reference, understand the system in the explanations. Role packs cut the same set by who you are.</p>
 
-<div class="docnav"><strong>On this page:</strong> &nbsp;<a href="#writing">Writing verifiable specs</a> &middot; <a href="#verdicts">Reading verdicts</a> &middot; <a href="#certificates">Certificates</a> &middot; <a href="#scope">Scope &amp; limits</a></div>
+<div class="quad">
+<div class="card"><h3>Tutorials</h3><p>Learning-oriented, step by step.</p>
+<p class="go"><a href="/docs/start/first-verification/">First verification</a><br>
+<a href="/docs/start/first-certificate-check/">First certificate check</a><br>
+<a href="/docs/start/first-mcp-call/">First MCP call</a></p></div>
+<div class="card"><h3>Guides</h3><p>Task-oriented, for working users.</p>
+<p class="go"><a href="/docs/guides/write-a-verifiable-lean-artefact/">Write a verifiable artefact</a><br>
+<a href="/docs/guides/use-the-queue/">Use the queue</a><br>
+<a href="/docs/guides/integrate-an-agent/">Integrate an agent</a></p></div>
+<div class="card"><h3>Reference</h3><p>Fact-oriented, complete and exact.</p>
+<p class="go"><a href="/docs/api/">REST API</a><br>
+<a href="/docs/mcp/">MCP (hosted &amp; local)</a><br>
+<a href="/docs/reference/verdicts-and-errors/">Verdicts &amp; errors</a></p></div>
+<div class="card"><h3>Explanation</h3><p>Understanding-oriented — the why.</p>
+<p class="go"><a href="/docs/explanation/what-verification-proves/">What verification proves</a><br>
+<a href="/docs/explanation/what-it-does-not-prove/">What it does not prove</a><br>
+<a href="/docs/explanation/certificate-trust-model/">Certificate trust model</a></p></div>
+</div>
 
-<h2 id="writing">Writing verifiable specifications</h2>
-<p>AxiomCode checks <strong>Lean 4</strong> artifacts. The unit of verification is one submission: a Lean source file (plus its declared dependencies) with an explicit target the engine should build.</p>
-<h3>What verifies cleanly</h3>
-<ul>
-<li>Explicit <code class="inline">theorem</code> / <code class="inline">def</code> targets with complete proofs.</li>
-<li>Statements that say what you mean: name the preconditions, name the postconditions.</li>
-<li>Self-contained developments, or ones whose dependencies you declare.</li>
-</ul>
-<h3>What gets rejected</h3>
-<ul>
-<li><code class="inline">sorry</code> and <code class="inline">admit</code> &mdash; placeholders are not proofs. The verdict is <span class="badge b-fail">FAILED</span>, and the transcript tells you exactly where.</li>
-<li>Targets that build nothing (vacuous builds) &mdash; <span class="badge b-fail">FAILED</span>.</li>
-<li>Anything that doesn&rsquo;t compile: you get <span class="badge b-fail">FAILED</span> with the compiler log, not a pass.</li>
-</ul>
-<div class="note blue"><strong>Customer responsibility:</strong> the certificate binds the artifact you submitted. It does not certify that your specification captures your intent, or that the deployed system matches the artifact. Writing a faithful spec is your job; checking the proof is ours.</div>
+<h2 style="margin-top:40px">Start in five minutes</h2>
+<p style="color:var(--mut)">Keys are issued by email (free; the first 10 cases are the trial). Then: <a href="/docs/start/first-verification/">first verification</a> → <a href="/docs/guides/write-a-verifiable-lean-artefact/">write your own artefact</a> → <a href="/docs/start/first-certificate-check/">check a certificate like a relying party</a>.</p>
 
-<h3>Minimal example</h3>
-<pre class="code">-- A tiny, honest spec: addition commutes on naturals.
-theorem add_comm_nat (a b : Nat) : a + b = b + a := by
-  exact Nat.add_comm a b</pre>
-<p>Submit this through the <a href="/docs/api/">API</a> or the <a href="/verify/">web verifier</a> with your API key: the engine compiles it, the proof checks, the verdict is <span class="badge b-pass">PASSED</span>.</p>
+<h2 style="margin-top:40px">Role packs</h2>
+<div class="roles">
+<div class="role"><h3><a href="/docs/roles/guest/">Guest</a></h3><p>Unauthenticated evaluator — judge it before you join it.</p></div>
+<div class="role"><h3><a href="/docs/roles/users/">Users</a></h3><p>Key-holders — the working set.</p></div>
+<div class="role"><h3><a href="/docs/roles/developers/">Developers</a></h3><p>Integrators and agent builders.</p></div>
+<div class="role"><h3><a href="/docs/roles/maintainers/">Maintainers</a></h3><p>Evidence on request — boundary published, internals not.</p></div>
+<div class="role"><h3><a href="/docs/roles/regulators/">Regulators</a></h3><p>Policy first, control → evidence index.</p></div>
+<div class="role"><h3><a href="/docs/roles/admins/">Admins</a></h3><p>Account administration as it actually works today.</p></div>
+<div class="role"><h3><a href="/docs/roles/ops/">Ops</a></h3><p>Surfaces, health evidence, the incident rule.</p></div>
+</div>
 
-<h2 id="verdicts">Reading verdicts</h2>
-<table class="spec">
-<tr><th>Verdict</th><th>Meaning</th><th>Certificate?</th></tr>
-<tr><td><span class="badge b-pass">PASSED</span></td><td>The toolchain compiled the artifact and the proof checked.</td><td>Yes (paid only)</td></tr>
-<tr><td><span class="badge b-fail">FAILED</span></td><td>The proof does not check: a broken proof, <code class="inline">sorry</code>/<code class="inline">admit</code>, a failed axiom audit, or an attempt that doesn&rsquo;t compile or builds nothing. The transcript shows why.</td><td>Yes (paid only) &mdash; records the failure</td></tr>
-<tr><td><span class="badge b-warn">NO VERDICT</span></td><td>The request ended before a verdict: payment required (trial used up and no credit balance), the proof ran past its time limit, or a concurrency, rate, or size refusal. This is an error outcome, not a verdict.</td><td>No</td></tr>
-</table>
-<p>Every verdict response carries its usage record &mdash; the exact compute time and what you were charged. Paid verifications also carry the signed certificate, pass or fail &mdash; the certificate records the verdict; it does not improve it.</p>
-
-<h2 id="certificates">Certificates</h2>
-<p>A certificate is a signed JSON document. Fields are defined in the <a href="/paperwork/certificate-policy/">Certificate Policy</a>. Anyone can check a certificate&rsquo;s serial against the <a href="/check/">public revocation list</a>; full signature validation runs offline against the CA&rsquo;s published keys, or through the <a href="/check/">certificate checker</a> with an API key. Possible outcomes: <span class="badge b-pass">VALID</span>, <span class="badge b-fail">REVOKED</span>, <span class="badge b-warn">EXPIRED</span>.</p>
-
-<h2 id="scope">Scope &amp; limits</h2>
-<ul>
-<li><strong>Language:</strong> Lean 4 only, today.</li>
-<li><strong>What &ldquo;verified&rdquo; means:</strong> the certificate credentials the code &mdash; our assessment that the submitted artifact was built to its specification, as mechanically checked. We hold no responsibility beyond this assessment. Nothing about intent, deployment, or the rest of your system.</li>
-<li><strong>Validity:</strong> 90 days from issuance. Re-verify after changes.</li>
-<li><strong>Revocation:</strong> if we discover a toolchain or engine defect that undermines a verdict, the certificate is revoked publicly. There is no silent un-verification.</li>
-</ul>
+<div class="honest"><h3>About this documentation</h3>
+<p>Every page carries its audience, Diátaxis type, version, last-verified date, source artefact, and a Markdown mirror (linked in the meta block). Status, lifecycle, and pricing facts are generated from the same canonical sources as the <a href="/status/">status page</a> and are covered by CI drift checks. The Maintainers pack is the one deliberate boundary: structure public, internals on request.</p>
+<p>Documentation error? It is a product error — report it on <a href="https://github.com/nrupala/axiomcode/issues">GitHub Issues</a>, user-initiated only.</p></div>
+</div>
 </div></div></section>
-<footer class="sitefoot"><div class="wrap">
+</main>
+<footer><div class="wrap">
 <div class="cols">
 <div><h4>Product</h4><ul>
 <li><a href="/how-it-works/">How it works</a></li>
-<li><a href="/pricing/">Pricing</a></li>
-<li><a href="/verify/">Try free</a></li>
-<li><a href="/ask/">Ask AxiomCode</a></li>
+<li><a href="/verify/">Verify</a></li>
 <li><a href="/check/">Check a certificate</a></li>
+<li><a href="/ask/">Ask AxiomCode</a></li>
+<li><a href="/pricing/">Pricing</a></li>
 </ul></div>
-<div><h4>Developers &amp; agents</h4><ul>
+<div><h4>Developers</h4><ul>
 <li><a href="/docs/">Documentation</a></li>
-<li><a href="/docs/api/">REST &amp; MCP API</a></li>
-<li><a href="/status.json">Status JSON</a></li>
+<li><a href="/docs/api/">REST API</a></li>
+<li><a href="/docs/mcp/">Hosted MCP</a></li>
+<li><a href="/docs/mcp/#local-mcp">Local MCP</a></li>
+<li><a href="https://api.axiom-code.com/openapi.json">OpenAPI (live)</a></li>
 <li><a href="/llms.txt">llms.txt</a></li>
-<li><a href="/.well-known/axiomcode.json">Machine-readable service info</a></li>
 </ul></div>
-<div><h4>Trust &amp; paperwork</h4><ul>
+<div><h4>Trust</h4><ul>
 <li><a href="/status/">Status</a></li>
 <li><a href="/changelog/">Changelog &amp; service record</a></li>
 <li><a href="/practice/">Practice</a></li>
-<li><a href="/paperwork/terms/">Terms of Service</a></li>
-<li><a href="/paperwork/privacy/">Privacy Policy</a></li>
-<li><a href="/paperwork/certificate-policy/">Certificate Policy &amp; CPS</a></li>
-<li><a href="/paperwork/refunds/">Refund Policy</a></li>
+<li><a href="/paperwork/certificate-policy/">Certificate Policy</a></li>
+<li><a href="/paperwork/security/">Security</a></li>
+<li><a href="/paperwork/privacy/">Privacy</a></li>
+<li><a href="/paperwork/terms/">Terms</a></li>
+<li><a href="/paperwork/refunds/">Refunds</a></li>
 <li><a href="/paperwork/sla/">Service Levels</a></li>
 </ul></div>
 <div><h4>Company</h4><ul>
+<li><a href="/about/">About</a></li>
+<li><a href="/contact/">Contact</a></li>
 <li><a href="/blog/">Blog</a></li>
-<li><a href="/releases/">Release log (now Changelog)</a></li>
-<li><a href="/paperwork/security/">Security &amp; disclosure</a></li>
-<li><a href="mailto:hello@axiom-code.com">hello@axiom-code.com</a></li>
+</ul></div>
+<div><h4>Machine-readable</h4><ul>
+<li><a href="/status.json">Status JSON</a></li>
+<li><a href="/changelog.json">Changelog JSON</a></li>
+<li><a href="https://api.axiom-code.com/.well-known/axiomcode-keys.json">CA keys</a></li>
+<li><a href="https://api.axiom-code.com/revoked">Revocation list</a></li>
+<li><a href="/.well-known/axiomcode.json">Service record</a></li>
+<li><a href="/sitemap.xml">Sitemap</a></li>
 </ul></div>
 </div>
-<div class="fine">Owned by 2351485 ALBERTA INC. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
+<div class="legal">AxiomCode is a service of <strong>2351485 ALBERTA INC.</strong> (Alberta, Canada). Certificates are valid 90 days and revocable; the production CA key ID is <code>c731a5036812339d</code>. &middot; Built with Muse by Meta. &middot; Copyright &copy; 2026 2351485 ALBERTA INC. Verification is evidence, not opinion.</div>
 </div></footer>
 </body>
 </html>
