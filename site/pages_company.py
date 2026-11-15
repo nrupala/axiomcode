@@ -67,6 +67,9 @@ page(
 <div class="card"><h3>Certificate incidents</h3>
 <p>A certificate you believe is wrong, revoked in error, or mis-issued: contact us with the serial.</p>
 <p class="go"><a href="mailto:hello@axiom-code.com?subject=Certificate%20incident">hello@axiom-code.com</a></p></div>
+<div class="card"><h3>Company &amp; general</h3>
+<p>General correspondence with the operator — AIMLDS, the public name of 2351485 ALBERTA INC. — rather than the AxiomCode service itself.</p>
+<p class="go"><a href="mailto:info@aimlds.org">info@aimlds.org</a></p></div>
 </div>
 
 <div class="prose" style="max-width:76ch;margin-top:44px">
