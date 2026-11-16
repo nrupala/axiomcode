@@ -243,17 +243,22 @@ SURFACES = [
         "graduates_on": None,
         "canonical_url": "https://axiom-code.com/status/",
         "summary": "Running the verification engine itself offline or air-gapped, for enterprise use. "
-        "Design accepted 2026-11-14; build started 2026-11-15 — step S1 (CA-signed revocation "
-        "snapshots for offline certificate validation) is built and proven in staging. Nothing "
-        "on this surface is live yet.",
+        "Design accepted 2026-11-14; the build is complete in staging — the Linux bundles (the full "
+        "bundle and the free check-only bundle) are built and proven end-to-end from clean installs, "
+        "including a release test of the full bundle with networking disabled at the OS level. "
+        "Production downloads open only after the production Release-key ceremony and the release "
+        "gate's judgment; nothing on this surface is downloadable yet.",
         "evidence": [{"label": "Status", "url": "https://axiom-code.com/status/"}],
         "known_limits": [
             "Offline certificate validation IS available today (public CA keys and revocation list). "
-            "Offline verification is a different capability: its first build step is proven in "
-            "staging and is not live."
+            "Offline verification is a different capability: built and proven in staging, not yet "
+            "released — no download links and no production Release fingerprint are published until "
+            "the ceremony and the gate's release judgment are complete.",
+            "The first release will be Linux. macOS and Windows bundles follow, each built and "
+            "proven on its own platform."
         ],
         "owner": _OWNER,
-        "last_verified_at": _VERIFIED,
+        "last_verified_at": "2026-11-15",
     },
     {
         "surface_id": "l3_agent",
