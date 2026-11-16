@@ -18,6 +18,12 @@ that actually ships. Fails when:
   mixed with route paths) and well-formed, it covers no declared
   route, and every declared route must still be covered by an
   on-host pathway;
+- a pathway may additionally declare covers_artefacts (gate
+  package 0.6.0 — e.g. the offline face's bundle surface):
+  non-route artefact surfaces the pathway governs. Entries must
+  be non-empty strings, must not name a declared route or an
+  external URL (those belong in covers), and they cover no
+  declared route;
 - a declared doc (threat model, coverage ledger, changelog) is
   missing, or the coverage ledger is not a JSON list of units each
   carrying coverage_id + status.
@@ -92,6 +98,18 @@ def main() -> int:
     # --- pathways cover declared routes --------------------------------
     covered: set[str] = set()
     for pw in gate.get("pathways") or []:
+        artefacts = pw.get("covers_artefacts")
+        if artefacts is not None:
+            if not isinstance(artefacts, list) or not artefacts:
+                fail(f"pathway {pw.get('id')} covers_artefacts is not a non-empty list")
+            else:
+                for a in artefacts:
+                    if not isinstance(a, str) or not a.strip():
+                        fail(f"pathway {pw.get('id')} has an empty covers_artefacts entry")
+                    elif a in declared:
+                        fail(f"pathway {pw.get('id')} covers_artefacts names a declared route (belongs in covers): {a}")
+                    elif a.startswith("https://"):
+                        fail(f"pathway {pw.get('id')} covers_artefacts names an external URL (belongs in covers): {a}")
         covers = pw.get("covers")
         paths = covers if isinstance(covers, list) else [covers]
         external = [p for p in paths if isinstance(p, str) and p.startswith("https://")]

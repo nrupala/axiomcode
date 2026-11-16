@@ -548,6 +548,21 @@ def _main(argv: list[str] | None = None) -> int:
                 return 0
             store.revoke(args.serial, reason=args.reason)
             print(f"revoked: {args.serial}")
+            # Slice 4 S1 (§4.1 reissue duty): a revocation event
+            # triggers publication of a fresh signed snapshot. The
+            # revocation itself has already committed — a publication
+            # failure is reported loudly on stderr but never un-does
+            # it; the weekly timer and the /revoked/snapshot bootstrap
+            # are the backstops. No-op unless AXIOMCODE_SNAPSHOT_DIR
+            # is set (the duty is armed by the deploy, not the code).
+            try:
+                import snapshot as _snapshot
+
+                published = _snapshot.reissue_from_env(store)
+                if published is not None:
+                    print(f"snapshot: sequence {published['sequence']} published")
+            except Exception as exc:
+                print(f"warning: revocation snapshot reissue failed: {exc}", file=sys.stderr)
             return 0
         finally:
             store.close()

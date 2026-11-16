@@ -281,6 +281,46 @@ isn't — and this model is organised around it.
   bounded by the rate limit and the traps — never a forged
   verdict, a credit grant or a key.
 
+### T11 — The offline face (air-gapped validation and verification)
+
+(a) *Forged bundle media* — an attacker substitutes a trojaned
+    checker/toolchain bundle on the media that crosses the air gap.
+    Control (S4): bundles are signed by a dedicated Release key;
+    import verifies signature -> manifest -> component hashes before
+    anything is unpacked; first-install authenticity is the published
+    fingerprint comparison (§4.3). Residual: a first install
+    bootstrapped carelessly — named in the install docs, printed by
+    the checker until acknowledged.
+(b) *Snapshot replay / rollback* — an attacker (or a stale USB stick)
+    replays an old snapshot to un-revoke a certificate offline.
+    Control (S1, built + proven in staging): snapshots are CA-signed
+    and monotonically sequenced from an on-disk allocator floored at
+    the last published sequence; consumers refuse any sequence <= the
+    highest imported, and a refused import changes nothing.
+(c) *Stale snapshot over-trust* — a relying party treats a weeks-old
+    revocation view as current. Control (publication side S1;
+    consumer side S2): weekly reissue cadence with next_update_by in
+    the signed document; freshness bands printed on every result
+    (current <= 7d / STALE 7–30d / hard-stale > 30d or none => no
+    answer, and the tool refuses the word "valid"). Residual: an
+    operator who ignores a STALE banner.
+(d) *Local verdict passed off as a certificate* — a local verdict
+    record is presented as CA attestation. Control (S2/S3, design
+    §3.3): the record's shape carries no serial/kid/CA signature
+    fields and a NOT A CERTIFICATE notice; the paperwork (S5) tells
+    relying parties to accept only CA-format certificates.
+(e) *Clock manipulation / skew* — freshness arithmetic runs on the
+    offline machine's clock. Control (S1 consumer reference; S2 in
+    the checker): the snapshot's issued_at, the certificate's
+    validity window and the local time used are cross-printed on
+    every result; a snapshot dated in the local future is refused at
+    import as mis-signed-or-mis-clocked. Residual: a skewed clock
+    produces a visibly skewed report, not a corrected one — named,
+    not solved.
+(f) *Toolchain substitution inside the enclave* — Control (S3/S4):
+    the checker verifies its toolchain tree against the bundle
+    manifest digest at verify time and refuses a mismatch.
+
 ## Out of scope / not claimed
 
 - No protection is claimed against a compromised host OS (see T2).

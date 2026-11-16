@@ -1,0 +1,14 @@
+[Unit]
+Description=AxiomCode CA — weekly revocation snapshot reissue (Slice 4 S1)
+After=network.target
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/home/ubuntu/axiomcode-prod/services/api
+Environment=PYTHONPATH=/home/ubuntu/axiomcode-prod:/home/ubuntu/axiomcode-prod/services/api
+Environment=AXIOMCODE_DB=/home/ubuntu/axiomcode-prod/state/axiomcode.db
+Environment=AXIOMCODE_CA_KEY_FILE=/home/ubuntu/axiomcode-prod/state/ca_key.pem
+Environment=AXIOMCODE_SNAPSHOT_DIR=/home/ubuntu/axiomcode-prod/state
+EnvironmentFile=-/home/ubuntu/axiomcode-prod/state/prod.env
+ExecStart=/home/ubuntu/axiomcode-prod/.venv/bin/python snapshot.py reissue --reason scheduled

@@ -1,0 +1,14 @@
+[Unit]
+Description=Weekly AxiomCode revocation snapshot reissue (Slice 4 S1, design §4.1)
+
+[Timer]
+OnCalendar=weekly
+RandomizedDelaySec=1h
+# A missed week (box down) fires on next boot, so freshness stays
+# provable rather than silently gapping (§4.1: a no-change snapshot
+# still advances the sequence).
+Persistent=true
+Unit=axiomcode-snapshot-reissue.service
+
+[Install]
+WantedBy=timers.target
