@@ -6,6 +6,26 @@
   "rss": "https://axiom-code.com/changelog.rss.xml",
   "entries": [
     {
+      "id": "2026-11-15-offline-verifier-status-correction",
+      "date": "2026-11-15",
+      "title": "Status corrected \u2014 the offline verifier is in design, and its build has started",
+      "category": "Status",
+      "surfaces": [
+        "Website",
+        "Status"
+      ],
+      "body": "<p>The <a href=\"/status/\">status page</a> said the offline / air-gapped verifier was &ldquo;not built&rdquo; \u2014 stale twice over. The design was accepted on 2026-11-14, which moves the surface to <em>in design</em> in this record&rsquo;s own vocabulary, and the build started on 2026-11-15: step S1 \u2014 CA-signed, monotonically sequenced revocation snapshots, the trust material offline certificate validation will carry across an air gap \u2014 is built and proven in staging. The surface now reads <em>in design</em> with that build-started summary. Its availability is unchanged \u2014 <em>unavailable</em>: nothing on this surface is live yet, and it will not read otherwise until a shipped step makes it true.</p>",
+      "effect": "The one place the public record understated the product's own progress: the status page now matches the build record \u2014 design accepted, first step built and proven in staging \u2014 while the surface's availability stays honestly unavailable until a step ships.",
+      "evidence": [
+        {
+          "label": "Status",
+          "url": "https://axiom-code.com/status/"
+        }
+      ],
+      "refs": [],
+      "disposition": "Live on the site; corrections are entries, never silent edits."
+    },
+    {
       "id": "2026-11-15-verification-reports-resident-boundary-correction",
       "date": "2026-11-15",
       "title": "Verification report corrected \u2014 the resident boundary's OUTSIDE-GRANT note",

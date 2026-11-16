@@ -238,16 +238,19 @@ SURFACES = [
         "surface_id": "offline_verifier",
         "name": "Offline / air-gapped verifier",
         "availability": "unavailable",
-        "lifecycle": "not_built",
+        "lifecycle": "in_design",
         "public_since": None,
         "graduates_on": None,
         "canonical_url": "https://axiom-code.com/status/",
         "summary": "Running the verification engine itself offline or air-gapped, for enterprise use. "
-        "Approved in the build queue; not built.",
+        "Design accepted 2026-11-14; build started 2026-11-15 — step S1 (CA-signed revocation "
+        "snapshots for offline certificate validation) is built and proven in staging. Nothing "
+        "on this surface is live yet.",
         "evidence": [{"label": "Status", "url": "https://axiom-code.com/status/"}],
         "known_limits": [
             "Offline certificate validation IS available today (public CA keys and revocation list). "
-            "Offline verification is a different capability and is not built."
+            "Offline verification is a different capability: its first build step is proven in "
+            "staging and is not live."
         ],
         "owner": _OWNER,
         "last_verified_at": _VERIFIED,

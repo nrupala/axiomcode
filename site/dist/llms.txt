@@ -23,7 +23,7 @@ How the practice runs (gates, soak, certificates, error reporting): https://axio
 - Billing / credit packs: paused / paused — https://axiom-code.com/pricing/
 - Paid certificates: paused / paused — https://axiom-code.com/pricing/
 - Smart-contract verification: unavailable / in_design — https://axiom-code.com/status/
-- Offline / air-gapped verifier: unavailable / not_built — https://axiom-code.com/status/
+- Offline / air-gapped verifier: unavailable / in_design — https://axiom-code.com/status/
 - L3 proof-generating agent: unavailable / not_built — https://axiom-code.com/status/
 - Verified library (complete L2): unavailable / not_built — https://axiom-code.com/status/
 

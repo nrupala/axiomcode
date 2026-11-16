@@ -131,7 +131,7 @@
       "id": "offline_verifier",
       "name": "Offline / air-gapped verifier",
       "availability": "unavailable",
-      "lifecycle": "not_built",
+      "lifecycle": "in_design",
       "public_since": null,
       "graduates_on": null,
       "url": "https://axiom-code.com/status/"
