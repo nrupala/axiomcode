@@ -24,6 +24,39 @@ _REPO = "https://github.com/nrupala/axiomcode"
 
 ENTRIES = [
     {
+        "id": "2026-11-15-offline-verifier-build-complete",
+        "date": "2026-11-15",
+        "title": "Offline verifier — build complete in staging; downloads await the Release-key ceremony",
+        "category": "Status",
+        "surfaces": ["Website", "Status"],
+        "body": (
+            "<p>The offline / air-gapped verifier&rsquo;s build is complete in staging. Both Linux "
+            "bundles are built and proven end-to-end from clean installs: the <em>full</em> bundle "
+            "(certificate validation plus the kernel verdict procedure under the pinned Lean "
+            "toolchain) and the free <em>check-only</em> bundle (certificate validation only &mdash; "
+            "the verify command and the toolchain are absent from the artefact, not merely "
+            "disabled). The full bundle also passed a release test with networking disabled at the "
+            "operating-system level, operated from its own bundled documentation, with zero network "
+            "calls observed.</p>"
+            "<p>Nothing is downloadable yet, and this entry publishes no download link and no "
+            "production fingerprint: production downloads open only after the production "
+            "Release-key ceremony (the key whose fingerprint every installer must compare by hand) "
+            'and the release gate&rsquo;s judgment. The <a href="/status/">status page</a> now '
+            "reads <em>built and proven in staging</em> in its summary; its availability stays "
+            "<em>unavailable</em> until that release judgment is recorded.</p>"
+        ),
+        "effect": (
+            "The public record now matches the build record for the offline verifier — build "
+            "complete and proven in staging, release gated on the Release-key ceremony and the "
+            "gate's judgment — without offering a download that does not exist."
+        ),
+        "evidence": [
+            {"label": "Status", "url": "https://axiom-code.com/status/"},
+        ],
+        "refs": [],
+        "disposition": "Live on the site; corrections are entries, never silent edits.",
+    },
+    {
         "id": "2026-11-15-offline-verifier-status-correction",
         "date": "2026-11-15",
         "title": "Status corrected — the offline verifier is in design, and its build has started",
