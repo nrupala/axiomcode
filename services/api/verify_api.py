@@ -12,6 +12,9 @@ POST /shell/turn {message, action, ...} -> {facts, result, explanation}
      the same callables, verdicts rendered in code, never by the model
 GET  /shell/jobs/{job_id} -> the shell page's owner-only job read
 GET  /revoked -> {issuer, revoked: [serial...]}   (public CRL)
+GET  /revoked/snapshot -> the current CA-signed revocation snapshot
+     (Slice 4 S1: /revoked's signed, sequenced sibling for offline
+     consumers; /revoked itself is unchanged)
 GET  /.well-known/axiomcode-keys.json -> published CA public keys
 GET  /health -> {status: ok}
 POST /billing/webhook -> Stripe webhook (credits granted here)
@@ -40,6 +43,7 @@ import os
 import sys
 import tempfile
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -48,6 +52,7 @@ import ca
 import jobqueue
 import limits
 import shell
+import snapshot
 import stripe_billing
 import verify_service
 from fastapi import Depends, FastAPI, HTTPException, Request
@@ -65,6 +70,11 @@ PROOF_TIMEOUT_S = verify_service.PROOF_TIMEOUT_S
 
 CA = ca.CA.load_or_create()
 STORE = Store()
+
+# Slice 4 S1: where signed revocation snapshots are published. The
+# deploy sets AXIOMCODE_SNAPSHOT_DIR explicitly (the state dir); the
+# default is the CA key file's directory, which is that same dir.
+SNAPSHOT_DIR = os.environ.get("AXIOMCODE_SNAPSHOT_DIR") or str(Path(ca.DEFAULT_KEY_FILE).parent)
 LIMITER = limits.RateLimiter()
 GATE = limits.ConcurrencyGate()  # legacy per-key gate; admission is owned by QUEUE below
 
@@ -399,6 +409,21 @@ def shell_job(job_id: str, key_hash: str = Depends(require_api_key)):
 @app.get("/revoked")
 def revoked():
     return {"issuer": ca.ISSUER, "revoked": sorted(STORE.revoked_serials())}
+
+
+@app.get("/revoked/snapshot")
+def revoked_snapshot():
+    """The current CA-signed revocation snapshot (Slice 4 S1, design
+    §2.3): /revoked's signed, sequenced sibling, published for offline
+    consumers to carry across an air gap. Serves the snapshot the
+    publication duty (revocation event + weekly timer) maintains in
+    SNAPSHOT_DIR; if none has been published yet, one is built and
+    published on this first read (bootstrap), so the route never
+    answers with an unsigned or unsequenced document."""
+    doc = snapshot.read_published(SNAPSHOT_DIR)
+    if doc is None:
+        doc = snapshot.publish_revocation_snapshot(CA, STORE.revoked_serials(), SNAPSHOT_DIR, reason="bootstrap")
+    return doc
 
 
 @app.get("/.well-known/axiomcode-keys.json")

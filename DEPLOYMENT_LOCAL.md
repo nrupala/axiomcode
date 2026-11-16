@@ -678,14 +678,21 @@ python cli.py models             # List LLM backends
 
 ### 2. Read the User Guide
 
-```bash
-cat AXIOMCODE_USER_GUIDE.md      # Comprehensive guide
-```
+The user guide lives in the website documentation — the canonical
+source, with a role pack per audience (users, developers,
+maintainers, regulators, admins, ops):
+
+**https://axiom-code.com/docs/**
+
+There is no user-guide file in this repository; the documentation
+moved to the website so it cannot drift from the shipped product.
 
 ### 3. Try Code Examples
 
 ```python
-# See AXIOMCODE_API_REFERENCE.py for full examples
+# Full API examples: the live OpenAPI reference at
+# https://api.axiom-code.com/openapi.json
+# (human-readable documentation: https://axiom-code.com/docs/)
 from core.security import KeyStore
 from core.licensing import LicenseManager
 
@@ -707,8 +714,8 @@ pytest tests/ -v --cov=core
 
 ## 📞 SUPPORT
 
-- **Documentation:** [README.md](README.md), [AXIOMCODE_USER_GUIDE.md](AXIOMCODE_USER_GUIDE.md)
-- **API Reference:** [AXIOMCODE_API_REFERENCE.py](AXIOMCODE_API_REFERENCE.py)
+- **Documentation:** [README.md](README.md), [Website documentation — user guide & role packs](https://axiom-code.com/docs/)
+- **API Reference:** [Live OpenAPI reference](https://api.axiom-code.com/openapi.json)
 - **Issue Tracker:** [GitHub Issues](https://github.com/nrupala/axiomcode/issues)
 - **Website:** [axiom-code.com](https://axiom-code.com)
 

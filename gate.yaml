@@ -1,5 +1,5 @@
 product: axiomcode
-version: "0.5.0"
+version: "0.6.0"
 base_url: https://api.axiom-code.com
 types:
   - web
@@ -56,6 +56,11 @@ routes:
     expect_status: 401
     probe_path: /shell/jobs/probe
   - path: /revoked
+    methods:
+      - GET
+    auth: public
+    expect_status: 200
+  - path: /revoked/snapshot
     methods:
       - GET
     auth: public
@@ -132,6 +137,13 @@ pathways:
     situation: an unauthenticated website visitor POSTs a message through the contact form on axiom-code.com — the website surface, NOT this file's base_url host, so the pathway declares no routes entry (routes are probed against the API host) and its covers is the external URL, held to the off-host rules in scripts/check_gate_contract.py. The form carries name, email, one of five fixed subject options, message; the operator reads it in his mailbox and replies to the address given
     gateway: the axiomcode-contact Cloudflare Worker on the axiom-code.com zone (routes axiom-code.com/contact and axiom-code.com/contact/) — the only path from the form to any store or mailbox. Non-POST requests pass through to the Pages origin untouched. Every accepted submission is written to the site's own SUBMISSIONS KV namespace FIRST (durable capture), then forwarded best-effort to the house Google Apps Script sink (Sheet row + Gmail notification under the sink's Contact-prefix subject convention) — the same sink the operator's other sites use, in the same shape
     validation: no authentication — a public contact form is unauthenticated by design, so the controls are the house pattern's abuse controls. A per-IP rate bound (60 POSTs/minute, the product's standing per-identity limiter shape from services/api/limits.py; the counter is a KV key and eventually consistent, so it is a flood bound, not an exact meter) answers an honest 429 before any capture. A honeypot field and a timestamp trap are dropped silently with a success answer, so bots learn nothing and nothing reaches KV, the Sheet or the mailbox. Field caps at the Worker (name 200, email 254, subject 200, message 5000 chars — the reference Worker's limits); missing required fields or a malformed email answer an honest 400 and are never captured. The KV write precedes the email leg, so a failed forward never loses a submission, the record is re-written after the forward attempt with its outcome (sent / failed / unconfigured) so the leg's health is never silent, and the page's pre-addressed mailto fallback stays live for any failure the visitor can see. The form offers no attachment field and the Worker accepts none
+  - id: PW-OFFLINE
+    covers: /revoked/snapshot
+    covers_artefacts:
+      - the offline bundle and its imported trust material (artefact surface — no URL)
+    situation: a relying party or an offline operator carries AxiomCode trust material across an air gap — the CA-signed revocation snapshot (and, at rotation, the keys snapshot) published by the hosted CA, and later the signed offline bundle — and validates certificates (S2) or runs the kernel leg (S3) on a network-isolated machine, where the only AxiomCode authority available is what the signatures prove
+    gateway: snapshot.py publication duty + verify_api.revoked_snapshot — the only path from the CA to a signed snapshot — the builder signs over the store's revoked_serials() with the CA key (ca.sign_body over ca.canonical, the production signing path), sequences come from an on-disk allocator floored at the last published sequence, and publication is triggered by the revocation event (store CLI revoke path) and a weekly systemd timer; /revoked/snapshot serves the published document and bootstraps one on first read rather than ever answering unsigned. For the offline face itself the bundle is the gateway (S4) — release-signed, manifest-hashed, sequence-checked at import
+    validation: snapshot authenticity is the CA signature over the canonical JSON of the unsigned document, verifiable against the published keys payload by the same public-key math as ca.verify_certificate; a snapshot naming an unknown kid is refused; consumers refuse any sequence <= the highest imported (anti-rollback) and any snapshot dated in the local future (mis-signed-or-mis-clocked); freshness is banded and printed on every result (current <= 7d, STALE 7–30d, hard-stale > 30d or none => the revocation leg returns no answer and the word "valid" is refused). This pathway's probes are ARTEFACT-based, declared as such — the gate's runner probes URLs, and this face has none beyond the one hosted route above — its behaviour proofs are the fixture/artefact tests in §3 of this filing, run per shipped platform at S2–S5
 isolation:
   - point: CA private key (Ed25519)
     kind: signing
@@ -157,6 +169,33 @@ isolation:
     kind: critical-data
     tier: in-process-exception
     acceptance: "Wright (builder), 2026-11-14 — a contact submission (visitor's name, email, subject, message, and the platform-observed IP) is correspondence the visitor chose to send; it is captured in the axiom-code.com zone's own SUBMISSIONS KV namespace and forwarded to the operator's house Apps Script sink (his own Sheet + mailbox). The sink's capability URL exists only as a Worker secret on the axiomcode-contact Worker — never in this repo or any repo. No third party processes the data beyond delivery (Cloudflare, Google), which is exactly what the contact page's privacy sentence states."
+assurance:
+  # The universal five — deterministic, repo-local, no per-product
+  # judgment (WIRING-REGISTER rows 1, 2, 4, 8, 10). Run by
+  # bin/universal_checks.py at the machine-pass stage; the verdict
+  # file lands in the evidence pack.
+  universal:
+    - gitleaks        # secrets — working tree (+ history on a real clone)
+    - osv-scanner     # dependency vulnerabilities (lockfiles/manifests)
+    - pip-audit       # Python deps — NOT-APPLICABLE without a Python surface
+    - lychee          # documentation links, offline scope
+    - interrogate     # docstring coverage — measured, no threshold here
+  # Per-product arms. Each entry names a tool from the wiring
+  # register, its product-specific parameters, and the decision that
+  # armed it. Empty until the product's owner/gate arm one.
+  armed: []
+  # - tool: interrogate
+  #   fail_under: 80            # the product's docstring bar
+  # - tool: joern
+  #   pack: joern-pack          # query pack dir (gate-wiring/joern-pack shape)
+  #   method: index_repo        # JOERN_PACK_* parameters
+  #   param: repo
+  #   sink: read_to_string
+  # - tool: testssl.sh
+  #   surfaces: ["api.example.com:443"]   # behavior-proof stage targets
+  # - tool: schemathesis
+  #   schema: https://api.example.com/openapi.json
+  evidence_dir: .release-gate/assurance/
 # Notes for the gate (flip package, 2026-11-09):
 # - F-AX-8 disposition: /docs and /openapi.json on the API host stay
 #   PUBLIC by deliberate decision. They disclose the documented route
@@ -269,3 +308,27 @@ isolation:
 #   approved to ride the next versioned package (the package
 #   version is metadata — nothing at runtime reads it). Billing
 #   stays paused; Memo B untouched.
+# - Slice 4 S1 package (0.6.0, 2026-11-15): PW-OFFLINE is a NEW
+#   pathway (gate verdict axiomcode-slice4-s1-2026-11-15, APPROVED
+#   AS DRAFTED) — the hosted leg is one new public route,
+#   GET /revoked/snapshot, serving the CA-signed, monotonically
+#   sequenced revocation snapshot that services/api/snapshot.py
+#   publishes (revocation event via the store CLI hook + weekly
+#   systemd timer; the route bootstraps one on first read rather
+#   than ever answering unsigned). /revoked is unchanged. The
+#   pathway's other surface is artefacts, not URLs, so it is
+#   declared under covers_artefacts — a narrow extension to
+#   scripts/check_gate_contract.py in this same package (the
+#   0.5.0 precedent): covers keeps its routes-or-external-URLs
+#   meaning, and covers_artefacts entries cover no route. Threat
+#   model gains the offline-face section (filed as T11 — T10 is
+#   the contact form's, 0.5.0). The assurance: block also lands
+#   in this package (gate review
+#   assurance-wiring-phase1-2026-11-15): the universal five are
+#   armed for axiomcode; armed: stays empty — no metered tool is
+#   armed, so no Gate 13 budget note is owed yet. The
+#   DEPLOYMENT_LOCAL.md dead-reference fix rides this package
+#   per the same review. Version moves 0.5.0 -> 0.6.0 (minor: a
+#   new declared face + the first assurance arming; hosted
+#   behaviour changes only by the one added route). Billing
+#   stays paused.
