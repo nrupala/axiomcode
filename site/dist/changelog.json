@@ -6,6 +6,31 @@
   "rss": "https://axiom-code.com/changelog.rss.xml",
   "entries": [
     {
+      "id": "2026-11-16-release-key-ceremony",
+      "date": "2026-11-16",
+      "title": "Release-key ceremony \u2014 production Release key fingerprint published",
+      "category": "Status",
+      "surfaces": [
+        "Website",
+        "Status",
+        "Paperwork"
+      ],
+      "body": "<p>On 2026-11-16 the production Release key for the offline verifier was generated in ceremony (Ed25519, key id 8ca9e97c1931e943). The Release key signs offline-verifier software bundles and nothing else: it is not a CA key and signs no certificates. Its SHA-256 fingerprint \u2014 8ca9e97c 1931e943 c8b0e88b 1ffd81cd 417340f3 2b493051 a064082d a6278a83 \u2014 is now published on the <a href=\"/status/\">status page</a> and in the <a href=\"/paperwork/certificate-policy/\">Certificate Policy</a> (\u00a76), ahead of any bundle, so the comparison anchor exists before anything can be downloaded. At install, a bundle presents the fingerprint of its signing key at bootstrap; installers must compare it against the published fingerprint and refuse the bundle if they differ. The private key is held in the operator&rsquo;s vault custody; it is never present on the service host and never ships inside a bundle.</p><p>No bundle is downloadable yet, and this entry publishes no download link: production downloads open only after the release gate&rsquo;s release judgment. The offline verifier&rsquo;s availability stays <em>unavailable</em>.</p>",
+      "effect": "The public comparison anchor for offline-verifier bundles now exists in two places (the status page and the Certificate Policy) before any production bundle does \u2014 without offering a download that does not exist.",
+      "evidence": [
+        {
+          "label": "Status",
+          "url": "https://axiom-code.com/status/"
+        },
+        {
+          "label": "Certificate Policy",
+          "url": "https://axiom-code.com/paperwork/certificate-policy/"
+        }
+      ],
+      "refs": [],
+      "disposition": "Live on the site; corrections are entries, never silent edits."
+    },
+    {
       "id": "2026-11-15-offline-verifier-build-complete",
       "date": "2026-11-15",
       "title": "Offline verifier \u2014 build complete in staging; downloads await the Release-key ceremony",
