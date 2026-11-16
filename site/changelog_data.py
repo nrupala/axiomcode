@@ -24,6 +24,35 @@ _REPO = "https://github.com/nrupala/axiomcode"
 
 ENTRIES = [
     {
+        "id": "2026-11-15-offline-verifier-status-correction",
+        "date": "2026-11-15",
+        "title": "Status corrected — the offline verifier is in design, and its build has started",
+        "category": "Status",
+        "surfaces": ["Website", "Status"],
+        "body": (
+            '<p>The <a href="/status/">status page</a> said the offline / air-gapped verifier was '
+            "&ldquo;not built&rdquo; — stale twice over. The design was accepted on 2026-11-14, which "
+            "moves the surface to <em>in design</em> in this record&rsquo;s own vocabulary, and the "
+            "build started on 2026-11-15: step S1 — CA-signed, monotonically sequenced revocation "
+            "snapshots, the trust material offline certificate validation will carry across an air "
+            "gap — is built and proven in staging. The surface now reads <em>in design</em> with "
+            "that build-started summary. Its availability is unchanged — <em>unavailable</em>: "
+            "nothing on this surface is live yet, and it will not read otherwise until a shipped "
+            "step makes it true.</p>"
+        ),
+        "effect": (
+            "The one place the public record understated the product's own progress: the status "
+            "page now matches the build record — design accepted, first step built and proven in "
+            "staging — while the surface's availability stays honestly unavailable until a step "
+            "ships."
+        ),
+        "evidence": [
+            {"label": "Status", "url": "https://axiom-code.com/status/"},
+        ],
+        "refs": [],
+        "disposition": "Live on the site; corrections are entries, never silent edits.",
+    },
+    {
         "id": "2026-11-15-verification-reports-resident-boundary-correction",
         "date": "2026-11-15",
         "title": "Verification report corrected — the resident boundary's OUTSIDE-GRANT note",
