@@ -30,7 +30,7 @@ ENTRIES = [
         "category": "Status",
         "surfaces": ["Website", "Status"],
         "body": (
-            '<p>The offline / air-gapped verifier&rsquo;s build is complete in staging. Both Linux '
+            "<p>The offline / air-gapped verifier&rsquo;s build is complete in staging. Both Linux "
             "bundles are built and proven end-to-end from clean installs: the <em>full</em> bundle "
             "(certificate validation plus the kernel verdict procedure under the pinned Lean "
             "toolchain) and the free <em>check-only</em> bundle (certificate validation only &mdash; "
@@ -41,7 +41,7 @@ ENTRIES = [
             "<p>Nothing is downloadable yet, and this entry publishes no download link and no "
             "production fingerprint: production downloads open only after the production "
             "Release-key ceremony (the key whose fingerprint every installer must compare by hand) "
-            "and the release gate&rsquo;s judgment. The <a href=\"/status/\">status page</a> now "
+            'and the release gate&rsquo;s judgment. The <a href="/status/">status page</a> now '
             "reads <em>built and proven in staging</em> in its summary; its availability stays "
             "<em>unavailable</em> until that release judgment is recorded.</p>"
         ),

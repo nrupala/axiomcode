@@ -255,7 +255,7 @@ SURFACES = [
             "released — no download links and no production Release fingerprint are published until "
             "the ceremony and the gate's release judgment are complete.",
             "The first release will be Linux. macOS and Windows bundles follow, each built and "
-            "proven on its own platform."
+            "proven on its own platform.",
         ],
         "owner": _OWNER,
         "last_verified_at": "2026-11-15",
