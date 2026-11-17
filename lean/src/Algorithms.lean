@@ -23,6 +23,8 @@ import Algorithms.PreviousPermutation
 import Algorithms.Fibonacci
 import Algorithms.Kadane
 import Algorithms.JumpGame
+import Algorithms.Graph
+import Algorithms.TopologicalSort
 
 /-!
 # AxiomCode — Verified Algorithms Library
