@@ -39,6 +39,7 @@ import Algorithms.ZAlgorithm
 import Algorithms.RabinKarp
 import Algorithms.Manacher
 import Algorithms.MinWindow
+import Algorithms.PalindromePartitioning
 
 /-!
 # AxiomCode — Verified Algorithms Library
