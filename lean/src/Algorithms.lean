@@ -3,6 +3,13 @@ import Algorithms.Gcd
 import Algorithms.RangeSum
 import Algorithms.Trie
 import Algorithms.LruCache
+import Algorithms.QuickSort
+import Algorithms.CountingSort
+import Algorithms.RadixSort
+import Algorithms.QuickSelect
+import Algorithms.RotatedSearch
+import Algorithms.BubbleSort
+import Algorithms.BinarySearch
 
 /-!
 # AxiomCode — Verified Algorithms Library
