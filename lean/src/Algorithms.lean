@@ -36,6 +36,8 @@ import Algorithms.EditDistance
 import Algorithms.Lcs
 import Algorithms.ZAlgorithm
 import Algorithms.RabinKarp
+import Algorithms.Manacher
+import Algorithms.MinWindow
 
 /-!
 # AxiomCode — Verified Algorithms Library
