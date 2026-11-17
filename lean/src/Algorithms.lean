@@ -10,6 +10,19 @@ import Algorithms.QuickSelect
 import Algorithms.RotatedSearch
 import Algorithms.BubbleSort
 import Algorithms.BinarySearch
+import Algorithms.GasStation
+import Algorithms.LargestRectangle
+import Algorithms.ProductExceptSelf
+import Algorithms.InsertInterval
+import Algorithms.RainWater
+import Algorithms.Spiral
+import Algorithms.MaximalSquare
+import Algorithms.Candy
+import Algorithms.MergeIntervals
+import Algorithms.PreviousPermutation
+import Algorithms.Fibonacci
+import Algorithms.Kadane
+import Algorithms.JumpGame
 
 /-!
 # AxiomCode — Verified Algorithms Library
