@@ -31,6 +31,7 @@ import Algorithms.Kruskal
 import Algorithms.ArticulationPoints
 import Algorithms.AvlTree
 import Algorithms.BTree
+import Algorithms.RedBlackTree
 
 /-!
 # AxiomCode — Verified Algorithms Library
