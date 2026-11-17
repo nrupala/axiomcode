@@ -27,6 +27,8 @@ import Algorithms.Graph
 import Algorithms.TopologicalSort
 import Algorithms.BellmanFord
 import Algorithms.FloydWarshall
+import Algorithms.Kruskal
+import Algorithms.ArticulationPoints
 
 /-!
 # AxiomCode — Verified Algorithms Library
