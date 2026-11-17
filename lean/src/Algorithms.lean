@@ -32,6 +32,9 @@ import Algorithms.ArticulationPoints
 import Algorithms.AvlTree
 import Algorithms.BTree
 import Algorithms.RedBlackTree
+import Algorithms.EditDistance
+import Algorithms.Lcs
+import Algorithms.ZAlgorithm
 
 /-!
 # AxiomCode — Verified Algorithms Library
