@@ -25,6 +25,8 @@ import Algorithms.Kadane
 import Algorithms.JumpGame
 import Algorithms.Graph
 import Algorithms.TopologicalSort
+import Algorithms.BellmanFord
+import Algorithms.FloydWarshall
 
 /-!
 # AxiomCode — Verified Algorithms Library
