@@ -1,5 +1,8 @@
 import Algorithms.InsertionSort
 import Algorithms.Gcd
+import Algorithms.RangeSum
+import Algorithms.Trie
+import Algorithms.LruCache
 
 /-!
 # AxiomCode — Verified Algorithms Library
