@@ -22,6 +22,7 @@ import Algorithms.MergeIntervals
 import Algorithms.PreviousPermutation
 import Algorithms.Fibonacci
 import Algorithms.Kadane
+import Algorithms.Kmp
 import Algorithms.JumpGame
 import Algorithms.Graph
 import Algorithms.TopologicalSort
