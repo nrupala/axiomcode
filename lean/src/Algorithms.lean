@@ -35,6 +35,7 @@ import Algorithms.RedBlackTree
 import Algorithms.EditDistance
 import Algorithms.Lcs
 import Algorithms.ZAlgorithm
+import Algorithms.RabinKarp
 
 /-!
 # AxiomCode — Verified Algorithms Library
