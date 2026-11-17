@@ -29,6 +29,8 @@ import Algorithms.BellmanFord
 import Algorithms.FloydWarshall
 import Algorithms.Kruskal
 import Algorithms.ArticulationPoints
+import Algorithms.AvlTree
+import Algorithms.BTree
 
 /-!
 # AxiomCode — Verified Algorithms Library
